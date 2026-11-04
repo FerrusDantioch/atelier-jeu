@@ -9,9 +9,9 @@ import assert from 'node:assert/strict';
 import {
   MONDE,
   ETAPES,
+  etapeLampe,
   creerEtatJeu,
   appliquerAction,
-  ramasserEngrenagesProches,
   utiliserEtabli,
   objectifActuel,
   objectifSecondaire,
@@ -49,10 +49,10 @@ import { serialiserPartie, chargerPartie } from '../js/logique-sauvegarde.js';
 
 // Joue la quête de la lampe d'Odile jusqu'au bout.
 function finirQueteLampe(etat) {
-  appliquerAction(etat, 'accepter');
-  for (const e of MONDE.engrenages) ramasserEngrenagesProches(etat, e.x, e.z);
+  appliquerAction(etat, 'quete:accepter:lampe-odile');
+  for (const e of MONDE.engrenages) ramasserObjetsQuete(etat, 'place', e.x, e.z);
   utiliserEtabli(etat);
-  appliquerAction(etat, 'livrer');
+  appliquerAction(etat, 'quete:parler:lampe-odile');
 }
 
 // Fabrique un objet de quête en achetant ce qu'il faut, puis attend la fin.
@@ -77,11 +77,34 @@ function marcher(zoneId, etat, depart, dirX, dirZ, secondes) {
 
 // --- La chaîne de quêtes ------------------------------------------------------------
 
-test('au début, les nouvelles quêtes sont verrouillées', () => {
+test('au début, seule la lampe d\'Odile est disponible ; les autres quêtes sont verrouillées', () => {
   const etat = creerEtatJeu();
-  assert.equal(queteDisponible(etat), null);
+  assert.equal(queteDisponible(etat).id, 'lampe-odile');
   assert.equal(queteEnCours(etat), null);
-  assert.equal(objectifQuetes(etat), null);
+  assert.equal(etat.quetes['balance-capucine'].statut, 'verrouillee');
+  assert.equal(etat.quetes['roue-moulin'].statut, 'verrouillee');
+  assert.equal(objectifQuetes(etat), 'Va parler à Odile, devant sa maison à droite de la place.');
+});
+
+test('une ancienne sauvegarde (version 1) en pleine quête de la lampe reprend au bon endroit', () => {
+  const ancienne = (etape, engrenages) => JSON.stringify({
+    version: 1,
+    etat: { argent: 20, quete: { etape, engrenagesRamasses: engrenages } },
+    zone: 'place',
+    position: { x: 0, z: 5 },
+  });
+  const cherche = chargerPartie(ancienne('acceptee', ['engrenage-2'])).etat;
+  assert.equal(etapeLampe(cherche), ETAPES.ACCEPTEE);
+  assert.deepEqual(objetsARamasser(cherche, 'place').map((o) => o.id), ['engrenage-1', 'engrenage-3']);
+  assert.match(objectifQuetes(cherche), /1\/3/);
+  const reunis = chargerPartie(ancienne('engrenages_reunis', ['engrenage-1', 'engrenage-2', 'engrenage-3'])).etat;
+  assert.equal(etapeLampe(reunis), ETAPES.ENGRENAGES_REUNIS);
+  const reparee = chargerPartie(ancienne('lampe_reparee', [])).etat;
+  assert.equal(etapeLampe(reparee), ETAPES.LAMPE_REPAREE);
+  // Et la suite se joue normalement : Odile paie, l'atelier ouvre.
+  appliquerAction(reparee, 'quete:parler:lampe-odile');
+  assert.equal(reparee.argent, 140);
+  assert.equal(reparee.atelier.ouvert, true);
 });
 
 test('finir la lampe d\'Odile rend la quête de Capucine disponible', () => {
@@ -334,7 +357,10 @@ test('une sauvegarde incomplète est complétée avec les valeurs de départ', (
   const ancienne = { version: 1, etat: { argent: 77, quete: { etape: 'terminee' } }, zone: 'place', position: { x: 1, z: 1 } };
   const relu = chargerPartie(JSON.stringify(ancienne));
   assert.equal(relu.etat.argent, 77);
-  assert.equal(relu.etat.quete.etape, ETAPES.TERMINEE);
+  // Ancienne version : la quête de la lampe est rangée avec les autres quêtes.
+  assert.equal(relu.etat.quete, undefined);
+  assert.equal(etapeLampe(relu.etat), ETAPES.TERMINEE);
+  assert.equal(relu.etat.quetes['balance-capucine'].statut, 'disponible');
   assert.ok(relu.etat.quetes['balance-capucine']);
   assert.ok(relu.etat.atelier.stock.cuivre === 0);
 });
@@ -358,7 +384,8 @@ test('une sauvegarde trafiquée est corrigée', () => {
   };
   const relu = chargerPartie(JSON.stringify(triche));
   assert.equal(relu.etat.argent, 0);
-  assert.equal(relu.etat.quete.etape, ETAPES.PAS_COMMENCEE);
+  assert.equal(etapeLampe(relu.etat), ETAPES.PAS_COMMENCEE);
+  assert.equal(relu.etat.quetes['lampe-odile'].statut, 'disponible');
   assert.equal(relu.etat.atelier.stock.cuivre, 0);
   assert.equal(relu.etat.atelier.stock.bois, 0);
   assert.equal(relu.etat.atelier.stock.ressort, 2);

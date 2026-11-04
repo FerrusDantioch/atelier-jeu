@@ -9,18 +9,19 @@
 //   - 'fabriquer' : fabriquer un objet à l'établi (l'étape est finie dès que
 //                   l'objet est dans le stock) ;
 //   - 'livrer'    : parler à un personnage en ayant l'objet dans le stock ;
-//   - 'utiliser'  : utiliser un objet du décor en ayant l'objet dans le stock ;
+//   - 'utiliser'  : utiliser un objet du décor (l'établi, un mécanisme…), en
+//                   ayant l'objet demandé dans le stock s'il y en a un ;
 //   - 'parler'    : simplement parler à un personnage.
 //
-// Les quêtes s'enchaînent : chacune a pour prérequis la précédente.
-// La toute première quête (la lampe d'Odile) garde son propre code, dans
-// logique.js ; le moteur la reconnaît sous le nom spécial 'lampe-odile'.
+// Les quêtes s'enchaînent : chacune a pour prérequis la précédente. La toute
+// première (la lampe d'Odile) n'a pas de prérequis : elle est disponible dès
+// le début de la partie, et la terminer ouvre l'atelier.
 //
 // Pour ajouter une quête plus tard : ajouter une entrée dans QUETES, avec ses
 // textes. Le reste (objectifs, marqueurs, dialogues) suit automatiquement.
 // =============================================================================
 
-import { RECETTES } from './logique-atelier.js';
+import { RECETTES, ouvrirAtelier } from './logique-atelier.js';
 
 // Distance (en mètres) pour ramasser un objet de quête en marchant dessus.
 export const DISTANCE_RAMASSAGE_QUETE = 1.0;
@@ -29,6 +30,60 @@ export const DISTANCE_RAMASSAGE_QUETE = 1.0;
 // 1. LES QUÊTES
 // -----------------------------------------------------------------------------
 export const QUETES = Object.freeze({
+  'lampe-odile': {
+    titre: "La lampe d'Odile",
+    donneur: 'odile',
+    lieuDonneur: 'devant sa maison, à droite de la place',
+    // L'objectif tant que la quête n'est pas acceptée (c'est le tout début du jeu).
+    objectifDepart: 'Va parler à Odile, devant sa maison à droite de la place.',
+    prerequis: null,
+    recettes: [],
+    ouvreAtelier: true, // la terminer ouvre l'atelier (étape 2 du jeu)
+    etapes: [
+      {
+        type: 'ramasser',
+        // Les 3 engrenages perdus par Odile, éparpillés sur la place.
+        objets: [
+          { id: 'engrenage-1', lieu: 'place', x: -13, z: 1.5 },
+          { id: 'engrenage-2', lieu: 'place', x: 4, z: 7.5 },
+          { id: 'engrenage-3', lieu: 'place', x: 13.5, z: -6 },
+        ],
+        ramasse: 'Engrenage ramassé',
+        messageFin: "Tous les engrenages ! Direction l'établi.",
+        objectif: "Retrouve les engrenages d'Odile sur la place",
+        repliquesDonneur: ['Merci de chercher ! Engrenages retrouvés : {n} sur {total}. Ils ont roulé un peu partout sur la place.'],
+      },
+      {
+        type: 'utiliser',
+        cible: 'etabli',
+        messageFait: 'Lampe à vapeur réparée !',
+        objectif: "Rapporte les engrenages à ton établi, devant l'atelier.",
+        repliquesDonneur: ["Vous les avez tous ! Il ne reste qu'à réparer la lampe sur votre établi."],
+      },
+      {
+        type: 'parler',
+        pnj: 'odile',
+        choix: 'Donner la lampe',
+        objectif: 'Apporte la lampe réparée à Odile.',
+      },
+    ],
+    recompense: 120,
+    textes: {
+      proposition: [
+        "Bonjour ! Vous êtes le nouvel artisan ? Ferrus Dantioch, c'est bien ça ?",
+        'Ma lampe à vapeur est tombée la semaine dernière. Depuis, mes soirées sont bien sombres…',
+        'Trois engrenages ont sauté dans la chute. Ils ont roulé quelque part sur la place.',
+        'Pourriez-vous les retrouver et réparer ma lampe ? Je vous paierai 120 pièces.',
+      ],
+      enCours: ['Merci de chercher !'],
+      fin: [
+        'Ma lampe ! Elle brille comme au premier jour…',
+        "Voici vos 120 pièces, bien méritées. Cuivrebourg a besoin d'artisans comme vous.",
+      ],
+      apres: ['Merci encore, Ferrus. Je parlerai de votre atelier à tout le quartier !'],
+    },
+  },
+
   'balance-capucine': {
     titre: 'La balance de Capucine',
     donneur: 'capucine',
@@ -80,7 +135,7 @@ export const QUETES = Object.freeze({
           { id: 'pale-2', lieu: 'moulin', x: -2, z: 6.5 },
           { id: 'pale-3', lieu: 'moulin', x: 6, z: 3 },
         ],
-        nomObjet: 'Pale',
+        ramasse: 'Pale ramassée',
         objectif: 'Retrouve les pales de la roue, dans l\'herbe près du moulin',
       },
       {
@@ -124,13 +179,15 @@ export const QUETES = Object.freeze({
 // 'terminee'), l'étape en cours, et les objets déjà ramassés.
 export function creerEtatQuetes() {
   const etat = {};
-  for (const id of Object.keys(QUETES)) etat[id] = { statut: 'verrouillee', etape: 0, ramasses: [] };
+  for (const [id, q] of Object.entries(QUETES)) {
+    // Une quête sans prérequis (la première) est disponible tout de suite.
+    etat[id] = { statut: q.prerequis ? 'verrouillee' : 'disponible', etape: 0, ramasses: [] };
+  }
   return etat;
 }
 
-// Une quête (ou la quête spéciale de la lampe) est-elle terminée ?
+// Une quête est-elle terminée ?
 export function queteTerminee(etat, id) {
-  if (id === 'lampe-odile') return etat.quete.etape === 'terminee';
   return etat.quetes[id] ? etat.quetes[id].statut === 'terminee' : false;
 }
 
@@ -140,7 +197,7 @@ export function majDisponibilites(etat) {
   const messages = [];
   for (const [id, q] of Object.entries(QUETES)) {
     const s = etat.quetes[id];
-    if (s.statut === 'verrouillee' && queteTerminee(etat, q.prerequis)) {
+    if (s.statut === 'verrouillee' && (!q.prerequis || queteTerminee(etat, q.prerequis))) {
       s.statut = 'disponible';
       messages.push(`Nouvelle quête : ${q.titre}`);
     }
@@ -187,7 +244,10 @@ function etapeSuivante(etat, id) {
   s.statut = 'terminee';
   etat.argent += q.recompense;
   etat.atelier.recettesQuete = etat.atelier.recettesQuete.filter((r) => !(q.recettes || []).includes(r));
-  return [`+${q.recompense} pièces`, `Quête terminée : ${q.titre}`, ...majDisponibilites(etat)];
+  const messages = [`+${q.recompense} pièces`, `Quête terminée : ${q.titre}`];
+  // La lampe d'Odile : Odile va parler de l'atelier à tout le quartier, il ouvre ses portes.
+  if (q.ouvreAtelier) messages.push(...ouvrirAtelier(etat));
+  return [...messages, ...majDisponibilites(etat)];
 }
 
 // Vérifie les étapes qui se terminent toutes seules (par exemple « fabriquer » :
@@ -220,10 +280,11 @@ export function ramasserObjetsQuete(etat, lieu, x, z) {
   for (const o of objetsARamasser(etat, lieu)) {
     if (Math.hypot(x - o.x, z - o.z) <= DISTANCE_RAMASSAGE_QUETE) {
       enCours.suivi.ramasses.push(o.id);
-      messages.push(`${enCours.etape.nomObjet} ramassée ${enCours.suivi.ramasses.length}/${total}`);
+      messages.push(`${enCours.etape.ramasse} ${enCours.suivi.ramasses.length}/${total}`);
     }
   }
   if (enCours.suivi.ramasses.length >= total && messages.length > 0) {
+    if (enCours.etape.messageFin) messages.push(enCours.etape.messageFin);
     messages.push(...etapeSuivante(etat, enCours.id));
   }
   return messages;
@@ -234,10 +295,12 @@ export function ramasserObjetsQuete(etat, lieu, x, z) {
 export function utiliserObjetQuete(etat, cible) {
   const enCours = queteEnCours(etat);
   if (!enCours || enCours.etape.type !== 'utiliser' || enCours.etape.cible !== cible) return null;
-  const objet = enCours.etape.objet;
+  const { objet, messageFait } = enCours.etape;
+  // Sans objet demandé (réparer la lampe à l'établi), l'action se fait tout de suite.
+  if (!objet) return [messageFait, ...etapeSuivante(etat, enCours.id)];
   if (etat.atelier.stock[objet] < 1) return [`Il te faut d'abord ${RECETTES[objet].article}.`];
   etat.atelier.stock[objet] -= 1;
-  return [`${RECETTES[objet].nom} installé !`, ...etapeSuivante(etat, enCours.id)];
+  return [messageFait || `${RECETTES[objet].nom} installé !`, ...etapeSuivante(etat, enCours.id)];
 }
 
 // -----------------------------------------------------------------------------
@@ -262,10 +325,14 @@ export function dialoguePnjQuete(etat, pnj, nomPnj) {
       }
     }
     if (etape.type === 'parler' && etape.pnj === pnj) {
-      return { orateur: nomPnj, repliques: quete.textes.fin, choix: [{ texte: 'Avec plaisir !', action: `quete:parler:${id}` }] };
+      return { orateur: nomPnj, repliques: quete.textes.fin, choix: [{ texte: etape.choix || 'Avec plaisir !', action: `quete:parler:${id}` }] };
     }
     if (quete.donneur === pnj) {
-      return { orateur: nomPnj, repliques: quete.textes.enCours, choix: [{ texte: "Je m'en occupe", action: 'fermer' }] };
+      // Certaines étapes ont leurs propres répliques ({n} et {total} : les objets ramassés).
+      const repliques = (etape.repliquesDonneur || quete.textes.enCours).map((r) => r
+        .replace('{n}', String(enCours.suivi.ramasses.length))
+        .replace('{total}', String(etape.objets ? etape.objets.length : 0)));
+      return { orateur: nomPnj, repliques, choix: [{ texte: "Je m'en occupe", action: 'fermer' }] };
     }
   }
   // 2. Ce personnage a une quête à proposer ?
@@ -320,11 +387,11 @@ export function objectifQuetes(etat) {
     return etape.objectif;
   }
   const dispo = queteDisponible(etat);
-  if (dispo) return `Nouvelle quête : va voir ${nomDonneur(dispo.quete.donneur)}, ${dispo.quete.lieuDonneur}.`;
+  if (dispo) return dispo.quete.objectifDepart || `Nouvelle quête : va voir ${nomDonneur(dispo.quete.donneur)}, ${dispo.quete.lieuDonneur}.`;
   return null;
 }
 
-const NOMS = { capucine: 'Capucine', barnabe: 'Barnabé' };
+const NOMS = { odile: 'Odile', capucine: 'Capucine', barnabe: 'Barnabé' };
 function nomDonneur(pnj) {
   return NOMS[pnj] || pnj;
 }
@@ -338,7 +405,7 @@ export function marqueursQuetes(etat) {
     const { etape } = enCours;
     if (etape.type === 'fabriquer' && !(etat.atelier.fabrication && etat.atelier.fabrication.recette === etape.objet)) liste.add('etabli');
     if (etape.type === 'livrer' && etat.atelier.stock[etape.objet] > 0) liste.add(etape.pnj);
-    if (etape.type === 'utiliser' && etat.atelier.stock[etape.objet] > 0) liste.add(etape.cible);
+    if (etape.type === 'utiliser' && (!etape.objet || etat.atelier.stock[etape.objet] > 0)) liste.add(etape.cible);
     if (etape.type === 'parler') liste.add(etape.pnj);
   } else {
     const dispo = queteDisponible(etat);

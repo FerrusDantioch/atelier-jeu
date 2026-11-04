@@ -19,6 +19,8 @@ habitants : chaque habitant a un problème à résoudre, ce sont les quêtes.
   au départ), de petits sons, un menu d'options, une démarche plus
   naturelle, un joystick qui vient sous le pouce, et le jeu s'installe sur
   un téléphone comme une application (il marche même sans connexion).
+- **Version 1.0.1** : les clients ne se laissent plus traverser, et toutes
+  les quêtes (la lampe d'Odile comprise) passent par le même moteur.
 
 ![L'atelier ouvert, avec des clients au comptoir](captures/pc-atelier.png)
 
@@ -243,7 +245,7 @@ plus, et le joystick ne glisse plus.
 npm test
 ```
 
-(C'est la même chose que `node --test`.) 90 tests vérifient les quêtes,
+(C'est la même chose que `node --test`.) 97 tests vérifient les quêtes,
 l'argent, les collisions dans les trois lieux, la gestion de l'atelier (dont
 une partie de 15 minutes jouée automatiquement), la sauvegarde (y compris
 des sauvegardes abîmées ou trafiquées), les options, la musique (toutes les
@@ -256,9 +258,9 @@ fichiers d'installation. Tout doit être indiqué `pass`.
 |---|---|
 | `index.html` | La page du jeu : écran d'accueil, interface, message d'erreur |
 | `css/style.css` | L'apparence : couleurs, tailles de texte, boutons tactiles |
-| `js/logique.js` | **Les règles du jeu**, sans aucune 3D : plan de la place, collisions, quête, textes |
+| `js/logique.js` | **Les règles du jeu**, sans aucune 3D : plan de la place, collisions (clients compris), objectif, marqueurs, dialogue d'Odile |
 | `js/logique-atelier.js` | **Les règles de l'atelier**, sans aucune 3D : matériaux, recettes, clients, améliorations, prix |
-| `js/logique-quetes.js` | **Le moteur de quêtes**, sans aucune 3D : les quêtes enchaînées décrites comme des données, leurs étapes et leurs textes |
+| `js/logique-quetes.js` | **Le moteur de quêtes**, sans aucune 3D : toutes les quêtes (la lampe d'Odile, la balance, la roue) décrites comme des données, leurs étapes et leurs textes |
 | `js/logique-zones.js` | **Les lieux**, sans aucune 3D : plan du marché et du moulin, sorties, portes fermées ou ouvertes, répliques de Léon |
 | `js/logique-sauvegarde.js` | Transforme la partie en texte et la relit en vérifiant tout |
 | `js/logique-reglages.js` | **Les options**, sans navigateur : valeurs de départ, volumes, qualité, numéro de version |
@@ -321,7 +323,7 @@ https://ferrusdantioch.github.io/atelier-jeu/ . Dans les messageries, le
 lien s'affiche avec le titre du jeu et une image du marché.
 
 **Publier une nouvelle version** : changez le numéro de version (par exemple
-`1.0.0` → `1.0.1`) aux **trois** endroits suivants, puis envoyez sur `main` :
+`1.0.1` → `1.0.2`) aux **trois** endroits suivants, puis envoyez sur `main` :
 `package.json`, `js/logique-reglages.js` (`VERSION_JEU`) et `sw.js`
 (`VERSION`). Un test vérifie qu'ils sont identiques. Les téléphones qui ont
 installé le jeu reçoivent la nouvelle version à la prochaine ouverture avec
@@ -339,12 +341,22 @@ le jeu fonctionne toujours.
 - ~~**Étape 3** : plus de lieux, plus d'habitants, des quêtes enchaînées, la sauvegarde de la partie.~~ Fait.
 - ~~**Étape 4** : la musique, les finitions pour téléphone, la publication.~~ Fait (version 1.0).
 
-## À améliorer plus tard
+## Les clients sur la place
 
-- Les clients ne bloquent pas Ferrus : il peut passer à travers eux.
-- La quête de la lampe d'Odile utilise encore son code de l'étape 1 ; les
-  quêtes suivantes passent par le moteur de quêtes. On pourra l'y faire
-  entrer aussi, pour n'avoir qu'un seul système.
+Les clients sont « solides » : Ferrus ne passe plus à travers eux, il les
+contourne. Et ce sont eux qui font attention : si Ferrus se trouve sur leur
+chemin, ils s'arrêtent poliment à quelques centimètres, et repartent dès
+qu'il s'écarte. Ils ne le bousculent jamais (pas de secousse).
+
+## Un seul système de quêtes
+
+Toutes les quêtes, y compris la première (la lampe d'Odile), sont décrites
+de la même façon dans `js/logique-quetes.js` : qui la donne, ses étapes
+(ramasser, fabriquer, livrer, utiliser, parler), ses textes et sa récompense.
+Pour ajouter une quête, il suffit d'y ajouter une entrée.
+
+Les parties sauvegardées avant ce changement se reprennent normalement :
+le jeu convertit l'ancienne sauvegarde la première fois qu'il la relit.
 
 ## Droits
 
