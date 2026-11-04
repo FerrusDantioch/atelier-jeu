@@ -7,10 +7,14 @@ Vous jouez **Ferrus Dantioch**, artisan-ingénieur. Il reprend un petit atelier
 dans une ville en difficulté. Il fabrique et répare des objets pour les
 habitants : chaque habitant a un problème à résoudre, ce sont les quêtes.
 
-**Ceci est l'étape 1 (prototype)** : une place de village, Ferrus, Odile et
-une première quête, « La lampe d'Odile ».
+**Où en est le jeu ?**
 
-![Le jeu sur ordinateur](captures/pc.png)
+- **Étape 1** : une place de village, Ferrus, Odile et une première quête,
+  « La lampe d'Odile ».
+- **Étape 2** : la gestion de l'atelier. On achète des matériaux, on fabrique
+  des objets, on sert des clients et on améliore l'atelier.
+
+![L'atelier ouvert, avec des clients au comptoir](captures/pc-atelier.png)
 
 ---
 
@@ -58,6 +62,7 @@ un téléphone connecté **au même Wi-Fi** peut l'ouvrir pour jouer.
 | Parler, utiliser | `E` ou `Espace` | Gros bouton **Interagir** en bas à droite |
 | Dialogue : réplique suivante | `E` ou `Espace` | Toucher la boîte de dialogue |
 | Dialogue : choisir une réponse | Flèches puis `E`, ou clic | Toucher la réponse |
+| Panneau de l'établi | Souris (ou `Tab` puis `Entrée`) ; `Échap` ou `E` pour fermer | Toucher les boutons ; **Fermer** en haut |
 
 ## La quête « La lampe d'Odile »
 
@@ -69,6 +74,46 @@ un téléphone connecté **au même Wi-Fi** peut l'ouvrir pour jouer.
 Le cadre « Objectif », en haut, dit toujours quoi faire. Un petit losange
 couleur ambre flotte au-dessus d'Odile ou de l'établi quand il y a quelque
 chose à y faire.
+
+## La gestion de l'atelier (étape 2)
+
+Quand Odile a payé, l'atelier ouvre ses portes. Ferrus explique alors en
+trois phrases comment tout fonctionne.
+
+- **Le comptoir** (à gauche de la porte de l'atelier) : les clients entrent
+  par le portail du sud, font la queue (3 au maximum) et commandent un
+  objet. Approchez-vous et appuyez sur `E` (ou **Interagir**) : si l'objet
+  est prêt, donnez-le-lui pour être payé.
+- **L'établi** (à droite de la porte) ouvre un panneau à trois onglets :
+  - **Fabriquer** : choisissez un objet. Il utilise des matériaux et prend
+    quelques secondes. Une barre de progression s'affiche en haut de l'écran.
+    Un seul objet à la fois.
+  - **Acheter** : cuivre (8 pièces), bois (4) et ressorts (6).
+  - **Améliorer** : des achats définitifs pour l'atelier.
+- **Le stock** : 5 de chaque matériau et de chaque objet au maximum (10 avec
+  les étagères).
+
+| Objet | Il faut | Durée | Prix de vente |
+|---|---|---|---|
+| Lanterne | 1 cuivre, 1 ressort | 6 s | 32 pièces |
+| Bouilloire à vapeur | 2 cuivres, 1 bois | 9 s | 45 pièces |
+| Horloge mécanique | 1 cuivre, 1 bois, 2 ressorts | 14 s | 75 pièces |
+
+| Amélioration | Prix | Effet |
+|---|---|---|
+| Étagères | 60 | 10 de chaque au lieu de 5 |
+| Soufflet de forge | 90 | Fabrication deux fois plus rapide |
+| Enseigne en cuivre | 110 | Un client toutes les 15 s au lieu de 25 s |
+| Plans d'horloger | 140 | Débloque les horloges |
+
+Chaque amélioration apparaît dans le décor : étagères près de la porte,
+soufflet sur l'établi, grand engrenage au-dessus de l'enseigne, plans roulés.
+
+Le cadre « Objectif » dit toujours quoi faire (acheter, fabriquer, servir),
+et un petit losange ambre flotte au-dessus de l'établi ou du comptoir.
+Personne n'est pressé : les clients attendent aussi longtemps qu'il faut.
+Et si jamais l'atelier se retrouve coincé (ni argent, ni objet à vendre),
+Odile prête 30 pièces pour repartir.
 
 ## Confort visuel
 
@@ -82,8 +127,9 @@ d'animations », les engrenages et les marqueurs ne flottent plus.
 npm test
 ```
 
-(C'est la même chose que `node --test`.) 29 tests vérifient la quête,
-l'argent et les collisions. Tout doit être indiqué `pass`.
+(C'est la même chose que `node --test`.) 54 tests vérifient la quête,
+l'argent, les collisions et toute la gestion de l'atelier (dont une partie
+de 15 minutes jouée automatiquement). Tout doit être indiqué `pass`.
 
 ## L'organisation des fichiers
 
@@ -92,13 +138,16 @@ l'argent et les collisions. Tout doit être indiqué `pass`.
 | `index.html` | La page du jeu : écran d'accueil, interface, message d'erreur |
 | `css/style.css` | L'apparence : couleurs, tailles de texte, boutons tactiles |
 | `js/logique.js` | **Les règles du jeu**, sans aucune 3D : plan de la place, collisions, quête, textes |
+| `js/logique-atelier.js` | **Les règles de l'atelier**, sans aucune 3D : matériaux, recettes, clients, améliorations, prix |
 | `js/main.js` | Le chef d'orchestre : crée la scène 3D, la caméra, la lumière, et fait tourner le jeu |
-| `js/decor.js` | La place en 3D : sol, haies, arbres, puits, atelier, maison d'Odile, établi, lampe |
-| `js/personnages.js` | Ferrus (avec ses lunettes d'artisan) et Odile, et leurs animations |
+| `js/decor.js` | La place en 3D : sol, haies, arbres, puits, atelier, maison d'Odile, établi, lampe, comptoir, améliorations |
+| `js/personnages.js` | Ferrus (avec ses lunettes d'artisan), Odile, les clients, et leurs animations |
 | `js/commandes.js` | Le clavier, le joystick tactile et le bouton « Interagir » |
-| `js/interface.js` | L'argent, l'objectif, les petits messages, la boîte de dialogue |
+| `js/interface.js` | L'argent, l'objectif, la barre de fabrication, les petits messages, la boîte de dialogue |
+| `js/interface-atelier.js` | Le panneau de l'établi (onglets Fabriquer, Acheter, Améliorer) |
 | `lib/three/` | Three.js 0.186.1 (le moteur 3D), copié ici pour ne dépendre d'aucun site extérieur |
-| `tests/logique.test.js` | Les tests automatiques des règles |
+| `tests/logique.test.js` | Les tests automatiques des règles de l'étape 1 |
+| `tests/atelier.test.js` | Les tests automatiques de la gestion de l'atelier |
 | `serveur.js` | Le petit serveur lancé par `npm start` |
 | `outils/copier-three.js` | Recopie Three.js de `node_modules` vers `lib/three/` (`npm run copier-three`) |
 | `outils/creer-zip.js` | Fabrique l'archive de sauvegarde (`npm run zip`) |
@@ -143,9 +192,15 @@ le jeu fonctionne toujours.
 
 ## La suite prévue
 
-- **Étape 2** : la gestion de l'atelier (fabrication, stocks, clients, améliorations).
+- ~~**Étape 2** : la gestion de l'atelier (fabrication, stocks, clients, améliorations).~~ Fait.
 - **Étape 3** : plus de lieux, plus d'habitants, des quêtes enchaînées, la sauvegarde de la partie.
 - **Étape 4** : la musique, les finitions pour téléphone, la publication.
+
+## À améliorer plus tard
+
+- La démarche des personnages (bras et jambes) fait un peu « robot » : à
+  rendre plus naturelle lors des finitions.
+- Les clients ne bloquent pas Ferrus : il peut passer à travers eux.
 
 ## Droits
 

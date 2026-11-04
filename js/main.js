@@ -29,10 +29,23 @@ import {
   appliquerAction,
   utiliserEtabli,
 } from './logique.js';
+import {
+  DIALOGUE_OUVERTURE,
+  avancerTemps,
+  lancerFabrication,
+  acheterMateriau,
+  acheterAmelioration,
+  dialogueClient,
+  messageComptoirVide,
+  clientAuComptoir,
+  materiauxManquants,
+  progressionFabrication,
+} from './logique-atelier.js';
 import { construireDecor, creerEngrenageQuete, creerMarqueur, allumerLampe } from './decor.js';
-import { creerFerrus, animerFerrus, creerOdile, animerOdile } from './personnages.js';
+import { creerFerrus, animerFerrus, creerOdile, animerOdile, creerHabitant, animerMarche, supprimerPersonnage } from './personnages.js';
 import { creerCommandes } from './commandes.js';
 import { creerInterface } from './interface.js';
+import { creerPanneauAtelier } from './interface-atelier.js';
 
 // -----------------------------------------------------------------------------
 // 1. La 3D est-elle disponible ?
@@ -131,12 +144,15 @@ function demarrer() {
     engrenages.set(e.id, objet3d);
   }
 
-  // Les marqueurs flottants au-dessus d'Odile et de l'établi.
+  // Les marqueurs flottants au-dessus d'Odile, de l'établi et du comptoir.
   const marqueurOdile = creerMarqueur();
   marqueurOdile.position.set(MONDE.odile.x, 2.35, MONDE.odile.z);
   const marqueurEtabli = creerMarqueur();
   marqueurEtabli.position.set(MONDE.etabli.x + 0.6, 2.05, MONDE.etabli.z);
-  scene.add(marqueurOdile, marqueurEtabli);
+  const marqueurComptoir = creerMarqueur();
+  marqueurComptoir.position.set(MONDE.comptoir.x, 1.95, MONDE.comptoir.z);
+  scene.add(marqueurOdile, marqueurEtabli, marqueurComptoir);
+  const hauteursMarqueurs = [[marqueurOdile, 2.35], [marqueurEtabli, 2.05], [marqueurComptoir, 1.95]];
 
   // ---------------------------------------------------------------------------
   // 3. L'état du jeu, l'interface et les commandes
@@ -148,8 +164,23 @@ function demarrer() {
   let orientationVoulue = 0; // la direction vers laquelle Ferrus doit se tourner
 
   const ui = creerInterface();
+  // Le panneau de l'établi : quand on appuie sur un de ses boutons, on applique
+  // la règle correspondante, puis on met tout à jour.
+  const panneau = creerPanneauAtelier({
+    etat,
+    surAction: (type, id, quantite) => {
+      let messages = [];
+      if (type === 'fabriquer') messages = lancerFabrication(etat, id);
+      else if (type === 'acheter') messages = acheterMateriau(etat, id, quantite);
+      else if (type === 'ameliorer') messages = acheterAmelioration(etat, id);
+      afficherMessages(messages);
+      majEtat();
+    },
+    surFermeture: () => commandes.relacherTout(),
+  });
   const commandes = creerCommandes({
-    estActif: () => jeuActif,
+    // Les commandes du jeu sont en pause pendant que le panneau est ouvert.
+    estActif: () => jeuActif && !panneau.estOuvert(),
     surInteraction: interagir,
     surNavigation: (sens) => {
       if (ui.dialogueOuvert()) ui.changerChoix(sens);
@@ -165,11 +196,17 @@ function demarrer() {
     const marqueurs = marqueursActifs(etat);
     marqueurOdile.visible = marqueurs.odile;
     marqueurEtabli.visible = marqueurs.etabli;
+    marqueurComptoir.visible = marqueurs.comptoir;
     // La lampe : éteinte sur l'établi, allumée une fois réparée, puis chez Odile.
     const etape = etat.quete.etape;
     allumerLampe(decor.lampeEtabli, etape === ETAPES.LAMPE_REPAREE);
     decor.lampeEtabli.visible = etape !== ETAPES.TERMINEE;
     decor.lanterneOdile.visible = etape === ETAPES.TERMINEE;
+    // Les améliorations achetées apparaissent dans le décor.
+    for (const [id, objet3d] of Object.entries(decor.ameliorations)) {
+      objet3d.visible = etat.atelier.ameliorations.includes(id);
+    }
+    panneau.rafraichir();
   }
 
   function afficherMessages(messages) {
@@ -183,18 +220,122 @@ function demarrer() {
       ui.avancerDialogue();
       return;
     }
+    if (panneau.estOuvert()) return;
     const cible = cibleProche(position.x, position.z);
+    if (cible) orientationVoulue = Math.atan2(MONDE[cible].x - position.x, MONDE[cible].z - position.z);
+
     if (cible === 'odile') {
       commandes.relacherTout();
-      orientationVoulue = Math.atan2(MONDE.odile.x - position.x, MONDE.odile.z - position.z);
       const action = await ui.ouvrirDialogue(dialogueOdile(etat));
+      const atelierAvant = etat.atelier.ouvert;
       afficherMessages(appliquerAction(etat, action));
       majEtat();
+      // L'atelier vient d'ouvrir : Ferrus explique en quelques mots comment il marche.
+      if (!atelierAvant && etat.atelier.ouvert) await ui.ouvrirDialogue(DIALOGUE_OUVERTURE);
     } else if (cible === 'etabli') {
-      orientationVoulue = Math.atan2(MONDE.etabli.x - position.x, MONDE.etabli.z - position.z);
-      afficherMessages(utiliserEtabli(etat));
+      if (etat.atelier.ouvert) {
+        // On ouvre directement le bon onglet : « Acheter » s'il manque des
+        // matériaux pour le client du comptoir, sinon « Fabriquer ».
+        commandes.relacherTout();
+        const client = clientAuComptoir(etat);
+        const manque = client && etat.atelier.stock[client.commande] === 0
+          && Object.keys(materiauxManquants(etat, client.commande)).length > 0;
+        panneau.ouvrir(manque ? 'acheter' : 'fabriquer');
+      } else {
+        afficherMessages(utiliserEtabli(etat));
+        majEtat();
+      }
+    } else if (cible === 'comptoir') {
+      const dialogue = dialogueClient(etat);
+      if (!dialogue) {
+        afficherMessages(messageComptoirVide(etat));
+        return;
+      }
+      commandes.relacherTout();
+      const action = await ui.ouvrirDialogue(dialogue);
+      afficherMessages(appliquerAction(etat, action));
       majEtat();
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Les clients en 3D (étape 2)
+  // ---------------------------------------------------------------------------
+  // La liste des clients est dans l'état du jeu (logique-atelier.js). Ici, on
+  // fait seulement correspondre un personnage 3D à chaque client :
+  //   - un nouveau client entre par le portail et va prendre sa place dans la file ;
+  //   - quand la file avance, il avance aussi ;
+  //   - une fois servi, il repart vers le portail et disparaît.
+  const clients3d = new Map(); // numéro du client → { objet, chemin, place, partant }
+  const VITESSE_CLIENT = 2.2;
+
+  function synchroniserClients() {
+    const file = MONDE.clients.file;
+    const presents = new Set();
+    etat.atelier.clients.forEach((client, place) => {
+      presents.add(client.id);
+      let c = clients3d.get(client.id);
+      if (!c) {
+        // Nouveau client : il apparaît devant le portail.
+        const objet = creerHabitant(client.id);
+        objet.position.set(MONDE.clients.entree.x, 0, MONDE.clients.entree.z);
+        objet.rotation.y = Math.PI;
+        scene.add(objet);
+        c = { objet, chemin: [...MONDE.clients.chemin, file[place]], place, partant: false };
+        clients3d.set(client.id, c);
+      } else if (c.place !== place) {
+        // La file a avancé : sa destination finale change.
+        if (c.chemin.length === 0) c.chemin.push(file[place]);
+        else c.chemin[c.chemin.length - 1] = file[place];
+        c.place = place;
+      }
+    });
+    // Les clients servis repartent par où ils sont venus.
+    for (const [id, c] of clients3d) {
+      if (!c.partant && !presents.has(id)) {
+        c.partant = true;
+        c.chemin = [...MONDE.clients.chemin].reverse().concat([MONDE.clients.entree]);
+      }
+    }
+  }
+
+  function animerClients(dt) {
+    for (const [id, c] of clients3d) {
+      let vitesse = 0;
+      const but = c.chemin[0];
+      if (but) {
+        const dx = but.x - c.objet.position.x;
+        const dz = but.z - c.objet.position.z;
+        const distance = Math.hypot(dx, dz);
+        const pas = VITESSE_CLIENT * dt;
+        if (distance <= pas) {
+          c.objet.position.x = but.x;
+          c.objet.position.z = but.z;
+          c.chemin.shift();
+        } else {
+          c.objet.position.x += (dx / distance) * pas;
+          c.objet.position.z += (dz / distance) * pas;
+          vitesse = VITESSE_CLIENT;
+        }
+        if (distance > 0.01) tournerVers(c.objet, Math.atan2(dx, dz), dt, 8);
+      } else if (c.partant) {
+        // Arrivé au portail : il quitte la place.
+        supprimerPersonnage(c.objet);
+        clients3d.delete(id);
+        continue;
+      } else {
+        // En attente dans la file : il regarde vers le comptoir (vers le nord).
+        tournerVers(c.objet, Math.PI, dt, 4);
+      }
+      animerMarche(c.objet, vitesse, dt);
+    }
+  }
+
+  // Tourne un personnage en douceur vers un angle (par le chemin le plus court).
+  function tournerVers(objet, angle, dt, rapidite) {
+    let ecart = angle - objet.rotation.y;
+    ecart = Math.atan2(Math.sin(ecart), Math.cos(ecart));
+    objet.rotation.y += ecart * Math.min(1, dt * rapidite);
   }
 
   // ---------------------------------------------------------------------------
@@ -242,8 +383,22 @@ function demarrer() {
     tempsTotal += dt;
 
     // --- Déplacement de Ferrus ---
+    // --- L'atelier vit : fabrication, arrivée des clients (étape 2) ---
+    if (jeuActif) {
+      const evenements = avancerTemps(etat, dt);
+      if (evenements.length > 0) {
+        afficherMessages(evenements);
+        majEtat();
+      }
+      const progression = progressionFabrication(etat);
+      ui.majFabrication(progression);
+      panneau.majProgression();
+      synchroniserClients();
+    }
+    animerClients(dt);
+
     let vitesse = 0;
-    if (jeuActif && !ui.dialogueOuvert()) {
+    if (jeuActif && !ui.dialogueOuvert() && !panneau.estOuvert()) {
       const direction = commandes.direction();
       const { dx, dz } = calculerPas(direction.x, direction.z, MONDE.joueur.vitesse, dt);
       const avant = position;
@@ -260,7 +415,7 @@ function demarrer() {
         majEtat();
       }
 
-      // Afficher l'aide si on est près d'Odile ou de l'établi.
+      // Afficher l'aide si on est près d'Odile, de l'établi ou du comptoir.
       const cible = cibleProche(position.x, position.z);
       ui.majIndice(cible ? libelleInteraction(etat, cible) : null);
     } else if (!jeuActif) {
@@ -290,10 +445,14 @@ function demarrer() {
         roue.rotation.z = tempsTotal * 0.9 + decalage;
         support.position.y = 0.65 + Math.sin(tempsTotal * 1.4 + decalage) * 0.06;
       }
-      for (const [marqueur, hauteur] of [[marqueurOdile, 2.35], [marqueurEtabli, 2.05]]) {
+      for (const [marqueur, hauteur] of hauteursMarqueurs) {
         marqueur.rotation.y = tempsTotal * 0.8;
         marqueur.position.y = hauteur + Math.sin(tempsTotal * 1.6) * 0.06;
       }
+      // Le rouage de l'établi tourne pendant une fabrication ; l'enseigne tourne
+      // très lentement.
+      if (etat.atelier.fabrication) decor.rouageEtabli.rotation.z += dt * 2.5;
+      if (decor.ameliorations.enseigne.visible) decor.ameliorations.enseigne.rotation.z += dt * 0.3;
     }
 
     // --- La caméra suit Ferrus en douceur (sans secousse) ---
@@ -330,5 +489,10 @@ function demarrer() {
 
   // Pour les vérifications automatiques (et la curiosité) : on peut consulter
   // l'état du jeu dans la console du navigateur en tapant « atelier.etat ».
-  window.atelier = { etat, position: () => ({ ...position }), dessin: () => ({ ...renderer.info.render }) };
+  window.atelier = {
+    etat,
+    position: () => ({ ...position }),
+    dessin: () => ({ ...renderer.info.render }),
+    clients3d: () => clients3d.size,
+  };
 }

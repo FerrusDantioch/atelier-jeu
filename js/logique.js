@@ -16,6 +16,15 @@
 //   - z : du haut de l'écran / le nord (négatif) vers le bas / le sud (positif).
 // =============================================================================
 
+import {
+  creerEtatAtelier,
+  ouvrirAtelier,
+  objectifAtelier,
+  marqueursAtelier,
+  clientAuComptoir,
+  servirClient,
+} from './logique-atelier.js';
+
 // -----------------------------------------------------------------------------
 // 1. LE PLAN DE LA PLACE
 // -----------------------------------------------------------------------------
@@ -54,6 +63,17 @@ export const MONDE = Object.freeze({
 
   // L'établi, contre la façade de l'atelier, à droite de la porte.
   etabli: { id: 'etabli', x: -4.6, z: -6.5, largeur: 2.4, profondeur: 1, distanceInteraction: 2.3 },
+
+  // Le comptoir où les clients passent commande (étape 2), à gauche de la porte.
+  comptoir: { id: 'comptoir', x: -9.6, z: -6.3, largeur: 2, profondeur: 0.8, distanceInteraction: 2.4 },
+
+  // Le trajet des clients : ils entrent par le portail du sud, passent par ces
+  // points, puis font la queue devant le comptoir (le premier est servi).
+  clients: {
+    entree: { x: 0, z: 11.2 },
+    chemin: [{ x: -3, z: 7 }, { x: -8.2, z: -1.2 }],
+    file: [{ x: -9.6, z: -4.95 }, { x: -10.3, z: -3.6 }, { x: -11, z: -2.25 }],
+  },
 
   // Odile attend devant sa maison, un peu à gauche de sa porte.
   odile: { id: 'odile', x: 6.2, z: -5.8, rayon: 0.5, distanceInteraction: 2.2 },
@@ -103,6 +123,7 @@ export function obstaclesDuMonde(monde = MONDE) {
     rect(monde.atelier),
     rect(monde.maisonOdile),
     rect(monde.etabli),
+    rect(monde.comptoir),
     rect(monde.portail),
     ...monde.haies.map(rect),
     { type: 'cercle', id: monde.puits.id, x: monde.puits.x, z: monde.puits.z, rayon: monde.puits.rayon },
@@ -240,6 +261,7 @@ export function creerEtatJeu() {
       etape: ETAPES.PAS_COMMENCEE,
       engrenagesRamasses: [], // les identifiants des engrenages déjà ramassés
     },
+    atelier: creerEtatAtelier(), // la gestion de l'atelier (étape 2)
   };
 }
 
@@ -269,18 +291,22 @@ export function objectifActuel(etat, monde = MONDE) {
     case ETAPES.LAMPE_REPAREE:
       return "Apporte la lampe réparée à Odile.";
     case ETAPES.TERMINEE:
-      return "Quête terminée ! L'atelier attend ses prochains clients.";
+      // Quête finie : c'est maintenant la gestion de l'atelier qui guide le joueur.
+      return objectifAtelier(etat);
     default:
       return '';
   }
 }
 
-// Les marqueurs flottants : faut-il en afficher un au-dessus d'Odile ? de l'établi ?
+// Les marqueurs flottants : faut-il en afficher un au-dessus d'Odile ? de
+// l'établi ? du comptoir ?
 export function marqueursActifs(etat) {
   const etape = etat.quete.etape;
+  const atelier = marqueursAtelier(etat);
   return {
     odile: etape === ETAPES.PAS_COMMENCEE || etape === ETAPES.LAMPE_REPAREE,
-    etabli: etape === ETAPES.ENGRENAGES_REUNIS,
+    etabli: etape === ETAPES.ENGRENAGES_REUNIS || atelier.etabli,
+    comptoir: atelier.comptoir,
   };
 }
 
@@ -303,14 +329,15 @@ export function ramasserEngrenagesProches(etat, x, z, monde = MONDE) {
   return messages;
 }
 
-// Ce avec quoi Ferrus peut interagir là où il se trouve ('odile', 'etabli' ou null).
-// S'il est près des deux, on prend le plus proche.
+// Ce avec quoi Ferrus peut interagir là où il se trouve ('odile', 'etabli',
+// 'comptoir' ou null). S'il est près de plusieurs, on prend le plus proche.
 export function cibleProche(x, z, monde = MONDE) {
   const candidats = [];
-  const dOdile = Math.hypot(x - monde.odile.x, z - monde.odile.z);
-  if (dOdile <= monde.odile.distanceInteraction) candidats.push({ cible: 'odile', distance: dOdile });
-  const dEtabli = Math.hypot(x - monde.etabli.x, z - monde.etabli.z);
-  if (dEtabli <= monde.etabli.distanceInteraction) candidats.push({ cible: 'etabli', distance: dEtabli });
+  for (const nom of ['odile', 'etabli', 'comptoir']) {
+    const cible = monde[nom];
+    const distance = Math.hypot(x - cible.x, z - cible.z);
+    if (distance <= cible.distanceInteraction) candidats.push({ cible: nom, distance });
+  }
   if (candidats.length === 0) return null;
   candidats.sort((a, b) => a.distance - b.distance);
   return candidats[0].cible;
@@ -320,7 +347,12 @@ export function cibleProche(x, z, monde = MONDE) {
 export function libelleInteraction(etat, cible) {
   if (cible === 'odile') return 'Parler à Odile';
   if (cible === 'etabli') {
+    if (etat.atelier.ouvert) return "Travailler à l'établi";
     return etat.quete.etape === ETAPES.ENGRENAGES_REUNIS ? 'Réparer la lampe' : "Regarder l'établi";
+  }
+  if (cible === 'comptoir') {
+    const client = clientAuComptoir(etat);
+    return client ? `Servir ${client.nom}` : 'Le comptoir';
   }
   return '';
 }
@@ -386,6 +418,7 @@ export function dialogueOdile(etat, monde = MONDE) {
 export function appliquerAction(etat, action) {
   if (action === 'accepter') return accepterQuete(etat);
   if (action === 'livrer') return livrerLampe(etat);
+  if (action === 'servir') return servirClient(etat);
   return [];
 }
 
@@ -420,5 +453,6 @@ export function livrerLampe(etat) {
   if (etat.quete.etape !== ETAPES.LAMPE_REPAREE) return [];
   etat.quete.etape = ETAPES.TERMINEE;
   etat.argent += RECOMPENSE_LAMPE;
-  return [`+${RECOMPENSE_LAMPE} pièces`, "Quête terminée : La lampe d'Odile"];
+  // Odile va parler de l'atelier à tout le quartier : il ouvre ses portes.
+  return [`+${RECOMPENSE_LAMPE} pièces`, "Quête terminée : La lampe d'Odile", ...ouvrirAtelier(etat)];
 }

@@ -12,6 +12,9 @@ export function creerInterface() {
   const elements = {
     haut: $('haut'),
     argent: $('argent-valeur'),
+    fabrication: $('fabrication'),
+    fabricationNom: $('fabrication-nom'),
+    fabricationBarre: $('fabrication-barre'),
     objectif: $('objectif-texte'),
     messages: $('messages'),
     indice: $('indice'),
@@ -32,6 +35,25 @@ export function creerInterface() {
   }
   function majObjectif(texte) {
     if (elements.objectif.textContent !== texte) elements.objectif.textContent = texte;
+  }
+
+  // --- Fabrication en cours (étape 2) ------------------------------------------------------
+  // « p » vient de progressionFabrication : { nom, progression } ou null.
+  let derniereLargeur = -1;
+  function majFabrication(p) {
+    if (!p) {
+      if (!elements.fabrication.hidden) elements.fabrication.hidden = true;
+      derniereLargeur = -1;
+      return;
+    }
+    if (elements.fabrication.hidden) elements.fabrication.hidden = false;
+    if (elements.fabricationNom.textContent !== p.nom) elements.fabricationNom.textContent = p.nom;
+    // La barre se remplit doucement, par pas de 1 %.
+    const largeur = Math.round(p.progression * 100);
+    if (largeur !== derniereLargeur) {
+      elements.fabricationBarre.style.width = `${largeur}%`;
+      derniereLargeur = largeur;
+    }
   }
 
   // --- Petits messages temporaires ------------------------------------------------------
@@ -156,6 +178,7 @@ export function creerInterface() {
   return {
     majArgent,
     majObjectif,
+    majFabrication,
     afficherMessage,
     majIndice,
     ouvrirDialogue,

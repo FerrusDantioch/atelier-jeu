@@ -62,7 +62,7 @@ test('les engrenages sont invisibles tant que la quête n\'est pas acceptée', (
 });
 
 test('le marqueur est au-dessus d\'Odile au début, pas au-dessus de l\'établi', () => {
-  assert.deepEqual(marqueursActifs(creerEtatJeu()), { odile: true, etabli: false });
+  assert.deepEqual(marqueursActifs(creerEtatJeu()), { odile: true, etabli: false, comptoir: false });
 });
 
 // --- Dialogue et acceptation ---------------------------------------------------
@@ -86,7 +86,7 @@ test('accepter la quête fait apparaître les 3 engrenages', () => {
   assert.equal(etat.quete.etape, ETAPES.ACCEPTEE);
   assert.equal(engrenagesVisibles(etat).length, 3);
   assert.ok(messages.length > 0);
-  assert.deepEqual(marqueursActifs(etat), { odile: false, etabli: false });
+  assert.deepEqual(marqueursActifs(etat), { odile: false, etabli: false, comptoir: false });
 });
 
 test('accepter deux fois ne recommence pas la quête', () => {
@@ -139,7 +139,7 @@ test('avec les 3 engrenages, le marqueur passe sur l\'établi', () => {
   for (const e of MONDE.engrenages) ramasserEngrenagesProches(etat, e.x, e.z);
   assert.equal(etat.quete.etape, ETAPES.ENGRENAGES_REUNIS);
   assert.equal(engrenagesVisibles(etat).length, 0);
-  assert.deepEqual(marqueursActifs(etat), { odile: false, etabli: true });
+  assert.deepEqual(marqueursActifs(etat), { odile: false, etabli: true, comptoir: false });
   assert.equal(libelleInteraction(etat, 'etabli'), 'Réparer la lampe');
 });
 
@@ -161,7 +161,7 @@ test('scénario complet : accepter, ramasser, réparer, livrer = +120 pièces', 
   const reparation = utiliserEtabli(etat);
   assert.equal(etat.quete.etape, ETAPES.LAMPE_REPAREE);
   assert.deepEqual(reparation, ['Lampe à vapeur réparée !']);
-  assert.deepEqual(marqueursActifs(etat), { odile: true, etabli: false });
+  assert.deepEqual(marqueursActifs(etat), { odile: true, etabli: false, comptoir: false });
 
   const dialogue = dialogueOdile(etat);
   assert.ok(dialogue.choix.some((c) => c.action === 'livrer'));
@@ -169,7 +169,7 @@ test('scénario complet : accepter, ramasser, réparer, livrer = +120 pièces', 
 
   assert.equal(etat.quete.etape, ETAPES.TERMINEE);
   assert.equal(etat.argent, ARGENT_DEPART + RECOMPENSE_LAMPE);
-  assert.deepEqual(marqueursActifs(etat), { odile: false, etabli: false });
+  assert.deepEqual(marqueursActifs(etat), { odile: false, etabli: false, comptoir: false });
 });
 
 test('la récompense n\'est versée qu\'une seule fois', () => {
