@@ -1,0 +1,19 @@
+{
+  "name": "L'Atelier de Cuivrebourg",
+  "short_name": "Cuivrebourg",
+  "description": "Un petit jeu de gestion d'atelier steampunk en 3D : fabriquez, réparez et aidez les habitants de Cuivrebourg.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "display_override": ["fullscreen", "standalone"],
+  "orientation": "any",
+  "background_color": "#e9dcc3",
+  "theme_color": "#3a2a1f",
+  "categories": ["games"],
+  "icons": [
+    { "src": "icones/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icones/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icones/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
