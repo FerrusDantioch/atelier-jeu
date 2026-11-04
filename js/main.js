@@ -20,14 +20,15 @@ import * as THREE from '../lib/three/three.module.js';
 import {
   MONDE,
   ETAPES,
+  etapeLampe,
   calculerPas,
   deplacerJoueur,
+  obstaclesClients,
+  clientPeutAvancer,
   creerEtatJeu,
-  engrenagesVisibles,
   objectifActuel,
   objectifSecondaire,
   marqueursActifs,
-  ramasserEngrenagesProches,
   dialogueOdile,
   appliquerAction,
   utiliserEtabli,
@@ -259,14 +260,13 @@ function demarrer() {
     odile.position.set(MONDE.odile.x, 0, MONDE.odile.z);
     scene.add(odile);
     lieu.pnj.push({ id: 'odile', objet: odile, x: MONDE.odile.x, z: MONDE.odile.z, animer: (dt) => animerOdile(odile, dt) });
-    lieu.engrenages = new Map();
     for (const e of MONDE.engrenages) {
       const objet3d = creerEngrenageQuete();
       objet3d.position.set(e.x, 0, e.z);
       objet3d.visible = false;
-      objet3d.userData.decalage = lieu.engrenages.size * 2.1; // pour qu'ils ne tournent pas tous pareil
+      objet3d.userData.decalage = lieu.objetsQuete.size * 2.1; // pour qu'ils ne tournent pas tous pareil
       scene.add(objet3d);
-      lieu.engrenages.set(e.id, objet3d);
+      lieu.objetsQuete.set(e.id, objet3d);
     }
     ajouterMarqueur(lieu, 'odile', MONDE.odile.x, MONDE.odile.z, 2.35);
     ajouterMarqueur(lieu, 'etabli', MONDE.etabli.x + 0.6, MONDE.etabli.z, 2.05);
@@ -400,9 +400,7 @@ function demarrer() {
 
     // La place : engrenages, lampe, lanterne, améliorations, portail.
     const place = lieux.place;
-    const visibles = new Set(engrenagesVisibles(etat).map((e) => e.id));
-    for (const [id, objet3d] of place.engrenages) objet3d.visible = visibles.has(id);
-    const etape = etat.quete.etape;
+    const etape = etapeLampe(etat);
     allumerLampe(place.decor.lampeEtabli, etape === ETAPES.LAMPE_REPAREE);
     place.decor.lampeEtabli.visible = etape !== ETAPES.TERMINEE;
     place.decor.lanterneOdile.visible = etape === ETAPES.TERMINEE;
@@ -417,8 +415,11 @@ function demarrer() {
     // Le moulin : les pales manquantes reviennent quand l'axe est installé.
     const roueReparee = roueEstReparee();
     for (const pale of lieux.moulin.decor.roue.palesManquantes) pale.visible = roueReparee;
-    const aRamasser = new Set(objetsQueteZone(etat, 'moulin').map((o) => o.id));
-    for (const [id, objet3d] of lieux.moulin.objetsQuete) objet3d.visible = aRamasser.has(id);
+    // Les objets de quête à ramasser (engrenages sur la place, pales au moulin).
+    for (const nom of ['place', 'moulin']) {
+      const aRamasser = new Set(objetsQueteZone(etat, nom).map((o) => o.id));
+      for (const [id, objet3d] of lieux[nom].objetsQuete) objet3d.visible = aRamasser.has(id);
+    }
 
     // Les marqueurs de tous les lieux.
     const marqueursPlace = marqueursActifs(etat);
@@ -596,14 +597,16 @@ function demarrer() {
         const dz = but.z - c.objet.position.z;
         const distance = Math.hypot(dx, dz);
         const pas = VITESSE_CLIENT * dt;
-        if (distance <= pas) {
-          c.objet.position.x = but.x;
-          c.objet.position.z = but.z;
-          c.chemin.shift();
-        } else {
-          c.objet.position.x += (dx / distance) * pas;
-          c.objet.position.z += (dz / distance) * pas;
-          vitesse = VITESSE_CLIENT;
+        // Ferrus est sur son chemin ? Le client s'arrête poliment et attend.
+        const prochain = distance <= pas
+          ? { x: but.x, z: but.z }
+          : { x: c.objet.position.x + (dx / distance) * pas, z: c.objet.position.z + (dz / distance) * pas };
+        const attend = zone === 'place' && !clientPeutAvancer(c.objet.position, prochain, position);
+        if (!attend) {
+          if (distance <= pas) c.chemin.shift(); // étape du trajet atteinte
+          else vitesse = VITESSE_CLIENT;
+          c.objet.position.x = prochain.x;
+          c.objet.position.z = prochain.z;
         }
         if (distance > 0.01) tournerVers(c.objet, Math.atan2(dx, dz), dt, 8);
       } else if (c.partant) {
@@ -705,15 +708,16 @@ function demarrer() {
       const direction = commandes.direction();
       const { dx, dz } = calculerPas(direction.x, direction.z, MONDE.joueur.vitesse, dt);
       const avant = position;
-      position = deplacerJoueur(position, dx, dz, obstacles, ZONES[zone]);
+      // Sur la place, les clients sont des obstacles eux aussi.
+      const autour = zone === 'place'
+        ? obstacles.concat(obstaclesClients([...clients3d.values()].map((c) => c.objet.position), position))
+        : obstacles;
+      position = deplacerJoueur(position, dx, dz, autour, ZONES[zone]);
       vitesse = dt > 0 ? Math.hypot(position.x - avant.x, position.z - avant.z) / dt : 0;
       if (Math.hypot(dx, dz) > 0.0001) orientationVoulue = Math.atan2(dx, dz);
 
-      // Ramasser en passant dessus : engrenages (place) et objets de quête.
-      const messages = [
-        ...(zone === 'place' ? ramasserEngrenagesProches(etat, position.x, position.z) : []),
-        ...ramasserObjetsQuete(etat, zone, position.x, position.z),
-      ];
+      // Ramasser en passant dessus les objets de quête (engrenages, pales).
+      const messages = ramasserObjetsQuete(etat, zone, position.x, position.z);
       if (messages.length > 0) {
         audio.jouerSon('ramasser');
         afficherMessages(messages);
@@ -748,8 +752,7 @@ function demarrer() {
 
     // Les objets à ramasser tournent lentement et flottent à peine ; les marqueurs aussi.
     if (!moinsDeMouvement) {
-      const aAnimer = zone === 'place' ? lieu.engrenages.values() : lieu.objetsQuete.values();
-      for (const objet3d of aAnimer) {
+      for (const objet3d of lieu.objetsQuete.values()) {
         if (!objet3d.visible) continue;
         const { roue, support, decalage } = objet3d.userData;
         // On retient la hauteur de départ de chaque objet, puis il flotte autour.
@@ -845,6 +848,7 @@ function demarrer() {
     zone: () => zone,
     dessin: () => ({ ...renderer.info.render }),
     clients3d: () => clients3d.size,
+    positionsClients: () => [...clients3d.values()].map((c) => ({ x: c.objet.position.x, z: c.objet.position.z })),
     reglages,
     audio: () => audio.etat(),
     imagesParSeconde: () => imagesParSeconde,

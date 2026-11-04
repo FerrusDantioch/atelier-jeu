@@ -4,8 +4,10 @@
 // Ce fichier décrit :
 //   1. le plan de la place (où sont les bâtiments, les arbres, les haies…) ;
 //   2. les collisions (Ferrus ne doit pas traverser les obstacles) ;
-//   3. la quête « La lampe d'Odile » (ses étapes, l'argent gagné…) ;
-//   4. les textes : objectifs, dialogues, petits messages.
+//   3. l'état d'une partie, et ce que l'interface affiche (objectif, marqueurs,
+//      dialogue d'Odile…).
+// La quête « La lampe d'Odile » elle-même est décrite avec les autres quêtes,
+// dans logique-quetes.js (un seul système de quêtes pour tout le jeu).
 //
 // Il n'utilise PAS Three.js : il ne fait que des calculs. C'est pour ça qu'on
 // peut le tester tout seul avec « node --test » (voir le dossier tests/).
@@ -18,25 +20,30 @@
 
 import {
   creerEtatAtelier,
-  ouvrirAtelier,
   objectifAtelier,
   marqueursAtelier,
   clientAuComptoir,
   servirClient,
 } from './logique-atelier.js';
 import {
+  QUETES,
   creerEtatQuetes,
-  majDisponibilites,
   objectifQuetes,
   marqueursQuetes,
   queteTerminee,
+  queteEnCours,
+  dialoguePnjQuete,
+  appliquerActionQuete,
+  utiliserObjetQuete,
 } from './logique-quetes.js';
 
 // -----------------------------------------------------------------------------
 // 1. LE PLAN DE LA PLACE
 // -----------------------------------------------------------------------------
 
-// Les étapes possibles de la quête, dans l'ordre.
+// Les grands moments de la quête « La lampe d'Odile », dans l'ordre. Ils sont
+// calculés à partir du moteur de quêtes (voir etapeLampe plus bas) : ils
+// servent à l'affichage (la lampe sur l'établi, la lanterne d'Odile…).
 export const ETAPES = Object.freeze({
   PAS_COMMENCEE: 'pas_commencee',         // On n'a pas encore parlé à Odile.
   ACCEPTEE: 'acceptee',                   // Quête acceptée : on cherche les engrenages.
@@ -46,13 +53,10 @@ export const ETAPES = Object.freeze({
 });
 
 // La récompense de la quête, en pièces.
-export const RECOMPENSE_LAMPE = 120;
+export const RECOMPENSE_LAMPE = QUETES['lampe-odile'].recompense;
 
 // L'argent de départ de Ferrus (l'atelier est en difficulté…).
 export const ARGENT_DEPART = 20;
-
-// Distance (en mètres) à laquelle Ferrus ramasse un engrenage en passant dessus.
-export const DISTANCE_RAMASSAGE = 1.0;
 
 // Tout ce qui se trouve sur la place.
 // Les obstacles « rectangle » ont un centre (x, z), une largeur (sur x) et une
@@ -115,12 +119,9 @@ export const MONDE = Object.freeze({
   ],
   portail: { id: 'portail', x: 0, z: 12.5, largeur: 3, profondeur: 0.6 },
 
-  // Les 3 engrenages perdus par Odile (invisibles tant que la quête n'est pas acceptée).
-  engrenages: [
-    { id: 'engrenage-1', x: -13, z: 1.5 },
-    { id: 'engrenage-2', x: 4, z: 7.5 },
-    { id: 'engrenage-3', x: 13.5, z: -6 },
-  ],
+  // Les 3 engrenages perdus par Odile (invisibles tant que la quête n'est pas
+  // acceptée). Ils sont décrits dans la quête elle-même (logique-quetes.js).
+  engrenages: QUETES['lampe-odile'].etapes[0].objets,
 });
 
 // Rassemble tous les obstacles dans une seule liste, pour les collisions.
@@ -257,94 +258,79 @@ export function toucheUnObstacle(x, z, rayon, obstacles) {
   return false;
 }
 
+// --- Les clients qui marchent sur la place -----------------------------------------
+// Les clients sont « solides » : Ferrus ne passe pas à travers eux. Et pour
+// qu'ils ne le bousculent jamais, ce sont eux qui s'arrêtent poliment quand
+// Ferrus est sur leur chemin.
+
+// La taille d'un client (un cercle, comme Ferrus mais un peu plus petit).
+export const RAYON_CLIENT = 0.4;
+
+// Les obstacles formés par les clients (des cercles). Un client qui chevauche
+// déjà Ferrus (par exemple s'il est apparu juste sur lui au portail) est
+// ignoré jusqu'à ce qu'ils se soient séparés : sinon Ferrus serait poussé
+// d'un coup, ce qui ferait une secousse.
+export function obstaclesClients(clients, joueur, rayonJoueur = MONDE.joueur.rayon) {
+  return clients
+    .filter((c) => Math.hypot(c.x - joueur.x, c.z - joueur.z) >= RAYON_CLIENT + rayonJoueur - 1e-6)
+    .map((c, i) => ({ type: 'cercle', id: `client-${i + 1}`, x: c.x, z: c.z, rayon: RAYON_CLIENT }));
+}
+
+// Un client peut-il faire ce pas ? Non s'il se rapprocherait de Ferrus au
+// point de le toucher : il attend alors que Ferrus s'écarte. (S'éloigner de
+// Ferrus est toujours permis.)
+export function clientPeutAvancer(depart, arrivee, joueur, rayonJoueur = MONDE.joueur.rayon) {
+  const contact = RAYON_CLIENT + rayonJoueur + 0.3; // il garde une petite distance polie
+  const avant = Math.hypot(depart.x - joueur.x, depart.z - joueur.z);
+  const apres = Math.hypot(arrivee.x - joueur.x, arrivee.z - joueur.z);
+  return apres >= contact || apres > avant;
+}
+
 // -----------------------------------------------------------------------------
-// 3. L'ÉTAT DU JEU ET LA QUÊTE « LA LAMPE D'ODILE »
+// 3. L'ÉTAT DU JEU, ET CE QUE L'INTERFACE AFFICHE
 // -----------------------------------------------------------------------------
 
 // Crée une nouvelle partie.
 export function creerEtatJeu() {
   return {
     argent: ARGENT_DEPART,
-    quete: {
-      etape: ETAPES.PAS_COMMENCEE,
-      engrenagesRamasses: [], // les identifiants des engrenages déjà ramassés
-    },
     atelier: creerEtatAtelier(), // la gestion de l'atelier (étape 2)
-    quetes: creerEtatQuetes(),   // les quêtes enchaînées (étape 3)
+    quetes: creerEtatQuetes(),   // toutes les quêtes, la lampe d'Odile comprise
   };
 }
 
-// Nombre d'engrenages à trouver au total.
-export function nombreEngrenagesTotal(monde = MONDE) {
-  return monde.engrenages.length;
+// Où en est la quête de la lampe ? (une des valeurs de ETAPES)
+export function etapeLampe(etat) {
+  const suivi = etat.quetes['lampe-odile'];
+  if (suivi.statut === 'terminee') return ETAPES.TERMINEE;
+  if (suivi.statut !== 'en_cours') return ETAPES.PAS_COMMENCEE;
+  return [ETAPES.ACCEPTEE, ETAPES.ENGRENAGES_REUNIS, ETAPES.LAMPE_REPAREE][suivi.etape] || ETAPES.ACCEPTEE;
 }
 
-// Les engrenages à afficher sur la place en ce moment.
-// Ils n'apparaissent qu'après avoir accepté la quête, et disparaissent une
-// fois ramassés.
-export function engrenagesVisibles(etat, monde = MONDE) {
-  if (etat.quete.etape !== ETAPES.ACCEPTEE) return [];
-  return monde.engrenages.filter((e) => !etat.quete.engrenagesRamasses.includes(e.id));
-}
-
-// Le texte du cadre « Objectif » : il dit toujours quoi faire.
-export function objectifActuel(etat, monde = MONDE) {
-  const total = nombreEngrenagesTotal(monde);
-  switch (etat.quete.etape) {
-    case ETAPES.PAS_COMMENCEE:
-      return "Va parler à Odile, devant sa maison à droite de la place.";
-    case ETAPES.ACCEPTEE:
-      return `Retrouve les engrenages d'Odile sur la place : ${etat.quete.engrenagesRamasses.length}/${total}.`;
-    case ETAPES.ENGRENAGES_REUNIS:
-      return "Rapporte les engrenages à ton établi, devant l'atelier.";
-    case ETAPES.LAMPE_REPAREE:
-      return "Apporte la lampe réparée à Odile.";
-    case ETAPES.TERMINEE:
-      // Quête finie : la quête suivante guide le joueur ; s'il n'y en a plus,
-      // c'est la gestion de l'atelier.
-      return objectifQuetes(etat) || objectifAtelier(etat);
-    default:
-      return '';
-  }
+// Le texte du cadre « Objectif » : il dit toujours quoi faire. D'abord la
+// quête en cours (ou la prochaine à aller chercher) ; quand il n'y en a plus,
+// la gestion de l'atelier.
+export function objectifActuel(etat) {
+  return objectifQuetes(etat) || objectifAtelier(etat);
 }
 
 // Une deuxième ligne d'objectif, plus petite : quand une quête est en cours et
 // qu'un client attend au comptoir, on le rappelle (null sinon).
 export function objectifSecondaire(etat) {
-  if (etat.quete.etape !== ETAPES.TERMINEE || !objectifQuetes(etat)) return null;
+  if (!etat.atelier.ouvert || !objectifQuetes(etat)) return null;
   return clientAuComptoir(etat) ? `Atelier : ${objectifAtelier(etat)}` : null;
 }
 
 // Les marqueurs flottants : faut-il en afficher un au-dessus d'Odile ? de
 // l'établi ? du comptoir ?
 export function marqueursActifs(etat) {
-  const etape = etat.quete.etape;
   const atelier = marqueursAtelier(etat);
   const quetes = marqueursQuetes(etat);
   return {
-    odile: etape === ETAPES.PAS_COMMENCEE || etape === ETAPES.LAMPE_REPAREE,
-    etabli: etape === ETAPES.ENGRENAGES_REUNIS || atelier.etabli || quetes.has('etabli'),
+    odile: quetes.has('odile'),
+    etabli: atelier.etabli || quetes.has('etabli'),
     comptoir: atelier.comptoir,
   };
-}
-
-// Ramasse les engrenages tout proches de Ferrus (on les ramasse en marchant dessus).
-// Renvoie la liste des messages à afficher (vide si rien n'a été ramassé).
-export function ramasserEngrenagesProches(etat, x, z, monde = MONDE) {
-  const messages = [];
-  const total = nombreEngrenagesTotal(monde);
-  for (const engrenage of engrenagesVisibles(etat, monde)) {
-    if (Math.hypot(x - engrenage.x, z - engrenage.z) <= DISTANCE_RAMASSAGE) {
-      etat.quete.engrenagesRamasses.push(engrenage.id);
-      const nombre = etat.quete.engrenagesRamasses.length;
-      messages.push(`Engrenage ramassé ${nombre}/${total}`);
-      if (nombre >= total) {
-        etat.quete.etape = ETAPES.ENGRENAGES_REUNIS;
-        messages.push("Tous les engrenages ! Direction l'établi.");
-      }
-    }
-  }
-  return messages;
 }
 
 // Ce avec quoi Ferrus peut interagir là où il se trouve ('odile', 'etabli',
@@ -366,7 +352,7 @@ export function libelleInteraction(etat, cible) {
   if (cible === 'odile') return 'Parler à Odile';
   if (cible === 'etabli') {
     if (etat.atelier.ouvert) return "Travailler à l'établi";
-    return etat.quete.etape === ETAPES.ENGRENAGES_REUNIS ? 'Réparer la lampe' : "Regarder l'établi";
+    return etapeLampe(etat) === ETAPES.ENGRENAGES_REUNIS ? 'Réparer la lampe' : "Regarder l'établi";
   }
   if (cible === 'comptoir') {
     const client = clientAuComptoir(etat);
@@ -375,109 +361,46 @@ export function libelleInteraction(etat, cible) {
   return '';
 }
 
-// Le dialogue d'Odile, qui change selon l'avancée de la quête.
+// Le dialogue d'Odile. Tant que sa quête n'est pas finie, c'est le moteur de
+// quêtes qui le fournit ; ensuite, elle donne un indice vers la suite.
 // Un dialogue = qui parle, une liste de répliques (affichées une par une), et
 // des choix à la fin. Chaque choix a une « action » que le jeu applique ensuite.
-export function dialogueOdile(etat, monde = MONDE) {
-  const total = nombreEngrenagesTotal(monde);
-  switch (etat.quete.etape) {
-    case ETAPES.PAS_COMMENCEE:
-      return {
-        orateur: 'Odile',
-        repliques: [
-          "Bonjour ! Vous êtes le nouvel artisan ? Ferrus Dantioch, c'est bien ça ?",
-          "Ma lampe à vapeur est tombée la semaine dernière. Depuis, mes soirées sont bien sombres…",
-          "Trois engrenages ont sauté dans la chute. Ils ont roulé quelque part sur la place.",
-          `Pourriez-vous les retrouver et réparer ma lampe ? Je vous paierai ${RECOMPENSE_LAMPE} pièces.`,
-        ],
-        choix: [
-          { texte: "J'accepte !", action: 'accepter' },
-          { texte: 'Plus tard', action: 'fermer' },
-        ],
-      };
-    case ETAPES.ACCEPTEE: {
-      const reste = total - etat.quete.engrenagesRamasses.length;
-      return {
-        orateur: 'Odile',
-        repliques: [
-          reste > 1
-            ? `Merci de chercher ! Il reste ${reste} engrenages à trouver sur la place.`
-            : "Plus qu'un engrenage à trouver ! Je crois qu'ils ont roulé loin…",
-        ],
-        choix: [{ texte: "J'y retourne", action: 'fermer' }],
-      };
-    }
-    case ETAPES.ENGRENAGES_REUNIS:
-      return {
-        orateur: 'Odile',
-        repliques: ["Vous les avez tous ! Il ne reste qu'à réparer la lampe sur votre établi."],
-        choix: [{ texte: "J'y vais", action: 'fermer' }],
-      };
-    case ETAPES.LAMPE_REPAREE:
-      return {
-        orateur: 'Odile',
-        repliques: [
-          "Ma lampe ! Elle brille comme au premier jour…",
-          `Voici vos ${RECOMPENSE_LAMPE} pièces, bien méritées. Cuivrebourg a besoin d'artisans comme vous.`,
-        ],
-        choix: [{ texte: 'Donner la lampe', action: 'livrer' }],
-      };
-    case ETAPES.TERMINEE:
-    default:
-      return {
-        orateur: 'Odile',
-        repliques: [
-          "Merci encore, Ferrus. Je parlerai de votre atelier à tout le quartier !",
-          // Un indice vers la quête suivante, tant qu'elle n'est pas finie.
-          queteTerminee(etat, 'balance-capucine')
-            ? 'On dit que vous aidez tout Cuivrebourg, maintenant. Je suis si fière !'
-            : 'Au fait : Capucine, la marchande, cherche un artisan habile. Le marché est derrière le portail du sud.',
-        ],
-        choix: [{ texte: 'Au revoir', action: 'fermer' }],
-      };
-  }
+export function dialogueOdile(etat) {
+  if (!queteTerminee(etat, 'lampe-odile')) return dialoguePnjQuete(etat, 'odile', 'Odile');
+  return {
+    orateur: 'Odile',
+    repliques: [
+      ...QUETES['lampe-odile'].textes.apres,
+      // Un indice vers la quête suivante, tant qu'elle n'est pas finie.
+      queteTerminee(etat, 'balance-capucine')
+        ? 'On dit que vous aidez tout Cuivrebourg, maintenant. Je suis si fière !'
+        : 'Au fait : Capucine, la marchande, cherche un artisan habile. Le marché est derrière le portail du sud.',
+    ],
+    choix: [{ texte: 'Au revoir', action: 'fermer' }],
+  };
 }
 
 // Applique le choix fait à la fin d'un dialogue. Renvoie les messages à afficher.
+// Les actions de quête ressemblent à 'quete:accepter:lampe-odile'.
 export function appliquerAction(etat, action) {
-  if (action === 'accepter') return accepterQuete(etat);
-  if (action === 'livrer') return livrerLampe(etat);
   if (action === 'servir') return servirClient(etat);
-  return [];
+  return appliquerActionQuete(etat, action);
 }
 
-// Accepter la quête : les engrenages apparaissent sur la place.
-export function accepterQuete(etat) {
-  if (etat.quete.etape !== ETAPES.PAS_COMMENCEE) return [];
-  etat.quete.etape = ETAPES.ACCEPTEE;
-  return ['Quête acceptée : La lampe d\'Odile'];
-}
-
-// Utiliser l'établi : répare la lampe si on a les 3 engrenages.
-export function utiliserEtabli(etat, monde = MONDE) {
-  const total = nombreEngrenagesTotal(monde);
-  switch (etat.quete.etape) {
-    case ETAPES.ENGRENAGES_REUNIS:
-      etat.quete.etape = ETAPES.LAMPE_REPAREE;
-      return ['Lampe à vapeur réparée !'];
+// Utiliser l'établi avant l'ouverture de l'atelier : réparer la lampe, si
+// c'est le moment ; sinon, un petit message.
+export function utiliserEtabli(etat) {
+  const fait = utiliserObjetQuete(etat, 'etabli');
+  if (fait) return fait;
+  const enCours = queteEnCours(etat);
+  switch (etapeLampe(etat)) {
     case ETAPES.ACCEPTEE:
-      return [`Il manque des engrenages : ${etat.quete.engrenagesRamasses.length}/${total}.`];
+      return [`Il manque des engrenages : ${enCours.suivi.ramasses.length}/${enCours.etape.objets.length}.`];
     case ETAPES.LAMPE_REPAREE:
       return ['La lampe est prête. Apporte-la à Odile.'];
     case ETAPES.TERMINEE:
       return ["L'établi est rangé. Rien à réparer pour l'instant."];
-    case ETAPES.PAS_COMMENCEE:
     default:
       return ["Ton établi. Rien à réparer pour l'instant."];
   }
-}
-
-// Livrer la lampe à Odile : elle paie la récompense (une seule fois).
-export function livrerLampe(etat) {
-  if (etat.quete.etape !== ETAPES.LAMPE_REPAREE) return [];
-  etat.quete.etape = ETAPES.TERMINEE;
-  etat.argent += RECOMPENSE_LAMPE;
-  // Odile va parler de l'atelier à tout le quartier : il ouvre ses portes.
-  // La quête suivante (celle de Capucine) devient disponible.
-  return [`+${RECOMPENSE_LAMPE} pièces`, "Quête terminée : La lampe d'Odile", ...ouvrirAtelier(etat), ...majDisponibilites(etat)];
 }

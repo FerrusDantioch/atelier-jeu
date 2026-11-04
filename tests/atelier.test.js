@@ -9,9 +9,9 @@ import assert from 'node:assert/strict';
 import {
   MONDE,
   ETAPES,
+  etapeLampe,
   creerEtatJeu,
   appliquerAction,
-  ramasserEngrenagesProches,
   utiliserEtabli,
   objectifActuel,
   marqueursActifs,
@@ -40,11 +40,12 @@ import {
   progressionFabrication,
   atelierCoince,
 } from '../js/logique-atelier.js';
+import { ramasserObjetsQuete } from '../js/logique-quetes.js';
 
 // Une partie où l'atelier vient d'ouvrir (sans refaire toute la quête).
 function partieAtelierOuvert(argent = 140) {
   const etat = creerEtatJeu();
-  etat.quete.etape = ETAPES.TERMINEE;
+  etat.quetes['lampe-odile'].statut = 'terminee';
   ouvrirAtelier(etat);
   etat.argent = argent;
   return etat;
@@ -70,10 +71,10 @@ test('l\'atelier est fermé au début, et rien ne s\'y passe', () => {
 
 test('livrer la lampe à Odile ouvre l\'atelier, avec un petit stock de départ', () => {
   const etat = creerEtatJeu();
-  appliquerAction(etat, 'accepter');
-  for (const e of MONDE.engrenages) ramasserEngrenagesProches(etat, e.x, e.z);
+  appliquerAction(etat, 'quete:accepter:lampe-odile');
+  for (const e of MONDE.engrenages) ramasserObjetsQuete(etat, 'place', e.x, e.z);
   utiliserEtabli(etat);
-  const messages = appliquerAction(etat, 'livrer');
+  const messages = appliquerAction(etat, 'quete:parler:lampe-odile');
   assert.ok(messages.includes("L'atelier ouvre ses portes !"));
   assert.equal(etat.atelier.ouvert, true);
   assert.equal(etat.atelier.stock.cuivre, REGLAGES.stockDepart.cuivre);

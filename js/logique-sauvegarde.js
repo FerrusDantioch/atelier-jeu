@@ -14,13 +14,15 @@
 // Il peut donc être testé avec « node --test ».
 // =============================================================================
 
-import { creerEtatJeu, ETAPES } from './logique.js';
+import { creerEtatJeu } from './logique.js';
 import { RECETTES } from './logique-atelier.js';
 import { ZONES } from './logique-zones.js';
-import { QUETES } from './logique-quetes.js';
+import { QUETES, majDisponibilites } from './logique-quetes.js';
 
 export const CLE_SAUVEGARDE = 'atelier-cuivrebourg-sauvegarde';
-export const VERSION_SAUVEGARDE = 1;
+// Version 2 : la quête de la lampe d'Odile est rangée avec les autres quêtes.
+// Les sauvegardes de la version 1 sont converties en les relisant.
+export const VERSION_SAUVEGARDE = 2;
 
 // Transforme la partie en texte.
 export function serialiserPartie({ etat, zone, position, orientation = 0 }) {
@@ -53,6 +55,25 @@ function fusionner(modele, lu) {
   return modele;
 }
 
+// Les sauvegardes de la version 1 rangeaient la quête de la lampe à part
+// (« etat.quete », avec une étape écrite en toutes lettres). On la range dans
+// « etat.quetes », comme les autres quêtes.
+const ANCIENNES_ETAPES = {
+  pas_commencee: { statut: 'disponible', etape: 0 },
+  acceptee: { statut: 'en_cours', etape: 0 },
+  engrenages_reunis: { statut: 'en_cours', etape: 1 },
+  lampe_reparee: { statut: 'en_cours', etape: 2 },
+  terminee: { statut: 'terminee', etape: 3 },
+};
+function convertirVersion1(lu) {
+  const ancienne = estObjet(lu.quete) ? lu.quete : {};
+  const correspondance = ANCIENNES_ETAPES[ancienne.etape] || ANCIENNES_ETAPES.pas_commencee;
+  const ramasses = Array.isArray(ancienne.engrenagesRamasses) ? ancienne.engrenagesRamasses : [];
+  if (!estObjet(lu.quetes)) lu.quetes = {};
+  lu.quetes['lampe-odile'] = { ...correspondance, ramasses };
+  delete lu.quete;
+}
+
 // Relit une sauvegarde. Renvoie { etat, zone, position, orientation } ou null.
 export function chargerPartie(texte) {
   let donnees;
@@ -61,15 +82,14 @@ export function chargerPartie(texte) {
   } catch {
     return null;
   }
-  if (!estObjet(donnees) || donnees.version !== VERSION_SAUVEGARDE || !estObjet(donnees.etat)) return null;
+  if (!estObjet(donnees) || ![1, VERSION_SAUVEGARDE].includes(donnees.version) || !estObjet(donnees.etat)) return null;
 
   const lu = donnees.etat;
+  if (donnees.version === 1) convertirVersion1(lu);
   const etat = fusionner(creerEtatJeu(), lu);
 
   // Vérifications plus précises.
   if (etat.argent < 0) etat.argent = 0;
-  if (!Object.values(ETAPES).includes(etat.quete.etape)) etat.quete.etape = ETAPES.PAS_COMMENCEE;
-  etat.quete.engrenagesRamasses = etat.quete.engrenagesRamasses.filter((id) => typeof id === 'string');
   for (const [id, n] of Object.entries(etat.atelier.stock)) {
     etat.atelier.stock[id] = Math.max(0, Math.floor(n));
   }
@@ -109,5 +129,8 @@ export function chargerPartie(texte) {
       dejaUne = true;
     }
   }
+  // Une quête dont le prérequis est fini ne doit pas rester verrouillée
+  // (la toute première, la lampe d'Odile, n'a pas de prérequis).
+  majDisponibilites(etat);
   return { etat, zone: position ? zone : 'place', position, orientation };
 }
