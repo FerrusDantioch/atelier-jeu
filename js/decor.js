@@ -47,7 +47,7 @@ export function objet(forme, couleur, x = 0, y = 0, z = 0, options = {}) {
 // - les deux « pans » : deux planches inclinées qui dépassent un peu des murs.
 // Le soleil venant de la gauche, le pan gauche est plus clair que le droit :
 // on comprend tout de suite la forme du toit.
-function ajouterToit(parent, largeur, profondeur, hauteur, y, couleurToit, couleurPignon, ombre = false) {
+export function ajouterToit(parent, largeur, profondeur, hauteur, y, couleurToit, couleurPignon, ombre = false) {
   const triangle = new THREE.Shape();
   triangle.moveTo(-largeur / 2, 0);
   triangle.lineTo(largeur / 2, 0);
@@ -92,7 +92,7 @@ export function formeEngrenage(rayon = 0.32, dents = 8, epaisseur = 0.09) {
 
 // Un panneau avec du texte (« ATELIER ») : on dessine le texte sur une petite
 // image (un « canvas »), puis on l'applique sur un rectangle.
-function panneauTexte(texte, largeur, hauteur) {
+export function panneauTexte(texte, largeur, hauteur) {
   const toile = document.createElement('canvas');
   toile.width = 256;
   toile.height = 64;
@@ -117,7 +117,7 @@ function panneauTexte(texte, largeur, hauteur) {
 
 // Un petit générateur de « hasard » qui donne toujours la même suite de nombres :
 // les arbres et buissons ont donc toujours la même allure d'une partie à l'autre.
-function creerHasard(graine) {
+export function creerHasard(graine) {
   let valeur = graine;
   return () => {
     valeur = (valeur * 16807) % 2147483647;
@@ -128,7 +128,7 @@ function creerHasard(graine) {
 // ----------------------------------------------------------------------------
 // Les couleurs du décor : douces, chaudes, peu saturées.
 // ----------------------------------------------------------------------------
-const COULEURS = {
+export const COULEURS = {
   herbe: '#a7b47c',
   pavage: '#cdbc9e',
   pave: '#bba98a',
@@ -163,7 +163,7 @@ const matiereFenetre = new THREE.MeshLambertMaterial({ color: COULEURS.fenetre, 
 // améliorations de l'atelier).
 export function construireDecor(scene, monde) {
   construireSol(scene, monde);
-  construireHaies(scene, monde);
+  const portail = construireHaies(scene, monde);
   construireArbres(scene, monde);
   construirePuits(scene, monde.puits);
   construireAtelier(scene, monde.atelier);
@@ -173,7 +173,7 @@ export function construireDecor(scene, monde) {
   construireComptoir(scene, monde.comptoir);
   const rouageEtabli = construireRouageEtabli(scene, monde.etabli);
   const ameliorations = construireAmeliorations(scene, monde);
-  return { lampeEtabli, lanterneOdile, rouageEtabli, ameliorations };
+  return { lampeEtabli, lanterneOdile, rouageEtabli, ameliorations, portail };
 }
 
 // --- Le sol : l'herbe, la place pavée et les chemins -------------------------
@@ -221,7 +221,7 @@ function construireSol(scene, monde) {
 }
 
 // --- Les haies et le portail ---------------------------------------------------
-function construireHaies(scene, monde) {
+export function construireHaies(scene, monde) {
   const hauteur = 1.3;
   const hasard = creerHasard(21);
   const positionsBuissons = [];
@@ -245,25 +245,31 @@ function construireHaies(scene, monde) {
   });
   scene.add(buissons);
 
-  // Le portail en bois, fermé (il mènera vers d'autres lieux dans une étape future).
+  // Le portail en bois de la place (seulement s'il y en a un dans ce lieu).
+  // Les planches sont dans un groupe « battants » : on les cache quand le
+  // portail est ouvert (étape 3), il ne reste que les deux poteaux.
   const p = monde.portail;
+  if (!p) return null;
   const portail = new THREE.Group();
   portail.position.set(p.x, 0, p.z);
   const poteau = new THREE.BoxGeometry(0.3, 1.7, 0.3);
   portail.add(objet(poteau, COULEURS.boisFonce, -p.largeur / 2, 0.85, 0));
   portail.add(objet(poteau, COULEURS.boisFonce, p.largeur / 2, 0.85, 0));
+  const battants = new THREE.Group();
   for (let i = 0; i < 6; i++) {
     // Les planches verticales.
-    portail.add(objet(new THREE.BoxGeometry(0.36, 1.25, 0.08), COULEURS.boisClair, -1.12 + i * 0.45, 0.72, 0));
+    battants.add(objet(new THREE.BoxGeometry(0.36, 1.25, 0.08), COULEURS.boisClair, -1.12 + i * 0.45, 0.72, 0));
   }
   const traverse = new THREE.BoxGeometry(p.largeur - 0.3, 0.12, 0.12);
-  portail.add(objet(traverse, COULEURS.boisFonce, 0, 0.4, 0.06));
-  portail.add(objet(traverse, COULEURS.boisFonce, 0, 1.05, 0.06));
+  battants.add(objet(traverse, COULEURS.boisFonce, 0, 0.4, 0.06));
+  battants.add(objet(traverse, COULEURS.boisFonce, 0, 1.05, 0.06));
+  portail.add(battants);
   scene.add(portail);
+  return battants;
 }
 
 // --- Les arbres ----------------------------------------------------------------
-function construireArbres(scene, monde) {
+export function construireArbres(scene, monde) {
   const n = monde.arbres.length;
   const troncs = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.17, 0.25, 1.5, 6), matiere(COULEURS.tronc), n);
   const bas = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1.35, 0), matiere(COULEURS.feuillage), n);
@@ -305,7 +311,7 @@ function construirePuits(scene, puits) {
 }
 
 // --- Un bâtiment générique (murs, socle, toit, porte, fenêtres) ----------------
-function construireBatiment(scene, b, couleurs) {
+export function construireBatiment(scene, b, couleurs) {
   const g = new THREE.Group();
   g.position.set(b.x, 0, b.z);
   const hauteurMurs = 3.0;
@@ -382,7 +388,7 @@ function construireMaisonOdile(scene, maison) {
 
 // --- La lampe à vapeur (sur l'établi, puis chez Odile) -----------------------------
 // Une lampe = un socle, un globe de verre, un chapeau et une anse.
-function creerLampe() {
+export function creerLampe() {
   const lampe = new THREE.Group();
   lampe.add(objet(new THREE.CylinderGeometry(0.16, 0.2, 0.1, 8), COULEURS.laiton, 0, 0.05, 0));
   // Le globe a sa propre matière : on change sa couleur quand la lampe s'allume.

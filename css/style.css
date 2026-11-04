@@ -580,3 +580,49 @@ body.panneau-ouvert #messages {
   bottom: max(12px, env(safe-area-inset-bottom));
   flex-direction: column-reverse;
 }
+
+/* ==========================================================================
+   ÉTAPE 3 : les lieux, les quêtes, la sauvegarde
+   ========================================================================== */
+
+/* La deuxième ligne de l'objectif (un client qui attend pendant une quête). */
+#objectif-secondaire {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--parchemin-fonce);
+  font-size: 15px;
+  color: var(--encre-douce);
+}
+
+/* Le fondu entre deux lieux : un voile couleur parchemin qui apparaît et
+   disparaît doucement (pas de flash). */
+#fondu {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  background: var(--ciel);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+#fondu.visible { opacity: 1; }
+
+/* L'écran d'accueil : « Continuer » et « Nouvelle partie ». */
+.boutons-accueil {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+#bouton-nouvelle {
+  min-height: 58px;
+  padding: 12px 22px;
+  border-radius: 14px;
+  border: 2px solid var(--cuivre);
+  background: var(--parchemin);
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+}
+#bouton-nouvelle.attention { border-color: #9a4a2a; color: #9a4a2a; }
+#info-sauvegarde { margin: 10px 0 0; }

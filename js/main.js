@@ -2,29 +2,30 @@
 // main.js — le point de départ du jeu : il assemble tout et fait tourner le jeu
 // -----------------------------------------------------------------------------
 // 1. Vérifie que la 3D est disponible (sinon, message d'erreur clair).
-// 2. Prépare la scène 3D : lumière, caméra, décor, personnages.
-// 3. Branche les commandes (clavier, tactile) et l'interface (textes).
+// 2. Prépare les trois lieux en 3D (la place, le marché, le moulin), chacun
+//    dans sa propre « scène » avec sa lumière, son décor et ses personnages.
+// 3. Branche les commandes (clavier, tactile), l'interface (textes) et la
+//    sauvegarde automatique.
 // 4. Lance la « boucle de jeu » : environ 60 fois par seconde, on déplace
-//    Ferrus, on vérifie ce qu'il touche, on bouge la caméra et on redessine.
+//    Ferrus, on vérifie ce qu'il touche, on bouge la caméra et on redessine
+//    le lieu où il se trouve.
 //
-// Les RÈGLES (quête, argent, collisions) sont dans logique.js : ce fichier-ci
-// ne fait que les appliquer et les montrer.
+// Les RÈGLES (quêtes, argent, collisions, lieux, sauvegarde) sont dans les
+// fichiers logique*.js : ce fichier-ci ne fait que les appliquer et les montrer.
 // =============================================================================
 
 import * as THREE from '../lib/three/three.module.js';
 import {
   MONDE,
   ETAPES,
-  obstaclesDuMonde,
   calculerPas,
   deplacerJoueur,
   creerEtatJeu,
   engrenagesVisibles,
   objectifActuel,
+  objectifSecondaire,
   marqueursActifs,
   ramasserEngrenagesProches,
-  cibleProche,
-  libelleInteraction,
   dialogueOdile,
   appliquerAction,
   utiliserEtabli,
@@ -41,8 +42,44 @@ import {
   materiauxManquants,
   progressionFabrication,
 } from './logique-atelier.js';
+import {
+  QUETES,
+  queteEnCours,
+  queteTerminee,
+  verifierQuetes,
+  dialoguePnjQuete,
+  appliquerActionQuete,
+  ramasserObjetsQuete,
+  utiliserObjetQuete,
+  marqueursQuetes,
+} from './logique-quetes.js';
+import {
+  ZONES,
+  conditionRemplie,
+  obstaclesZone,
+  sortieAtteinte,
+  cibleProcheZone,
+  libelleZone,
+  nomPnj,
+  objetsQueteZone,
+  dialogueLeon,
+  dialogueParDefaut,
+  messageObjet,
+} from './logique-zones.js';
+import { CLE_SAUVEGARDE, serialiserPartie, chargerPartie } from './logique-sauvegarde.js';
 import { construireDecor, creerEngrenageQuete, creerMarqueur, allumerLampe } from './decor.js';
-import { creerFerrus, animerFerrus, creerOdile, animerOdile, creerHabitant, animerMarche, supprimerPersonnage } from './personnages.js';
+import { construireMarche, construireMoulin, creerPaleQuete } from './decor-zones.js';
+import {
+  creerFerrus,
+  animerFerrus,
+  creerOdile,
+  animerOdile,
+  creerHabitant,
+  creerPersonnage,
+  TENUES_PNJ,
+  animerMarche,
+  supprimerPersonnage,
+} from './personnages.js';
 import { creerCommandes } from './commandes.js';
 import { creerInterface } from './interface.js';
 import { creerPanneauAtelier } from './interface-atelier.js';
@@ -74,6 +111,34 @@ if (!webgl2Disponible()) {
   }
 }
 
+// -----------------------------------------------------------------------------
+// La sauvegarde dans le navigateur (le « localStorage »).
+// Tout est protégé par try/catch : en navigation privée, par exemple, le
+// navigateur peut refuser. Le jeu marche alors quand même, sans sauvegarde.
+// -----------------------------------------------------------------------------
+function lireSauvegarde() {
+  try {
+    const texte = window.localStorage.getItem(CLE_SAUVEGARDE);
+    return texte ? chargerPartie(texte) : null;
+  } catch {
+    return null;
+  }
+}
+function ecrireSauvegarde(texte) {
+  try {
+    window.localStorage.setItem(CLE_SAUVEGARDE, texte);
+  } catch {
+    // Pas de place ou stockage interdit : tant pis, on continue sans sauvegarder.
+  }
+}
+function effacerSauvegarde() {
+  try {
+    window.localStorage.removeItem(CLE_SAUVEGARDE);
+  } catch {
+    // Rien à faire.
+  }
+}
+
 function demarrer() {
   // Économie d'énergie pour les téléphones.
   const tactile = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
@@ -81,7 +146,7 @@ function demarrer() {
   const moinsDeMouvement = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // ---------------------------------------------------------------------------
-  // 2. La scène 3D
+  // 2. Le moteur 3D et les lieux
   // ---------------------------------------------------------------------------
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
   // Le « pixel ratio » : sur les écrans très fins, on ne dessine pas plus de 1,5
@@ -95,72 +160,123 @@ function demarrer() {
   // Si le téléphone « perd » la 3D (manque de mémoire…), on prévient clairement.
   renderer.domElement.addEventListener('webglcontextlost', (e) => {
     e.preventDefault();
-    window.afficherErreur("La 3D s'est arrêtée (l'appareil manquait peut-être de mémoire).", 'Rechargez la page pour reprendre.');
+    window.afficherErreur("La 3D s'est arrêtée (l'appareil manquait peut-être de mémoire).", 'Rechargez la page pour reprendre (la partie est sauvegardée).');
   });
-
-  const scene = new THREE.Scene();
-  // Un ciel couleur sable doux et une brume légère qui cache l'horizon.
-  const couleurCiel = new THREE.Color('#e9dcc3');
-  scene.background = couleurCiel;
-  scene.fog = new THREE.Fog(couleurCiel, 34, 70);
-
-  // La lumière : douce et chaude, sans contraste violent.
-  // - une lumière « ciel / sol » qui éclaire tout doucement ;
-  scene.add(new THREE.HemisphereLight('#fff1d8', '#8a7558', 1.75));
-  // - un « soleil » de fin d'après-midi qui fait les ombres. Il reste fixe et
-  //   couvre toute la place : les ombres ne bougent pas et ne scintillent pas.
-  const soleil = new THREE.DirectionalLight('#ffe0b8', 1.5);
-  soleil.position.set(-10, 22, 12);
-  soleil.castShadow = true;
-  soleil.shadow.mapSize.set(tactile ? 1024 : 2048, tactile ? 1024 : 2048);
-  Object.assign(soleil.shadow.camera, { left: -24, right: 24, top: 22, bottom: -22, near: 1, far: 60 });
-  soleil.shadow.bias = -0.0005;
-  soleil.shadow.normalBias = 0.03;
-  scene.add(soleil, soleil.target);
 
   // La caméra : vue de dessus, inclinée.
   const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.5, 120);
 
-  // Le décor (place, bâtiments, arbres, haies…).
-  const decor = construireDecor(scene, MONDE);
-
-  // Les personnages.
-  const ferrus = creerFerrus();
-  ferrus.position.set(MONDE.joueur.x, 0, MONDE.joueur.z);
-  scene.add(ferrus);
-
-  const odile = creerOdile();
-  odile.position.set(MONDE.odile.x, 0, MONDE.odile.z);
-  scene.add(odile);
-
-  // Les engrenages de la quête (cachés au départ).
-  const engrenages = new Map();
-  for (const e of MONDE.engrenages) {
-    const objet3d = creerEngrenageQuete();
-    objet3d.position.set(e.x, 0, e.z);
-    objet3d.visible = false;
-    objet3d.userData.decalage = engrenages.size * 2.1; // pour qu'ils ne tournent pas tous pareil
-    scene.add(objet3d);
-    engrenages.set(e.id, objet3d);
+  // Une scène vide avec le ciel, la brume et la lumière (la même pour chaque lieu).
+  function creerSceneDeBase() {
+    const scene = new THREE.Scene();
+    // Un ciel couleur sable doux et une brume légère qui cache l'horizon.
+    const couleurCiel = new THREE.Color('#e9dcc3');
+    scene.background = couleurCiel;
+    scene.fog = new THREE.Fog(couleurCiel, 34, 70);
+    // La lumière : douce et chaude, sans contraste violent.
+    // - une lumière « ciel / sol » qui éclaire tout doucement ;
+    scene.add(new THREE.HemisphereLight('#fff1d8', '#8a7558', 1.75));
+    // - un « soleil » de fin d'après-midi qui fait les ombres. Il reste fixe et
+    //   couvre tout le lieu : les ombres ne bougent pas et ne scintillent pas.
+    const soleil = new THREE.DirectionalLight('#ffe0b8', 1.5);
+    soleil.position.set(-10, 22, 12);
+    soleil.castShadow = true;
+    soleil.shadow.mapSize.set(tactile ? 1024 : 2048, tactile ? 1024 : 2048);
+    Object.assign(soleil.shadow.camera, { left: -24, right: 24, top: 22, bottom: -22, near: 1, far: 60 });
+    soleil.shadow.bias = -0.0005;
+    soleil.shadow.normalBias = 0.03;
+    scene.add(soleil, soleil.target);
+    return scene;
   }
 
-  // Les marqueurs flottants au-dessus d'Odile, de l'établi et du comptoir.
-  const marqueurOdile = creerMarqueur();
-  marqueurOdile.position.set(MONDE.odile.x, 2.35, MONDE.odile.z);
-  const marqueurEtabli = creerMarqueur();
-  marqueurEtabli.position.set(MONDE.etabli.x + 0.6, 2.05, MONDE.etabli.z);
-  const marqueurComptoir = creerMarqueur();
-  marqueurComptoir.position.set(MONDE.comptoir.x, 1.95, MONDE.comptoir.z);
-  scene.add(marqueurOdile, marqueurEtabli, marqueurComptoir);
-  const hauteursMarqueurs = [[marqueurOdile, 2.35], [marqueurEtabli, 2.05], [marqueurComptoir, 1.95]];
+  // Ajoute un marqueur flottant (losange ambre) au-dessus d'un point d'un lieu.
+  function ajouterMarqueur(lieu, id, x, z, hauteur) {
+    const marqueur = creerMarqueur();
+    marqueur.position.set(x, hauteur, z);
+    lieu.scene.add(marqueur);
+    lieu.marqueurs.set(id, { objet: marqueur, hauteur });
+  }
+
+  // Ajoute un personnage avec un nom (Capucine, Léon, Barnabé) dans un lieu.
+  function ajouterPnj(lieu, p) {
+    const objet = creerPersonnage(TENUES_PNJ[p.id], p.x * 3);
+    objet.position.set(p.x, 0, p.z);
+    lieu.scene.add(objet);
+    lieu.pnj.push({ id: p.id, objet, x: p.x, z: p.z, animer: (dt) => animerMarche(objet, 0, dt) });
+    ajouterMarqueur(lieu, p.id, p.x, p.z, 2.45);
+  }
+
+  // Les trois lieux. Chacun : { scene, marqueurs, pnj, objetsQuete, … }
+  const lieux = {};
+
+  // --- La place (étapes 1 et 2) ---
+  {
+    const scene = creerSceneDeBase();
+    const lieu = { scene, marqueurs: new Map(), pnj: [], objetsQuete: new Map() };
+    lieu.decor = construireDecor(scene, MONDE);
+    // Odile, et ses engrenages perdus (cachés au départ).
+    const odile = creerOdile();
+    odile.position.set(MONDE.odile.x, 0, MONDE.odile.z);
+    scene.add(odile);
+    lieu.pnj.push({ id: 'odile', objet: odile, x: MONDE.odile.x, z: MONDE.odile.z, animer: (dt) => animerOdile(odile, dt) });
+    lieu.engrenages = new Map();
+    for (const e of MONDE.engrenages) {
+      const objet3d = creerEngrenageQuete();
+      objet3d.position.set(e.x, 0, e.z);
+      objet3d.visible = false;
+      objet3d.userData.decalage = lieu.engrenages.size * 2.1; // pour qu'ils ne tournent pas tous pareil
+      scene.add(objet3d);
+      lieu.engrenages.set(e.id, objet3d);
+    }
+    ajouterMarqueur(lieu, 'odile', MONDE.odile.x, MONDE.odile.z, 2.35);
+    ajouterMarqueur(lieu, 'etabli', MONDE.etabli.x + 0.6, MONDE.etabli.z, 2.05);
+    ajouterMarqueur(lieu, 'comptoir', MONDE.comptoir.x, MONDE.comptoir.z, 1.95);
+    lieux.place = lieu;
+  }
+
+  // --- Le marché ---
+  {
+    const scene = creerSceneDeBase();
+    const lieu = { scene, marqueurs: new Map(), pnj: [], objetsQuete: new Map() };
+    lieu.decor = construireMarche(scene, ZONES.marche);
+    for (const p of ZONES.marche.pnj) ajouterPnj(lieu, p);
+    lieux.marche = lieu;
+  }
+
+  // --- Le moulin ---
+  {
+    const scene = creerSceneDeBase();
+    const lieu = { scene, marqueurs: new Map(), pnj: [], objetsQuete: new Map() };
+    lieu.decor = construireMoulin(scene, ZONES.moulin);
+    for (const p of ZONES.moulin.pnj) ajouterPnj(lieu, p);
+    const m = ZONES.moulin.mecanisme;
+    ajouterMarqueur(lieu, 'mecanisme', m.x, m.z, 1.9);
+    // Les pales à ramasser (cachées tant que la quête ne les demande pas).
+    QUETES['roue-moulin'].etapes[0].objets.forEach((o, i) => {
+      const pale = creerPaleQuete();
+      pale.position.set(o.x, 0, o.z);
+      pale.visible = false;
+      pale.userData.decalage = i * 2.1;
+      scene.add(pale);
+      lieu.objetsQuete.set(o.id, pale);
+    });
+    lieux.moulin = lieu;
+  }
+
+  // Ferrus, qui passe d'une scène à l'autre selon le lieu.
+  const ferrus = creerFerrus();
+  ferrus.position.set(MONDE.joueur.x, 0, MONDE.joueur.z);
+  lieux.place.scene.add(ferrus);
 
   // ---------------------------------------------------------------------------
   // 3. L'état du jeu, l'interface et les commandes
   // ---------------------------------------------------------------------------
   const etat = creerEtatJeu();
-  const obstacles = obstaclesDuMonde(MONDE);
+  let zone = 'place';
+  let obstacles = obstaclesZone(zone, etat);
   let position = { x: MONDE.joueur.x, z: MONDE.joueur.z };
-  let jeuActif = false;      // devient vrai après « Commencer »
+  let jeuActif = false;      // devient vrai après « Commencer » ou « Continuer »
+  let enTransition = false;  // pendant le fondu entre deux lieux
   let orientationVoulue = 0; // la direction vers laquelle Ferrus doit se tourner
 
   const ui = creerInterface();
@@ -173,7 +289,7 @@ function demarrer() {
       if (type === 'fabriquer') messages = lancerFabrication(etat, id);
       else if (type === 'acheter') messages = acheterMateriau(etat, id, quantite);
       else if (type === 'ameliorer') messages = acheterAmelioration(etat, id);
-      afficherMessages(messages);
+      afficherMessages([...messages, ...verifierQuetes(etat)]);
       majEtat();
     },
     surFermeture: () => commandes.relacherTout(),
@@ -187,26 +303,64 @@ function demarrer() {
     },
   });
 
-  // Met à jour tout ce qui dépend de l'avancée de la quête.
+  // --- La sauvegarde automatique ---
+  let derniereSauvegarde = 0;
+  function sauvegarder() {
+    if (!jeuActif) return; // jamais sur l'écran d'accueil (on écraserait la partie)
+    ecrireSauvegarde(serialiserPartie({ etat, zone, position, orientation: orientationVoulue }));
+    derniereSauvegarde = performance.now();
+  }
+  // Quand on quitte la page ou qu'on change d'application, on sauvegarde.
+  window.addEventListener('pagehide', sauvegarder);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') sauvegarder();
+  });
+
+  // Met à jour tout ce qui dépend de l'état du jeu (et sauvegarde).
   function majEtat() {
     ui.majArgent(etat.argent);
-    ui.majObjectif(objectifActuel(etat));
+    ui.majObjectif(objectifActuel(etat), objectifSecondaire(etat));
+    obstacles = obstaclesZone(zone, etat);
+
+    // La place : engrenages, lampe, lanterne, améliorations, portail.
+    const place = lieux.place;
     const visibles = new Set(engrenagesVisibles(etat).map((e) => e.id));
-    for (const [id, objet3d] of engrenages) objet3d.visible = visibles.has(id);
-    const marqueurs = marqueursActifs(etat);
-    marqueurOdile.visible = marqueurs.odile;
-    marqueurEtabli.visible = marqueurs.etabli;
-    marqueurComptoir.visible = marqueurs.comptoir;
-    // La lampe : éteinte sur l'établi, allumée une fois réparée, puis chez Odile.
+    for (const [id, objet3d] of place.engrenages) objet3d.visible = visibles.has(id);
     const etape = etat.quete.etape;
-    allumerLampe(decor.lampeEtabli, etape === ETAPES.LAMPE_REPAREE);
-    decor.lampeEtabli.visible = etape !== ETAPES.TERMINEE;
-    decor.lanterneOdile.visible = etape === ETAPES.TERMINEE;
-    // Les améliorations achetées apparaissent dans le décor.
-    for (const [id, objet3d] of Object.entries(decor.ameliorations)) {
+    allumerLampe(place.decor.lampeEtabli, etape === ETAPES.LAMPE_REPAREE);
+    place.decor.lampeEtabli.visible = etape !== ETAPES.TERMINEE;
+    place.decor.lanterneOdile.visible = etape === ETAPES.TERMINEE;
+    for (const [id, objet3d] of Object.entries(place.decor.ameliorations)) {
       objet3d.visible = etat.atelier.ameliorations.includes(id);
     }
+    place.decor.portail.visible = !conditionRemplie(etat, 'portail');
+
+    // Le marché : l'arbre tombé disparaît quand le chemin est dégagé.
+    lieux.marche.decor.barriere.visible = !conditionRemplie(etat, 'chemin-moulin');
+
+    // Le moulin : les pales manquantes reviennent quand l'axe est installé.
+    const roueReparee = roueEstReparee();
+    for (const pale of lieux.moulin.decor.roue.palesManquantes) pale.visible = roueReparee;
+    const aRamasser = new Set(objetsQueteZone(etat, 'moulin').map((o) => o.id));
+    for (const [id, objet3d] of lieux.moulin.objetsQuete) objet3d.visible = aRamasser.has(id);
+
+    // Les marqueurs de tous les lieux.
+    const marqueursPlace = marqueursActifs(etat);
+    const marqueursQ = marqueursQuetes(etat);
+    for (const [id, m] of lieux.place.marqueurs) m.objet.visible = Boolean(marqueursPlace[id]);
+    for (const nom of ['marche', 'moulin']) {
+      for (const [id, m] of lieux[nom].marqueurs) m.objet.visible = marqueursQ.has(id);
+    }
+
     panneau.rafraichir();
+    sauvegarder();
+  }
+
+  // La roue du moulin est réparée dès que l'axe a été installé.
+  function roueEstReparee() {
+    if (queteTerminee(etat, 'roue-moulin')) return true;
+    const enCours = queteEnCours(etat);
+    return Boolean(enCours && enCours.id === 'roue-moulin' && enCours.etape.type === 'parler');
   }
 
   function afficherMessages(messages) {
@@ -215,15 +369,18 @@ function demarrer() {
 
   // Le joueur a appuyé sur E / Espace / « Interagir ».
   async function interagir() {
-    if (!jeuActif) return;
+    if (!jeuActif || enTransition) return;
     if (ui.dialogueOuvert()) {
       ui.avancerDialogue();
       return;
     }
     if (panneau.estOuvert()) return;
-    const cible = cibleProche(position.x, position.z);
-    if (cible) orientationVoulue = Math.atan2(MONDE[cible].x - position.x, MONDE[cible].z - position.z);
+    const cible = cibleProcheZone(zone, position.x, position.z, etat);
+    if (!cible) return;
+    const point = ZONES[zone].interactifs.find((i) => i.id === cible);
+    orientationVoulue = Math.atan2(point.x - position.x, point.z - position.z);
 
+    let messages = [];
     if (cible === 'odile') {
       commandes.relacherTout();
       const action = await ui.ouvrirDialogue(dialogueOdile(etat));
@@ -235,31 +392,85 @@ function demarrer() {
     } else if (cible === 'etabli') {
       if (etat.atelier.ouvert) {
         // On ouvre directement le bon onglet : « Acheter » s'il manque des
-        // matériaux pour le client du comptoir, sinon « Fabriquer ».
+        // matériaux pour ce qu'on doit faire (client ou quête), sinon « Fabriquer ».
         commandes.relacherTout();
-        const client = clientAuComptoir(etat);
-        const manque = client && etat.atelier.stock[client.commande] === 0
-          && Object.keys(materiauxManquants(etat, client.commande)).length > 0;
-        panneau.ouvrir(manque ? 'acheter' : 'fabriquer');
-      } else {
-        afficherMessages(utiliserEtabli(etat));
-        majEtat();
+        panneau.ouvrir(ongletUtile());
+        return;
       }
+      messages = utiliserEtabli(etat);
     } else if (cible === 'comptoir') {
       const dialogue = dialogueClient(etat);
       if (!dialogue) {
-        afficherMessages(messageComptoirVide(etat));
-        return;
+        messages = messageComptoirVide(etat);
+      } else {
+        commandes.relacherTout();
+        messages = appliquerAction(etat, await ui.ouvrirDialogue(dialogue));
       }
+    } else if (cible === 'leon') {
       commandes.relacherTout();
+      await ui.ouvrirDialogue(dialogueLeon(etat));
+    } else if (cible === 'capucine' || cible === 'barnabe') {
+      commandes.relacherTout();
+      const dialogue = dialoguePnjQuete(etat, cible, nomPnj(cible)) || dialogueParDefaut(cible);
       const action = await ui.ouvrirDialogue(dialogue);
-      afficherMessages(appliquerAction(etat, action));
-      majEtat();
+      messages = appliquerActionQuete(etat, action);
+    } else if (cible === 'mecanisme') {
+      messages = utiliserObjetQuete(etat, 'mecanisme') || messageObjet(etat, 'mecanisme');
+    } else {
+      messages = messageObjet(etat, cible);
     }
+    afficherMessages([...messages, ...verifierQuetes(etat)]);
+    majEtat();
+  }
+
+  // L'onglet le plus utile à ouvrir à l'établi.
+  function ongletUtile() {
+    const besoins = [];
+    const client = clientAuComptoir(etat);
+    if (client && etat.atelier.stock[client.commande] === 0) besoins.push(client.commande);
+    const enCours = queteEnCours(etat);
+    if (enCours && enCours.etape.type === 'fabriquer') besoins.unshift(enCours.etape.objet);
+    const manque = besoins.length > 0 && Object.keys(materiauxManquants(etat, besoins[0])).length > 0;
+    return manque ? 'acheter' : 'fabriquer';
   }
 
   // ---------------------------------------------------------------------------
-  // Les clients en 3D (étape 2)
+  // Changer de lieu (avec un fondu doux, sans flash)
+  // ---------------------------------------------------------------------------
+  const fondu = document.getElementById('fondu');
+  const DUREE_FONDU = 350; // millisecondes
+
+  function placerDansLieu(nouveauLieu, x, z, orientation) {
+    zone = nouveauLieu;
+    lieux[zone].scene.add(ferrus); // Ferrus quitte l'ancienne scène et entre dans la nouvelle
+    obstacles = obstaclesZone(zone, etat);
+    // Sécurité : si le point d'arrivée touche un obstacle, on le pousse dehors.
+    position = deplacerJoueur({ x, z }, 0, 0, obstacles, ZONES[zone]);
+    orientationVoulue = orientation;
+    ferrus.rotation.y = orientation;
+    ferrus.position.set(position.x, 0, position.z);
+    // La caméra est replacée directement (on ne la voit pas bouger : l'écran est voilé).
+    calculerCamera(camera.position);
+    viseeLissee.copy(viseeCamera);
+    camera.lookAt(viseeLissee);
+  }
+
+  function changerLieu(sortie) {
+    enTransition = true;
+    commandes.relacherTout();
+    ui.majIndice(null);
+    fondu.classList.add('visible');
+    setTimeout(() => {
+      placerDansLieu(sortie.zone, sortie.x, sortie.z, sortie.orientation);
+      majEtat();
+      afficherMessages([ZONES[zone].nom]);
+      fondu.classList.remove('visible');
+      setTimeout(() => { enTransition = false; }, DUREE_FONDU / 2);
+    }, DUREE_FONDU);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Les clients en 3D (étape 2) — ils vivent sur la place
   // ---------------------------------------------------------------------------
   // La liste des clients est dans l'état du jeu (logique-atelier.js). Ici, on
   // fait seulement correspondre un personnage 3D à chaque client :
@@ -280,7 +491,7 @@ function demarrer() {
         const objet = creerHabitant(client.id);
         objet.position.set(MONDE.clients.entree.x, 0, MONDE.clients.entree.z);
         objet.rotation.y = Math.PI;
-        scene.add(objet);
+        lieux.place.scene.add(objet);
         c = { objet, chemin: [...MONDE.clients.chemin, file[place]], place, partant: false };
         clients3d.set(client.id, c);
       } else if (c.place !== place) {
@@ -343,30 +554,30 @@ function demarrer() {
   // ---------------------------------------------------------------------------
   // On vise un point un peu au-dessus de Ferrus. La caméra est placée derrière
   // et au-dessus de ce point. Sur un écran en hauteur (téléphone tenu droit),
-  // on recule un peu pour voir assez de la place.
+  // on recule un peu pour voir assez du lieu.
   const viseeCamera = new THREE.Vector3();
   const positionCameraVoulue = new THREE.Vector3();
   function calculerCamera(sortie) {
     const enHauteur = camera.aspect < 1;
     const recul = enHauteur ? 1.8 : 1;
-    // La visée reste un peu à l'intérieur de la place, pour ne pas montrer le vide.
-    const vx = Math.max(-11, Math.min(11, position.x));
-    const vz = Math.max(-8, Math.min(8, position.z));
+    // La visée reste un peu à l'intérieur du lieu, pour ne pas montrer le vide.
+    const b = ZONES[zone].camera;
+    const vx = Math.max(b.minX, Math.min(b.maxX, position.x));
+    const vz = Math.max(b.minZ, Math.min(b.maxZ, position.z));
     viseeCamera.set(vx, 0.8, vz - 0.5);
     sortie.set(vx, 0.8 + 15 * recul, vz - 0.5 + 12.5 * recul);
+  }
+  function redimensionner() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    // Écran en hauteur : champ de vision un peu plus large pour voir le lieu.
+    camera.fov = camera.aspect < 1 ? 50 : 40;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
   }
   redimensionner();
   calculerCamera(camera.position);
   camera.lookAt(viseeCamera);
   const viseeLissee = viseeCamera.clone();
-
-  function redimensionner() {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    // Écran en hauteur : champ de vision un peu plus large pour voir la place.
-    camera.fov = camera.aspect < 1 ? 50 : 40;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-  }
   window.addEventListener('resize', redimensionner);
 
   // ---------------------------------------------------------------------------
@@ -381,78 +592,91 @@ function demarrer() {
     const dt = Math.min(0.05, Math.max(0, (maintenant - tempsPrecedent) / 1000));
     tempsPrecedent = maintenant;
     tempsTotal += dt;
+    const lieu = lieux[zone];
 
-    // --- Déplacement de Ferrus ---
-    // --- L'atelier vit : fabrication, arrivée des clients (étape 2) ---
+    // --- L'atelier vit, même quand Ferrus est ailleurs (fabrication, clients) ---
     if (jeuActif) {
       const evenements = avancerTemps(etat, dt);
       if (evenements.length > 0) {
-        afficherMessages(evenements);
+        // Une fabrication finie peut faire avancer une quête.
+        afficherMessages([...evenements, ...verifierQuetes(etat)]);
         majEtat();
       }
-      const progression = progressionFabrication(etat);
-      ui.majFabrication(progression);
+      ui.majFabrication(progressionFabrication(etat));
       panneau.majProgression();
       synchroniserClients();
+      // Sauvegarde de sécurité toutes les 5 secondes.
+      if (maintenant - derniereSauvegarde > 5000) sauvegarder();
     }
     animerClients(dt);
 
+    // --- Déplacement de Ferrus ---
     let vitesse = 0;
-    if (jeuActif && !ui.dialogueOuvert() && !panneau.estOuvert()) {
+    if (jeuActif && !enTransition && !ui.dialogueOuvert() && !panneau.estOuvert()) {
       const direction = commandes.direction();
       const { dx, dz } = calculerPas(direction.x, direction.z, MONDE.joueur.vitesse, dt);
       const avant = position;
-      position = deplacerJoueur(position, dx, dz, obstacles);
-      const parcouruX = position.x - avant.x;
-      const parcouruZ = position.z - avant.z;
-      vitesse = dt > 0 ? Math.hypot(parcouruX, parcouruZ) / dt : 0;
+      position = deplacerJoueur(position, dx, dz, obstacles, ZONES[zone]);
+      vitesse = dt > 0 ? Math.hypot(position.x - avant.x, position.z - avant.z) / dt : 0;
       if (Math.hypot(dx, dz) > 0.0001) orientationVoulue = Math.atan2(dx, dz);
 
-      // Ramasser les engrenages en passant dessus.
-      const messages = ramasserEngrenagesProches(etat, position.x, position.z);
+      // Ramasser en passant dessus : engrenages (place) et objets de quête.
+      const messages = [
+        ...(zone === 'place' ? ramasserEngrenagesProches(etat, position.x, position.z) : []),
+        ...ramasserObjetsQuete(etat, zone, position.x, position.z),
+      ];
       if (messages.length > 0) {
         afficherMessages(messages);
         majEtat();
       }
 
-      // Afficher l'aide si on est près d'Odile, de l'établi ou du comptoir.
-      const cible = cibleProche(position.x, position.z);
-      ui.majIndice(cible ? libelleInteraction(etat, cible) : null);
+      // Une sortie ? On change de lieu.
+      const sortie = sortieAtteinte(zone, position.x, position.z, etat);
+      if (sortie) {
+        changerLieu(sortie);
+      } else {
+        // Afficher l'aide si on est près de quelqu'un ou de quelque chose.
+        const cible = cibleProcheZone(zone, position.x, position.z, etat);
+        ui.majIndice(cible ? libelleZone(etat, cible) : null);
+      }
     } else if (!jeuActif) {
       ui.majIndice(null);
     }
 
     ferrus.position.set(position.x, 0, position.z);
     // Ferrus se tourne en douceur (on prend le chemin le plus court pour tourner).
-    let ecart = orientationVoulue - ferrus.rotation.y;
-    ecart = Math.atan2(Math.sin(ecart), Math.cos(ecart));
-    ferrus.rotation.y += ecart * Math.min(1, dt * 12);
+    tournerVers(ferrus, orientationVoulue, dt, 12);
     animerFerrus(ferrus, vitesse, dt);
 
-    // Odile se tourne doucement vers Ferrus quand il est proche.
-    animerOdile(odile, dt);
-    const distanceOdile = Math.hypot(position.x - MONDE.odile.x, position.z - MONDE.odile.z);
-    const regardOdile = distanceOdile < 5 ? Math.atan2(position.x - MONDE.odile.x, position.z - MONDE.odile.z) : 0;
-    let ecartOdile = regardOdile - odile.rotation.y;
-    ecartOdile = Math.atan2(Math.sin(ecartOdile), Math.cos(ecartOdile));
-    odile.rotation.y += ecartOdile * Math.min(1, dt * 3);
+    // Les personnages du lieu se tournent doucement vers Ferrus quand il est proche.
+    for (const p of lieu.pnj) {
+      p.animer(dt);
+      const distance = Math.hypot(position.x - p.x, position.z - p.z);
+      const regard = distance < 5 ? Math.atan2(position.x - p.x, position.z - p.z) : 0;
+      tournerVers(p.objet, regard, dt, 3);
+    }
 
-    // Les engrenages tournent lentement et flottent à peine ; les marqueurs aussi.
+    // Les objets à ramasser tournent lentement et flottent à peine ; les marqueurs aussi.
     if (!moinsDeMouvement) {
-      for (const objet3d of engrenages.values()) {
+      const aAnimer = zone === 'place' ? lieu.engrenages.values() : lieu.objetsQuete.values();
+      for (const objet3d of aAnimer) {
         if (!objet3d.visible) continue;
         const { roue, support, decalage } = objet3d.userData;
+        // On retient la hauteur de départ de chaque objet, puis il flotte autour.
+        if (objet3d.userData.base === undefined) objet3d.userData.base = support.position.y;
         roue.rotation.z = tempsTotal * 0.9 + decalage;
-        support.position.y = 0.65 + Math.sin(tempsTotal * 1.4 + decalage) * 0.06;
+        support.position.y = objet3d.userData.base + Math.sin(tempsTotal * 1.4 + decalage) * 0.06;
       }
-      for (const [marqueur, hauteur] of hauteursMarqueurs) {
-        marqueur.rotation.y = tempsTotal * 0.8;
-        marqueur.position.y = hauteur + Math.sin(tempsTotal * 1.6) * 0.06;
+      for (const m of lieu.marqueurs.values()) {
+        m.objet.rotation.y = tempsTotal * 0.8;
+        m.objet.position.y = m.hauteur + Math.sin(tempsTotal * 1.6) * 0.06;
       }
-      // Le rouage de l'établi tourne pendant une fabrication ; l'enseigne tourne
-      // très lentement.
+      // Le rouage de l'établi tourne pendant une fabrication ; l'enseigne et la
+      // roue du moulin (une fois réparée) tournent lentement.
+      const decor = lieux.place.decor;
       if (etat.atelier.fabrication) decor.rouageEtabli.rotation.z += dt * 2.5;
       if (decor.ameliorations.enseigne.visible) decor.ameliorations.enseigne.rotation.z += dt * 0.3;
+      if (roueEstReparee()) lieux.moulin.decor.roue.tourne.rotation.z -= dt * 0.5;
     }
 
     // --- La caméra suit Ferrus en douceur (sans secousse) ---
@@ -464,27 +688,62 @@ function demarrer() {
     viseeLissee.lerp(viseeCamera, douceur);
     camera.lookAt(viseeLissee);
 
-    renderer.render(scene, camera);
+    renderer.render(lieu.scene, camera);
     requestAnimationFrame(boucle);
   }
 
   // ---------------------------------------------------------------------------
-  // Écran d'accueil : le jeu est prêt, on active le bouton « Commencer ».
+  // Écran d'accueil : « Commencer », ou « Continuer » s'il y a une sauvegarde.
   // ---------------------------------------------------------------------------
+  const sauvegarde = lireSauvegarde();
   majEtat();
-  renderer.render(scene, camera);
+  renderer.render(lieux.place.scene, camera);
   requestAnimationFrame(boucle);
   window.jeuDemarre = true;
 
   const boutonCommencer = document.getElementById('bouton-commencer');
+  const boutonNouvelle = document.getElementById('bouton-nouvelle');
+  const infoSauvegarde = document.getElementById('info-sauvegarde');
   boutonCommencer.disabled = false;
-  boutonCommencer.textContent = 'Commencer';
+  boutonCommencer.textContent = sauvegarde ? 'Continuer la partie' : 'Commencer';
+  boutonNouvelle.hidden = !sauvegarde;
+  infoSauvegarde.textContent = sauvegarde
+    ? 'Une partie est sauvegardée sur cet appareil.'
+    : 'La partie se sauvegarde toute seule sur cet appareil.';
   boutonCommencer.focus();
-  boutonCommencer.addEventListener('click', () => {
+
+  function lancerJeu() {
     document.getElementById('accueil').hidden = true;
     document.getElementById('interface').hidden = false;
-    boutonCommencer.blur();
+    if (document.activeElement) document.activeElement.blur();
     jeuActif = true;
+    tempsPrecedent = performance.now();
+    majEtat();
+    afficherMessages(verifierQuetes(etat));
+  }
+
+  boutonCommencer.addEventListener('click', () => {
+    if (sauvegarde) {
+      // On reprend la partie : on recopie l'état sauvegardé dans l'état du jeu.
+      for (const cle of Object.keys(etat)) etat[cle] = sauvegarde.etat[cle];
+      // Sans position valide, Ferrus repart devant l'atelier.
+      const depart = sauvegarde.position || { x: MONDE.joueur.x, z: MONDE.joueur.z };
+      placerDansLieu(sauvegarde.zone, depart.x, depart.z, sauvegarde.orientation);
+    }
+    lancerJeu();
+  });
+
+  // « Nouvelle partie » efface la sauvegarde… après une confirmation.
+  let confirmation = false;
+  boutonNouvelle.addEventListener('click', () => {
+    if (!confirmation) {
+      confirmation = true;
+      boutonNouvelle.textContent = 'Toucher encore pour effacer la partie';
+      boutonNouvelle.classList.add('attention');
+      return;
+    }
+    effacerSauvegarde();
+    lancerJeu();
   });
 
   // Pour les vérifications automatiques (et la curiosité) : on peut consulter
@@ -492,6 +751,7 @@ function demarrer() {
   window.atelier = {
     etat,
     position: () => ({ ...position }),
+    zone: () => zone,
     dessin: () => ({ ...renderer.info.render }),
     clients3d: () => clients3d.size,
   };

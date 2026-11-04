@@ -34,6 +34,7 @@
     <div id="objectif" class="panneau" role="status" aria-live="polite">
       <div class="objectif-titre">Objectif</div>
       <div id="objectif-texte"></div>
+      <div id="objectif-secondaire" hidden></div>
     </div>
   </div>
 
@@ -74,6 +75,9 @@
   </div>
 </div>
 
+<!-- Le voile qui fait un fondu doux quand on change de lieu. -->
+<div id="fondu" aria-hidden="true"></div>
+
 <!-- ============================ Écran d'accueil ============================ -->
 <div id="accueil" class="ecran">
   <div class="carte">
@@ -99,7 +103,11 @@
       </div>
     </div>
 
-    <button id="bouton-commencer" type="button" disabled>Chargement…</button>
+    <div class="boutons-accueil">
+      <button id="bouton-commencer" type="button" disabled>Chargement…</button>
+      <button id="bouton-nouvelle" type="button" hidden>Nouvelle partie</button>
+    </div>
+    <p class="petit" id="info-sauvegarde"></p>
   </div>
 </div>
 

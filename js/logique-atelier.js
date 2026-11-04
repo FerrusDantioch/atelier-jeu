@@ -54,6 +54,24 @@ export const RECETTES = Object.freeze({
     prixVente: 75,
     plans: 'plans-horloge',
   },
+  // Objets de quête (étape 3) : on ne peut les fabriquer que pendant la quête
+  // qui les demande (« quete »), et les clients ne les commandent jamais.
+  balance: {
+    nom: 'Balance de précision',
+    article: 'une balance de précision',
+    ingredients: { cuivre: 2, ressort: 1 },
+    duree: 8,
+    prixVente: 0,
+    quete: 'balance-capucine',
+  },
+  axe: {
+    nom: 'Axe en laiton',
+    article: 'un axe en laiton',
+    ingredients: { cuivre: 1, bois: 2 },
+    duree: 10,
+    prixVente: 0,
+    quete: 'roue-moulin',
+  },
 });
 
 // Les améliorations de l'atelier (chacune ne s'achète qu'une fois).
@@ -109,6 +127,7 @@ export function creerEtatAtelier() {
     compteurClients: 0,      // pour donner un numéro unique à chaque client
     clientsServis: 0,
     graine: 20261104,        // pour le « hasard » des commandes (toujours le même)
+    recettesQuete: [],       // les objets de quête qu'on a le droit de fabriquer en ce moment
   };
 }
 
@@ -145,7 +164,9 @@ export function capaciteStock(etat) {
 // Les recettes qu'on a le droit de fabriquer (les plans débloquent l'horloge).
 export function recetteDebloquee(etat, id) {
   const r = RECETTES[id];
-  return Boolean(r) && (!r.plans || possedeAmelioration(etat, r.plans));
+  if (!r) return false;
+  if (r.quete) return etat.atelier.recettesQuete.includes(id);
+  return !r.plans || possedeAmelioration(etat, r.plans);
 }
 export function recettesDisponibles(etat) {
   return Object.keys(RECETTES).filter((id) => recetteDebloquee(etat, id));
@@ -195,7 +216,9 @@ export function peutFabriquer(etat, id) {
   const r = RECETTES[id];
   if (!r) return { possible: false, raison: 'Recette inconnue.' };
   if (!a.ouvert) return { possible: false, raison: "L'atelier n'est pas encore ouvert." };
-  if (!recetteDebloquee(etat, id)) return { possible: false, raison: `Il faut d'abord les ${AMELIORATIONS[r.plans].nom.toLowerCase()}.` };
+  if (!recetteDebloquee(etat, id)) {
+    return { possible: false, raison: r.quete ? 'Cet objet sert à une quête.' : `Il faut d'abord les ${AMELIORATIONS[r.plans].nom.toLowerCase()}.` };
+  }
   if (a.fabrication) return { possible: false, raison: "L'établi est déjà occupé." };
   if (a.stock[id] >= capaciteStock(etat)) return { possible: false, raison: 'Plus de place pour ranger cet objet.' };
   const manque = materiauxManquants(etat, id);
@@ -296,8 +319,12 @@ export function messageComptoirVide(etat) {
 export function atelierCoince(etat) {
   const a = etat.atelier;
   if (!a.ouvert || a.fabrication) return false;
-  if (Object.keys(RECETTES).some((id) => a.stock[id] > 0)) return false;
-  return recettesDisponibles(etat).every((id) => coutMateriauxManquants(etat, id) > etat.argent);
+  // Seuls les objets qu'un client peut acheter comptent (pas les objets de quête).
+  const vendables = Object.keys(RECETTES).filter((id) => !RECETTES[id].quete);
+  if (vendables.some((id) => a.stock[id] > 0)) return false;
+  return vendables
+    .filter((id) => recetteDebloquee(etat, id))
+    .every((id) => coutMateriauxManquants(etat, id) > etat.argent);
 }
 
 // Fait avancer le temps de « dt » secondes. Renvoie les messages à afficher.
@@ -322,7 +349,8 @@ export function avancerTemps(etat, dt) {
     a.prochainClient -= dt;
     if (a.prochainClient <= 0) {
       const habitant = HABITANTS[a.compteurClients % HABITANTS.length];
-      const disponibles = recettesDisponibles(etat);
+      // Les clients ne commandent que des objets « normaux » (pas d'objets de quête).
+      const disponibles = recettesDisponibles(etat).filter((id) => !RECETTES[id].quete);
       const commande = disponibles[Math.floor(hasard(a) * disponibles.length)];
       a.compteurClients += 1;
       a.clients.push({ id: a.compteurClients, nom: habitant.nom, salut: habitant.salut, commande });

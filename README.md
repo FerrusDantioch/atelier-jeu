@@ -13,8 +13,12 @@ habitants : chaque habitant a un problème à résoudre, ce sont les quêtes.
   « La lampe d'Odile ».
 - **Étape 2** : la gestion de l'atelier. On achète des matériaux, on fabrique
   des objets, on sert des clients et on améliore l'atelier.
+- **Étape 3** : deux nouveaux lieux (le marché et le moulin), trois nouveaux
+  personnages, des quêtes qui s'enchaînent, et la sauvegarde automatique.
 
 ![L'atelier ouvert, avec des clients au comptoir](captures/pc-atelier.png)
+
+![Le marché de Cuivrebourg](captures/pc-marche.png)
 
 ---
 
@@ -115,6 +119,54 @@ Personne n'est pressé : les clients attendent aussi longtemps qu'il faut.
 Et si jamais l'atelier se retrouve coincé (ni argent, ni objet à vendre),
 Odile prête 30 pièces pour repartir.
 
+## Les lieux et les quêtes (étape 3)
+
+Cuivrebourg compte maintenant trois lieux. On passe de l'un à l'autre en
+marchant jusqu'à la sortie, avec un fondu doux.
+
+```
+[ La place ]  ── portail du sud ──  [ Le marché ]  ── chemin de l'est ──  [ Le moulin ]
+```
+
+- **La place** : l'atelier, Odile, le puits. Le portail du sud s'ouvre quand
+  l'atelier ouvre.
+- **Le marché** : des étals, une fontaine, **Capucine** la marchande et
+  **Léon** le facteur (il connaît toutes les nouvelles et donne des indices).
+  Le chemin du moulin est d'abord bloqué par un arbre tombé.
+- **Le moulin** : le canal, la grande roue à aubes et **Barnabé** le meunier.
+
+Les quêtes s'enchaînent : chacune ouvre la suivante.
+
+1. **La lampe d'Odile** : ouvre l'atelier et le portail du marché.
+2. **La balance de Capucine** : fabriquer une balance de précision à
+   l'établi (2 cuivres, 1 ressort), puis la livrer à Capucine. Récompense :
+   120 pièces, et le chemin du moulin est dégagé.
+3. **La roue du moulin** : retrouver 3 pales dans l'herbe près du moulin,
+   fabriquer un axe en laiton à l'établi (1 cuivre, 2 bois), l'installer sur
+   le mécanisme au bord du canal, puis revenir voir Barnabé. Récompense :
+   150 pièces, et la roue tourne de nouveau.
+
+Les objets de quête n'apparaissent à l'établi que pendant leur quête, et les
+clients ne les commandent jamais. L'atelier continue de vivre pendant que
+Ferrus est au marché ou au moulin (les fabrications avancent, les clients
+attendent). Quand une quête est en cours et qu'un client attend, une
+deuxième ligne « Atelier : … » s'affiche sous l'objectif.
+
+## La sauvegarde
+
+La partie se sauvegarde **toute seule** : après chaque action importante,
+toutes les 5 secondes, et quand on quitte la page. Au retour, l'écran
+d'accueil propose **Continuer la partie** ou **Nouvelle partie** (il faut
+toucher deux fois pour confirmer, pour ne pas tout effacer par erreur).
+
+À savoir :
+
+- la sauvegarde reste **dans le navigateur de l'appareil** : la partie du
+  téléphone et celle de l'ordinateur sont séparées ;
+- effacer les données du site dans le navigateur efface aussi la partie ;
+- en navigation privée, le navigateur peut refuser de sauvegarder (le jeu
+  marche quand même, sans sauvegarde).
+
 ## Confort visuel
 
 Couleurs douces et chaudes, éclairage doux, aucun clignotement, aucune
@@ -127,9 +179,10 @@ d'animations », les engrenages et les marqueurs ne flottent plus.
 npm test
 ```
 
-(C'est la même chose que `node --test`.) 54 tests vérifient la quête,
-l'argent, les collisions et toute la gestion de l'atelier (dont une partie
-de 15 minutes jouée automatiquement). Tout doit être indiqué `pass`.
+(C'est la même chose que `node --test`.) 73 tests vérifient les quêtes,
+l'argent, les collisions dans les trois lieux, la gestion de l'atelier (dont
+une partie de 15 minutes jouée automatiquement) et la sauvegarde (y compris
+des sauvegardes abîmées ou trafiquées). Tout doit être indiqué `pass`.
 
 ## L'organisation des fichiers
 
@@ -139,15 +192,20 @@ de 15 minutes jouée automatiquement). Tout doit être indiqué `pass`.
 | `css/style.css` | L'apparence : couleurs, tailles de texte, boutons tactiles |
 | `js/logique.js` | **Les règles du jeu**, sans aucune 3D : plan de la place, collisions, quête, textes |
 | `js/logique-atelier.js` | **Les règles de l'atelier**, sans aucune 3D : matériaux, recettes, clients, améliorations, prix |
+| `js/logique-quetes.js` | **Le moteur de quêtes**, sans aucune 3D : les quêtes enchaînées décrites comme des données, leurs étapes et leurs textes |
+| `js/logique-zones.js` | **Les lieux**, sans aucune 3D : plan du marché et du moulin, sorties, portes fermées ou ouvertes, répliques de Léon |
+| `js/logique-sauvegarde.js` | Transforme la partie en texte et la relit en vérifiant tout |
 | `js/main.js` | Le chef d'orchestre : crée la scène 3D, la caméra, la lumière, et fait tourner le jeu |
 | `js/decor.js` | La place en 3D : sol, haies, arbres, puits, atelier, maison d'Odile, établi, lampe, comptoir, améliorations |
-| `js/personnages.js` | Ferrus (avec ses lunettes d'artisan), Odile, les clients, et leurs animations |
+| `js/decor-zones.js` | Le marché et le moulin en 3D : étals, fontaine, canal, roue à aubes, pales |
+| `js/personnages.js` | Ferrus (avec ses lunettes d'artisan), Odile, Capucine, Barnabé, Léon, les clients, et leurs animations |
 | `js/commandes.js` | Le clavier, le joystick tactile et le bouton « Interagir » |
 | `js/interface.js` | L'argent, l'objectif, la barre de fabrication, les petits messages, la boîte de dialogue |
 | `js/interface-atelier.js` | Le panneau de l'établi (onglets Fabriquer, Acheter, Améliorer) |
 | `lib/three/` | Three.js 0.186.1 (le moteur 3D), copié ici pour ne dépendre d'aucun site extérieur |
 | `tests/logique.test.js` | Les tests automatiques des règles de l'étape 1 |
 | `tests/atelier.test.js` | Les tests automatiques de la gestion de l'atelier |
+| `tests/etape3.test.js` | Les tests automatiques des quêtes, des lieux et de la sauvegarde |
 | `serveur.js` | Le petit serveur lancé par `npm start` |
 | `outils/copier-three.js` | Recopie Three.js de `node_modules` vers `lib/three/` (`npm run copier-three`) |
 | `outils/creer-zip.js` | Fabrique l'archive de sauvegarde (`npm run zip`) |
@@ -193,7 +251,7 @@ le jeu fonctionne toujours.
 ## La suite prévue
 
 - ~~**Étape 2** : la gestion de l'atelier (fabrication, stocks, clients, améliorations).~~ Fait.
-- **Étape 3** : plus de lieux, plus d'habitants, des quêtes enchaînées, la sauvegarde de la partie.
+- ~~**Étape 3** : plus de lieux, plus d'habitants, des quêtes enchaînées, la sauvegarde de la partie.~~ Fait.
 - **Étape 4** : la musique, les finitions pour téléphone, la publication.
 
 ## À améliorer plus tard
@@ -201,6 +259,9 @@ le jeu fonctionne toujours.
 - La démarche des personnages (bras et jambes) fait un peu « robot » : à
   rendre plus naturelle lors des finitions.
 - Les clients ne bloquent pas Ferrus : il peut passer à travers eux.
+- La quête de la lampe d'Odile utilise encore son code de l'étape 1 ; les
+  quêtes suivantes passent par le moteur de quêtes. On pourra l'y faire
+  entrer aussi, pour n'avoir qu'un seul système.
 
 ## Droits
 

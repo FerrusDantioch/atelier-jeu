@@ -16,6 +16,7 @@ export function creerInterface() {
     fabricationNom: $('fabrication-nom'),
     fabricationBarre: $('fabrication-barre'),
     objectif: $('objectif-texte'),
+    objectifSecondaire: $('objectif-secondaire'),
     messages: $('messages'),
     indice: $('indice'),
     boutonInteragir: $('bouton-interagir'),
@@ -33,8 +34,13 @@ export function creerInterface() {
   function majArgent(montant) {
     elements.argent.textContent = String(montant);
   }
-  function majObjectif(texte) {
+  // « secondaire » : une deuxième ligne plus petite (par exemple un client qui
+  // attend pendant une quête), ou null.
+  function majObjectif(texte, secondaire = null) {
     if (elements.objectif.textContent !== texte) elements.objectif.textContent = texte;
+    const ligne = secondaire || '';
+    if (elements.objectifSecondaire.textContent !== ligne) elements.objectifSecondaire.textContent = ligne;
+    elements.objectifSecondaire.hidden = !secondaire;
   }
 
   // --- Fabrication en cours (étape 2) ------------------------------------------------------
