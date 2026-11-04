@@ -21,6 +21,8 @@ habitants : chaque habitant a un problème à résoudre, ce sont les quêtes.
   un téléphone comme une application (il marche même sans connexion).
 - **Version 1.0.1** : les clients ne se laissent plus traverser, et toutes
   les quêtes (la lampe d'Odile comprise) passent par le même moteur.
+- **Version 1.1** : des personnages et un décor aux formes arrondies (fini
+  l'aspect « carré »), et de l'eau qui bouge doucement.
 
 ![L'atelier ouvert, avec des clients au comptoir](captures/pc-atelier.png)
 
@@ -231,13 +233,43 @@ tournent légèrement. À l'arrêt, ils respirent doucement.
 
 ![Ferrus qui marche, vu de profil, à six moments du pas](captures/marche-de-profil.png)
 
+## Des formes arrondies (version 1.1)
+
+Tout le jeu est dessiné par le code, avec des formes simples. Avant, c'étaient
+surtout des boîtes aux arêtes vives : un aspect très « carré ». Maintenant :
+
+- **les personnages** ont des bras et des jambes en « gélules » (aux bouts
+  ronds), un buste aux épaules arrondies, une tête bien ronde. Odile porte une
+  longue robe en cloche, les habitants ont de petits yeux, Barnabé a un pompon ;
+- **le décor** a des coins arrondis partout : murs, toits, haies, étals,
+  poteaux, tables. Les portes sont en arc, les arbres et les buissons sont
+  de grosses boules de feuillage, le puits et la fontaine ont un rebord rond ;
+- la lumière **glisse en douceur** sur les formes (au lieu de petites
+  facettes bien nettes).
+
+Ces formes arrondies sont fabriquées dans `js/formes.js`. Elles restent
+légères : le téléphone dessine à peu près le même nombre d'objets qu'avant.
+
+![Les personnages du jeu, aux formes arrondies](captures/personnages.png)
+
+## L'eau qui bouge (version 1.1)
+
+- Des **reflets clairs** ondulent lentement à la surface du puits, de la
+  fontaine et du canal ; dans le canal, ils glissent dans le sens du courant.
+- Des **ronds dans l'eau** s'élargissent puis s'effacent (dans le puits et
+  dans les deux vasques de la fontaine, où l'eau bouillonne doucement).
+- Quelques **feuilles flottent** au fil du canal du moulin.
+
+Tout est lent et peu contrasté : rien ne clignote. Si votre système demande
+« moins d'animations », l'eau reste immobile.
+
 ## Confort visuel et sonore
 
 Couleurs douces et chaudes, éclairage doux, aucun clignotement, aucune
 secousse de caméra. **Aucun son tant qu'on ne l'a pas activé** dans les
 options ; et même activés, musique et sons restent doux. Si votre système
 demande « moins d'animations », les engrenages et les marqueurs ne flottent
-plus, et le joystick ne glisse plus.
+plus, l'eau reste immobile, et le joystick ne glisse plus.
 
 ## Vérifier les règles du jeu (tests automatiques)
 
@@ -245,12 +277,13 @@ plus, et le joystick ne glisse plus.
 npm test
 ```
 
-(C'est la même chose que `node --test`.) 97 tests vérifient les quêtes,
+(C'est la même chose que `node --test`.) 104 tests vérifient les quêtes,
 l'argent, les collisions dans les trois lieux, la gestion de l'atelier (dont
 une partie de 15 minutes jouée automatiquement), la sauvegarde (y compris
 des sauvegardes abîmées ou trafiquées), les options, la musique (toutes les
-notes dans la gamme, pas de grand saut, des silences pour respirer) et les
-fichiers d'installation. Tout doit être indiqué `pass`.
+notes dans la gamme, pas de grand saut, des silences pour respirer), les
+formes arrondies (bonne taille, aucune surface à l'envers) et les fichiers
+d'installation. Tout doit être indiqué `pass`.
 
 ## L'organisation des fichiers
 
@@ -270,6 +303,8 @@ fichiers d'installation. Tout doit être indiqué `pass`.
 | `js/main.js` | Le chef d'orchestre : crée la scène 3D, la caméra, la lumière, et fait tourner le jeu |
 | `js/decor.js` | La place en 3D : sol, haies, arbres, puits, atelier, maison d'Odile, établi, lampe, comptoir, améliorations |
 | `js/decor-zones.js` | Le marché et le moulin en 3D : étals, fontaine, canal, roue à aubes, pales |
+| `js/formes.js` | Les formes de base aux bords arrondis : boîtes, cylindres, gélules, formes « tournées » comme un vase |
+| `js/eau.js` | L'eau qui bouge : reflets qui ondulent, ronds dans l'eau, feuilles au fil du canal |
 | `js/personnages.js` | Ferrus (avec ses lunettes d'artisan), Odile, Capucine, Barnabé, Léon, les clients, et leurs animations |
 | `js/commandes.js` | Le clavier, le joystick tactile (qui vient sous le pouce) et le bouton « Interagir » |
 | `js/interface.js` | L'argent, l'objectif, la barre de fabrication, les petits messages, la boîte de dialogue |
@@ -279,6 +314,7 @@ fichiers d'installation. Tout doit être indiqué `pass`.
 | `tests/atelier.test.js` | Les tests automatiques de la gestion de l'atelier |
 | `tests/etape3.test.js` | Les tests automatiques des quêtes, des lieux et de la sauvegarde |
 | `tests/etape4.test.js` | Les tests automatiques des options, de la musique et des fichiers d'installation |
+| `tests/formes.test.js` | Les tests automatiques des formes arrondies |
 | `manifest.webmanifest` | La « fiche d'identité » de l'application : nom, icône, couleurs, plein écran |
 | `sw.js` | Le « service worker » : garde une copie du jeu pour jouer sans connexion |
 | `icones/` | L'icône du jeu (un engrenage de cuivre et une flamme) : le dessin `icone.svg` et ses versions PNG |
@@ -323,7 +359,7 @@ https://ferrusdantioch.github.io/atelier-jeu/ . Dans les messageries, le
 lien s'affiche avec le titre du jeu et une image du marché.
 
 **Publier une nouvelle version** : changez le numéro de version (par exemple
-`1.0.1` → `1.0.2`) aux **trois** endroits suivants, puis envoyez sur `main` :
+`1.1.0` → `1.1.1`) aux **trois** endroits suivants, puis envoyez sur `main` :
 `package.json`, `js/logique-reglages.js` (`VERSION_JEU`) et `sw.js`
 (`VERSION`). Un test vérifie qu'ils sont identiques. Les téléphones qui ont
 installé le jeu reçoivent la nouvelle version à la prochaine ouverture avec

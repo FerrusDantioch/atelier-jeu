@@ -1,18 +1,54 @@
 // =============================================================================
-// personnages.js — Ferrus et Odile, en formes simples
+// personnages.js — Ferrus, Odile et les habitants, en formes simples et rondes
 // -----------------------------------------------------------------------------
 // Chaque personnage est un « groupe » : plusieurs formes assemblées (corps,
 // tête, bras, jambes…). Bouger le groupe fait bouger tout le personnage.
+// Depuis la version 1.1, toutes les formes sont arrondies (voir formes.js) :
+// bras et jambes en « gélules », buste et robes « tournés » comme un vase,
+// têtes bien rondes.
 // Par défaut, un personnage regarde vers le sud (vers la caméra, l'axe +z).
 // Les personnages projettent une ombre (contrairement au décor léger).
 // =============================================================================
 
 import * as THREE from '../lib/three/three.module.js';
 import { matiere } from './decor.js';
+import { boite, cylindre, boule, tour, gelule } from './formes.js';
+
+// Une tête bien ronde, et le dessus d'une tête (cheveux, bonnet…).
+const tete = (rayon) => new THREE.SphereGeometry(rayon, 20, 14);
+const calotte = (rayon) => new THREE.SphereGeometry(rayon, 20, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+
+// Un buste aux épaules arrondies, de y = bas à y = haut (en « tour » de potier).
+function buste(rayonBas, rayonHaut, bas, haut) {
+  const h = haut - bas;
+  return tour([
+    [0, bas],
+    [rayonBas - 0.01, bas],
+    [rayonBas, bas + h * 0.1],
+    [(rayonBas + rayonHaut) / 2, bas + h * 0.45],
+    [rayonHaut, bas + h * 0.8],
+    [rayonHaut * 0.92, bas + h * 0.9],
+    [rayonHaut * 0.7, bas + h * 0.97],
+    [rayonHaut * 0.35, bas + h],
+    [0, bas + h + 0.01],
+  ]);
+}
+
+// Un tablier de cuir (ou de toile) qui épouse le ventre : un morceau de
+// cylindre, visible des deux côtés.
+function tablier(rayon, hauteur) {
+  return new THREE.CylinderGeometry(rayon, rayon + 0.01, hauteur, 12, 1, true, -0.72, 1.44);
+}
+
+// Deux petits yeux sombres (pour les personnages sans lunettes d'artisan).
+function yeux(parent, y, z, ecart = 0.08) {
+  for (const cote of [-1, 1]) piece(parent, boule(0.024, 1), '#3b2a22', cote * ecart, y, z);
+}
 
 // Ajoute une forme au groupe, avec ombre portée.
+// « couleur » peut aussi être une matière toute faite (pour un tablier, par exemple).
 function piece(parent, forme, couleur, x, y, z) {
-  const m = new THREE.Mesh(forme, matiere(couleur));
+  const m = new THREE.Mesh(forme, typeof couleur === 'string' ? matiere(couleur) : couleur);
   m.position.set(x, y, z);
   m.castShadow = true;
   parent.add(m);
@@ -22,20 +58,25 @@ function piece(parent, forme, couleur, x, y, z) {
 // Un membre (bras ou jambe) en DEUX morceaux, comme un vrai membre :
 //   - le haut (cuisse ou bras) pivote depuis la hanche ou l'épaule ;
 //   - le bas (tibia ou avant-bras) pivote depuis le genou ou le coude.
+// Chaque morceau est une « gélule » (aux bouts ronds) : le genou et le coude
+// restent bien arrondis quand ils se plient.
 // On place chaque forme sous son point de rotation : en tournant ce point, le
 // morceau se balance. Renvoie le pivot du haut ; celui du bas est rangé dans
 // « pivot.userData.articulation ».
-function membre(parent, largeur, longueur, couleur, x, y, z, couleurBout, tailleBout) {
+// « bout » (facultatif) = { forme, couleur, z } : la botte ou la main.
+function membre(parent, largeur, longueur, couleur, x, y, z, bout) {
   const pivot = new THREE.Group();
   pivot.position.set(x, y, z);
   const haut = longueur * 0.52;
   const bas = longueur - haut;
-  piece(pivot, new THREE.BoxGeometry(largeur, haut + 0.02, largeur), couleur, 0, -haut / 2, 0);
+  const rayonHaut = largeur / 2;
+  const rayonBas = largeur * 0.46;
+  piece(pivot, gelule(rayonHaut, haut), couleur, 0, -haut / 2, 0);
   const articulation = new THREE.Group();
   articulation.position.y = -haut;
   pivot.add(articulation);
-  piece(articulation, new THREE.BoxGeometry(largeur * 0.92, bas, largeur * 0.92), couleur, 0, -bas / 2, 0);
-  if (couleurBout) piece(articulation, new THREE.BoxGeometry(tailleBout[0], tailleBout[1], tailleBout[2]), couleurBout, 0, -bas, tailleBout[3] || 0);
+  piece(articulation, gelule(rayonBas, bas - rayonBas), couleur, 0, -(bas - rayonBas) / 2, 0);
+  if (bout) piece(articulation, bout.forme, bout.couleur, 0, -bas, bout.z || 0);
   pivot.userData.articulation = articulation;
   parent.add(pivot);
   return pivot;
@@ -62,33 +103,37 @@ export function creerFerrus() {
   const cuivre = '#c47f3c';
 
   // Les jambes (avec les bottes).
-  const jambeG = membre(silhouette, 0.19, 0.58, pantalon, -0.12, 0.62, 0, bottes, [0.22, 0.12, 0.3, 0.04]);
-  const jambeD = membre(silhouette, 0.19, 0.58, pantalon, 0.12, 0.62, 0, bottes, [0.22, 0.12, 0.3, 0.04]);
+  const botte = { forme: boite(0.22, 0.13, 0.3, 0.06), couleur: bottes, z: 0.04 };
+  const jambeG = membre(silhouette, 0.19, 0.58, pantalon, -0.12, 0.62, 0, botte);
+  const jambeD = membre(silhouette, 0.19, 0.58, pantalon, 0.12, 0.62, 0, botte);
 
   // Le buste, la ceinture à outils et le tablier de cuir.
-  piece(corps, new THREE.CylinderGeometry(0.26, 0.3, 0.72, 8), chemise, 0, 0.98, 0);
-  piece(corps, new THREE.CylinderGeometry(0.31, 0.31, 0.1, 8), '#4a3226', 0, 0.7, 0);
-  piece(corps, new THREE.BoxGeometry(0.1, 0.08, 0.05), '#c99a4a', 0, 0.7, 0.3);
-  piece(corps, new THREE.BoxGeometry(0.42, 0.62, 0.05), cuir, 0, 0.83, 0.28);
-  piece(corps, new THREE.BoxGeometry(0.08, 0.14, 0.06), '#6b6660', -0.3, 0.62, 0.12); // une clé à molette à la ceinture
+  piece(corps, buste(0.3, 0.27, 0.62, 1.37), chemise, 0, 0, 0);
+  piece(corps, cylindre(0.31, 0.31, 0.1, 20, 0.03), '#4a3226', 0, 0.7, 0);
+  piece(corps, boite(0.1, 0.08, 0.05), '#c99a4a', 0, 0.7, 0.32);
+  piece(corps, tablier(0.305, 0.62), matiere(cuir, { side: THREE.DoubleSide }), 0, 0.83, 0);
+  piece(corps, boite(0.08, 0.14, 0.06), '#6b6660', -0.3, 0.62, 0.12); // une clé à molette à la ceinture
 
   // Les bras (avec les mains).
-  const brasG = membre(corps, 0.14, 0.56, chemise, -0.36, 1.28, 0, peau, [0.13, 0.13, 0.13]);
-  const brasD = membre(corps, 0.14, 0.56, chemise, 0.36, 1.28, 0, peau, [0.13, 0.13, 0.13]);
+  const main = { forme: boule(0.072, 2), couleur: peau };
+  const brasG = membre(corps, 0.14, 0.56, chemise, -0.36, 1.28, 0, main);
+  const brasD = membre(corps, 0.14, 0.56, chemise, 0.36, 1.28, 0, main);
 
-  // La tête, les cheveux et une barbe courte.
-  piece(corps, new THREE.IcosahedronGeometry(0.24, 1), peau, 0, 1.58, 0);
-  const coiffe = piece(corps, new THREE.SphereGeometry(0.255, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), cheveux, 0, 1.62, -0.02);
+  // La tête, les cheveux, le nez et une barbe courte.
+  piece(corps, tete(0.24), peau, 0, 1.58, 0);
+  const coiffe = piece(corps, calotte(0.255), cheveux, 0, 1.62, -0.02);
   coiffe.scale.set(1, 0.85, 1);
-  piece(corps, new THREE.BoxGeometry(0.3, 0.12, 0.12), cheveux, 0, 1.43, 0.14);
+  piece(corps, boule(0.04, 1), '#dcae8c', 0, 1.53, 0.24);
+  const barbe = piece(corps, boule(0.15, 2), cheveux, 0, 1.45, 0.12);
+  barbe.scale.set(1, 0.5, 0.6);
 
   // Les lunettes d'artisan : une sangle autour de la tête, deux verres cerclés de cuivre.
-  const sangle = piece(corps, new THREE.TorusGeometry(0.245, 0.03, 4, 16), '#3e2c22', 0, 1.62, 0);
+  const sangle = piece(corps, new THREE.TorusGeometry(0.245, 0.03, 8, 32), '#3e2c22', 0, 1.62, 0);
   sangle.rotation.x = Math.PI / 2;
   for (const cote of [-1, 1]) {
-    const cercle = piece(corps, new THREE.CylinderGeometry(0.085, 0.085, 0.09, 10), cuivre, cote * 0.1, 1.62, 0.22);
+    const cercle = piece(corps, cylindre(0.085, 0.085, 0.09, 20, 0.02), cuivre, cote * 0.1, 1.62, 0.22);
     cercle.rotation.x = Math.PI / 2;
-    const verre = piece(corps, new THREE.CylinderGeometry(0.062, 0.062, 0.02, 10), '#6f9e9b', cote * 0.1, 1.62, 0.27);
+    const verre = piece(corps, new THREE.CylinderGeometry(0.062, 0.062, 0.02, 20), '#6f9e9b', cote * 0.1, 1.62, 0.27);
     verre.rotation.x = Math.PI / 2;
   }
 
@@ -163,25 +208,30 @@ export function creerOdile() {
   const chale = '#c9a37b';
   const cheveux = '#cdc6bd';
 
-  piece(corps, new THREE.CylinderGeometry(0.22, 0.46, 0.98, 9), robe, 0, 0.49, 0);
-  piece(corps, new THREE.CylinderGeometry(0.19, 0.23, 0.42, 8), robe, 0, 1.17, 0);
-  piece(corps, new THREE.CylinderGeometry(0.25, 0.3, 0.2, 8), chale, 0, 1.3, 0);
+  // Une longue robe en cloche, d'une seule pièce (du sol jusqu'aux épaules).
+  piece(corps, tour([
+    [0, 0], [0.43, 0], [0.47, 0.04], [0.45, 0.18], [0.37, 0.48], [0.27, 0.8],
+    [0.22, 0.98], [0.21, 1.16], [0.19, 1.3], [0.12, 1.38], [0, 1.4],
+  ]), robe, 0, 0, 0);
+  // Le châle sur les épaules.
+  piece(corps, tour([[0.26, 1.16], [0.3, 1.22], [0.29, 1.32], [0.22, 1.4], [0.11, 1.44], [0, 1.45]]), matiere(chale, { side: THREE.DoubleSide }), 0, 0, 0);
   // Les bras repliés devant elle (comme si elle tenait ses mains).
   for (const cote of [-1, 1]) {
-    const bras = piece(corps, new THREE.BoxGeometry(0.12, 0.42, 0.12), chale, cote * 0.27, 1.1, 0.08);
+    const bras = piece(corps, gelule(0.065, 0.3), chale, cote * 0.27, 1.1, 0.08);
     bras.rotation.x = -0.5;
     bras.rotation.z = cote * 0.15;
   }
-  piece(corps, new THREE.IcosahedronGeometry(0.11, 0), peau, 0, 0.93, 0.25);
-  // La tête, les cheveux gris et le chignon.
-  piece(corps, new THREE.IcosahedronGeometry(0.22, 1), peau, 0, 1.6, 0);
-  const coiffe = piece(corps, new THREE.SphereGeometry(0.235, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), cheveux, 0, 1.63, -0.02);
+  const mains = piece(corps, boule(0.1, 2), peau, 0, 0.96, 0.26);
+  mains.scale.set(1.15, 0.9, 1);
+  // La tête, les yeux, les cheveux gris et le chignon.
+  piece(corps, tete(0.22), peau, 0, 1.6, 0);
+  yeux(corps, 1.6, 0.2);
+  const coiffe = piece(corps, calotte(0.235), cheveux, 0, 1.63, -0.02);
   coiffe.scale.set(1, 0.9, 1);
-  piece(corps, new THREE.IcosahedronGeometry(0.12, 0), cheveux, 0, 1.85, -0.1);
+  piece(corps, boule(0.12, 2), cheveux, 0, 1.85, -0.1);
   // De petites lunettes rondes.
   for (const cote of [-1, 1]) {
-    const lunette = piece(corps, new THREE.TorusGeometry(0.05, 0.012, 4, 10), '#8a5427', cote * 0.08, 1.6, 0.2);
-    lunette.rotation.y = 0;
+    piece(corps, new THREE.TorusGeometry(0.05, 0.012, 8, 20), '#8a5427', cote * 0.08, 1.6, 0.205);
   }
 
   odile.userData = { corps, temps: 0 };
@@ -231,39 +281,48 @@ export function creerPersonnage(t, numero = 0) {
   const corps = new THREE.Group();
   silhouette.add(corps);
 
-  const jambeG = membre(silhouette, 0.18, 0.58, t.bas, -0.12, 0.62, 0, '#3a2a20', [0.21, 0.12, 0.28, 0.04]);
-  const jambeD = membre(silhouette, 0.18, 0.58, t.bas, 0.12, 0.62, 0, '#3a2a20', [0.21, 0.12, 0.28, 0.04]);
-  if (t.jupe) piece(corps, new THREE.CylinderGeometry(0.27, 0.38, 0.5, 8), t.jupe, 0, 0.55, 0);
-  piece(corps, new THREE.CylinderGeometry(0.25, 0.29, 0.7, 8), t.haut, 0, 0.98, 0);
-  const brasG = membre(corps, 0.13, 0.54, t.haut, -0.35, 1.27, 0, t.peau, [0.12, 0.12, 0.12]);
-  const brasD = membre(corps, 0.13, 0.54, t.haut, 0.35, 1.27, 0, t.peau, [0.12, 0.12, 0.12]);
-  piece(corps, new THREE.IcosahedronGeometry(0.23, 1), t.peau, 0, 1.56, 0);
-  const coiffe = piece(corps, new THREE.SphereGeometry(0.245, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), t.cheveux, 0, 1.6, -0.02);
+  const chaussure = { forme: boite(0.21, 0.12, 0.28, 0.055), couleur: '#3a2a20', z: 0.04 };
+  const jambeG = membre(silhouette, 0.18, 0.58, t.bas, -0.12, 0.62, 0, chaussure);
+  const jambeD = membre(silhouette, 0.18, 0.58, t.bas, 0.12, 0.62, 0, chaussure);
+  // Une jupe évasée (ouverte en bas et en haut : le buste la recouvre).
+  if (t.jupe) {
+    piece(corps, tour([[0.37, 0.3], [0.39, 0.33], [0.35, 0.5], [0.29, 0.7], [0.26, 0.8]]), matiere(t.jupe, { side: THREE.DoubleSide }), 0, 0, 0);
+  }
+  piece(corps, buste(0.29, 0.26, 0.63, 1.35), t.haut, 0, 0, 0);
+  const main = { forme: boule(0.068, 2), couleur: t.peau };
+  const brasG = membre(corps, 0.13, 0.54, t.haut, -0.35, 1.27, 0, main);
+  const brasD = membre(corps, 0.13, 0.54, t.haut, 0.35, 1.27, 0, main);
+  piece(corps, tete(0.23), t.peau, 0, 1.56, 0);
+  yeux(corps, 1.58, 0.205);
+  const coiffe = piece(corps, calotte(0.245), t.cheveux, 0, 1.6, -0.02);
   coiffe.scale.set(1, 0.85, 1);
 
   // Le chapeau.
   if (t.chapeau === 'haut-de-forme') {
-    piece(corps, new THREE.CylinderGeometry(0.3, 0.3, 0.03, 10), t.couleurChapeau, 0, 1.76, 0);
-    piece(corps, new THREE.CylinderGeometry(0.18, 0.19, 0.32, 10), t.couleurChapeau, 0, 1.92, 0);
+    piece(corps, cylindre(0.3, 0.3, 0.035, 24, 0.015), t.couleurChapeau, 0, 1.76, 0);
+    piece(corps, cylindre(0.18, 0.19, 0.32, 20, 0.03), t.couleurChapeau, 0, 1.92, 0);
   } else if (t.chapeau === 'beret') {
-    const beret = piece(corps, new THREE.CylinderGeometry(0.27, 0.25, 0.08, 10), t.couleurChapeau, 0.03, 1.78, 0);
+    const beret = piece(corps, boule(0.27, 2), t.couleurChapeau, 0.03, 1.77, 0);
+    beret.scale.set(1, 0.32, 1);
     beret.rotation.z = 0.15;
   } else if (t.chapeau === 'casquette') {
-    piece(corps, new THREE.SphereGeometry(0.25, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2), t.couleurChapeau, 0, 1.68, 0);
-    piece(corps, new THREE.BoxGeometry(0.3, 0.03, 0.18), t.couleurChapeau, 0, 1.69, 0.24);
+    piece(corps, calotte(0.25), t.couleurChapeau, 0, 1.68, 0);
+    const visiere = piece(corps, cylindre(0.15, 0.15, 0.03, 20, 0.012), t.couleurChapeau, 0, 1.69, 0.2);
+    visiere.scale.set(1, 1, 0.75);
   } else if (t.chapeau === 'foulard') {
-    const foulard = piece(corps, new THREE.SphereGeometry(0.265, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), t.couleurChapeau, 0, 1.6, -0.02);
+    const foulard = piece(corps, calotte(0.265), t.couleurChapeau, 0, 1.6, -0.02);
     foulard.scale.set(1, 0.9, 1);
-    piece(corps, new THREE.IcosahedronGeometry(0.07, 0), t.couleurChapeau, 0, 1.55, -0.26);
+    piece(corps, boule(0.07, 2), t.couleurChapeau, 0, 1.55, -0.26);
   } else if (t.chapeau === 'bonnet') {
-    const bonnet = piece(corps, new THREE.ConeGeometry(0.22, 0.4, 8), t.couleurChapeau, 0, 1.92, -0.04);
+    const bonnet = piece(corps, new THREE.ConeGeometry(0.22, 0.4, 18), t.couleurChapeau, 0, 1.92, -0.04);
     bonnet.rotation.x = -0.35;
+    piece(corps, boule(0.06, 1), t.couleurChapeau, 0, 2.1, -0.11); // un petit pompon
   }
   // Un tablier sur le devant, et une sacoche en bandoulière.
-  if (t.tablier) piece(corps, new THREE.BoxGeometry(0.4, 0.58, 0.05), t.tablier, 0, 0.84, 0.28);
+  if (t.tablier) piece(corps, tablier(0.3, 0.58), matiere(t.tablier, { side: THREE.DoubleSide }), 0, 0.84, 0);
   if (t.sacoche) {
-    piece(corps, new THREE.BoxGeometry(0.1, 0.3, 0.28), t.sacoche, 0.33, 0.78, 0.05);
-    const bandouliere = piece(corps, new THREE.BoxGeometry(0.05, 0.75, 0.04), t.sacoche, 0.05, 1.05, 0.27);
+    piece(corps, boite(0.1, 0.3, 0.28, 0.04), t.sacoche, 0.33, 0.78, 0.05);
+    const bandouliere = piece(corps, boite(0.05, 0.75, 0.04), t.sacoche, 0.05, 1.05, 0.27);
     bandouliere.rotation.z = 0.6;
   }
 

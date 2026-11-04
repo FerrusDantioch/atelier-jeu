@@ -72,6 +72,7 @@ import {
 import { CLE_SAUVEGARDE, serialiserPartie, chargerPartie } from './logique-sauvegarde.js';
 import { construireDecor, creerEngrenageQuete, creerMarqueur, allumerLampe } from './decor.js';
 import { construireMarche, construireMoulin, creerPaleQuete } from './decor-zones.js';
+import { animerEau } from './eau.js';
 import {
   creerFerrus,
   animerFerrus,
@@ -770,6 +771,9 @@ function demarrer() {
       if (etat.atelier.fabrication) decor.rouageEtabli.rotation.z += dt * 2.5;
       if (decor.ameliorations.enseigne.visible) decor.ameliorations.enseigne.rotation.z += dt * 0.3;
       if (roueEstReparee()) lieux.moulin.decor.roue.tourne.rotation.z -= dt * 0.5;
+      // L'eau ondule, fait des ronds, et emporte quelques feuilles (version 1.1).
+      animerEau(tempsTotal);
+      for (const e of lieu.decor.eau || []) e.userData.animer(tempsTotal);
     }
 
     // --- La caméra suit Ferrus en douceur (sans secousse) ---
@@ -847,6 +851,18 @@ function demarrer() {
     position: () => ({ ...position }),
     zone: () => zone,
     dessin: () => ({ ...renderer.info.render }),
+    // Les triangles de chaque partie du lieu affiché (pour surveiller les performances).
+    triangles: () => {
+      const parties = {};
+      lieux[zone].scene.traverse((o) => {
+        if (!o.isMesh || !o.visible) return;
+        const g = o.geometry;
+        const n = ((g.index ? g.index.count : g.attributes.position.count) / 3) * (o.isInstancedMesh ? o.count : 1);
+        const nom = g.type + (o.isInstancedMesh ? " (x" + o.count + ")" : "");
+        parties[nom] = (parties[nom] || 0) + n;
+      });
+      return parties;
+    },
     clients3d: () => clients3d.size,
     positionsClients: () => [...clients3d.values()].map((c) => ({ x: c.objet.position.x, z: c.objet.position.z })),
     reglages,
