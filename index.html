@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<!-- « user-scalable=no » et « maximum-scale=1 » : sur téléphone, toucher
+     l'écran ne zoome pas. « viewport-fit=cover » : on utilise tout l'écran,
+     même autour de l'encoche de l'appareil photo. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="description" content="L'Atelier de Cuivrebourg : un petit jeu de gestion d'atelier steampunk en 3D, jouable dans le navigateur.">
+<meta name="author" content="Ferrus Dantioch">
+<meta name="theme-color" content="#3a2a1f">
+<title>L'Atelier de Cuivrebourg</title>
+<!-- Petite icône d'onglet : un engrenage dessiné en SVG, directement ici. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='11' fill='none' stroke='%23b87333' stroke-width='6' stroke-dasharray='4 3.2'/%3E%3Ccircle cx='16' cy='16' r='8' fill='%23b87333'/%3E%3Ccircle cx='16' cy='16' r='3' fill='%23f3e6cc'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- La scène 3D est dessinée dans ce cadre. -->
+<div id="scene" aria-hidden="true"></div>
+
+<!-- ===================== L'interface par-dessus la 3D ===================== -->
+<div id="interface" hidden>
+  <div id="haut">
+    <div id="argent" class="panneau" aria-label="Argent">
+      <span class="piece" aria-hidden="true"></span>
+      <span id="argent-valeur">0</span>&nbsp;pièces
+    </div>
+    <div id="objectif" class="panneau" role="status" aria-live="polite">
+      <div class="objectif-titre">Objectif</div>
+      <div id="objectif-texte"></div>
+    </div>
+  </div>
+
+  <!-- Les petits messages temporaires (« Engrenage ramassé 1/3 »). -->
+  <div id="messages" aria-live="polite"></div>
+
+  <!-- L'aide qui apparaît quand on est près de quelque chose. -->
+  <div id="indice" class="panneau" hidden></div>
+
+  <!-- Les commandes tactiles (visibles seulement sur écran tactile). -->
+  <div id="joystick" aria-hidden="true">
+    <div id="joystick-bouton"></div>
+  </div>
+  <button id="bouton-interagir" type="button">Interagir</button>
+
+  <!-- La boîte de dialogue. -->
+  <div id="dialogue" class="panneau" hidden>
+    <div id="dialogue-orateur"></div>
+    <p id="dialogue-texte"></p>
+    <div id="dialogue-choix"></div>
+    <div id="dialogue-suite">Suite ▸ <span class="aide-pc">E ou Espace</span><span class="aide-tactile">touchez la boîte</span></div>
+  </div>
+</div>
+
+<!-- ============================ Écran d'accueil ============================ -->
+<div id="accueil" class="ecran">
+  <div class="carte">
+    <h1>L'Atelier de Cuivrebourg</h1>
+    <p class="intro">Vous êtes <strong>Ferrus Dantioch</strong>, artisan-ingénieur. Vous reprenez un petit
+      atelier dans une ville en difficulté. Les habitants ont des problèmes&nbsp;: à vous de
+      fabriquer et de réparer ce qu'il faut&nbsp;!</p>
+
+    <div class="commandes">
+      <div class="bloc-commandes">
+        <h2>Sur ordinateur</h2>
+        <ul>
+          <li><kbd>Z</kbd> <kbd>Q</kbd> <kbd>S</kbd> <kbd>D</kbd> ou les <kbd>flèches</kbd>&nbsp;: se déplacer</li>
+          <li><kbd>E</kbd> ou <kbd>Espace</kbd>&nbsp;: parler, utiliser</li>
+        </ul>
+      </div>
+      <div class="bloc-commandes">
+        <h2>Sur téléphone</h2>
+        <ul>
+          <li>Joystick à gauche&nbsp;: se déplacer</li>
+          <li>Gros bouton à droite&nbsp;: <strong>Interagir</strong></li>
+        </ul>
+      </div>
+    </div>
+
+    <button id="bouton-commencer" type="button" disabled>Chargement…</button>
+  </div>
+</div>
+
+<!-- ============================ Écran d'erreur ============================= -->
+<div id="erreur" class="ecran" hidden>
+  <div class="carte">
+    <h1>Oups, le jeu ne peut pas démarrer</h1>
+    <p id="erreur-texte"></p>
+    <p class="petit" id="erreur-detail"></p>
+  </div>
+</div>
+
+<!-- Ce petit script classique (pas un module) s'exécute en premier. Il affiche
+     un message clair si le jeu ne peut pas se charger. -->
+<script>
+  // Affiche l'écran d'erreur avec un texte simple, et un détail technique.
+  window.afficherErreur = function (texte, detail) {
+    document.getElementById('erreur-texte').textContent = texte;
+    document.getElementById('erreur-detail').textContent = detail || '';
+    document.getElementById('erreur').hidden = false;
+    document.getElementById('accueil').hidden = true;
+    document.getElementById('interface').hidden = true;
+  };
+
+  // Page ouverte par double-clic : les navigateurs bloquent alors les modules.
+  if (location.protocol === 'file:') {
+    window.afficherErreur(
+      "La page a été ouverte directement depuis un fichier. Le navigateur bloque alors le jeu.",
+      "Solution : dans le dossier du jeu, lancez « npm start », puis ouvrez http://localhost:8080"
+    );
+  }
+
+  // Une erreur avant le démarrage du jeu : on l'affiche au lieu d'un écran figé.
+  window.addEventListener('error', function (evenement) {
+    if (!window.jeuDemarre) {
+      window.afficherErreur("Une erreur a empêché le jeu de se lancer.", evenement.message || '');
+    }
+  });
+</script>
+<!-- Le jeu lui-même. Si un fichier manque, « onerror » affiche un message. -->
+<script type="module" src="js/main.js"
+  onerror="afficherErreur('Un fichier du jeu n\'a pas pu être chargé.', 'Vérifiez votre connexion internet, puis rechargez la page.')"></script>
+</body>
+</html>

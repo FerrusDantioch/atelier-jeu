@@ -1,0 +1,17 @@
+{
+  "name": "atelier-cuivrebourg",
+  "version": "0.1.0",
+  "private": true,
+  "description": "L'Atelier de Cuivrebourg — prototype de jeu de gestion en 3D (étape 1).",
+  "type": "module",
+  "scripts": {
+    "start": "node serveur.js",
+    "test": "node --test",
+    "postinstall": "node outils/copier-three.js",
+    "copier-three": "node outils/copier-three.js",
+    "zip": "node outils/creer-zip.js"
+  },
+  "devDependencies": {
+    "three": "0.186.1"
+  }
+}
