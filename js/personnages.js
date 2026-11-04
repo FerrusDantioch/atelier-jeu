@@ -160,7 +160,21 @@ const TENUES = [
 ];
 
 export function creerHabitant(numero) {
-  const t = TENUES[numero % TENUES.length];
+  return creerPersonnage(TENUES[numero % TENUES.length], numero);
+}
+
+// Les tenues des personnages qui ont un nom (étape 3).
+export const TENUES_PNJ = {
+  // Capucine, la marchande : foulard, tablier rayé.
+  capucine: { peau: '#e9bf9b', haut: '#c98b7a', bas: '#5a4a42', cheveux: '#7a4a2e', chapeau: 'foulard', couleurChapeau: '#e3c27e', jupe: '#8a6a5e', tablier: '#efe2c4' },
+  // Barnabé, le meunier : tout blanc de farine, bonnet de meunier.
+  barnabe: { peau: '#dcae8c', haut: '#ece6da', bas: '#b9ad99', cheveux: '#6b5a4a', chapeau: 'bonnet', couleurChapeau: '#f3eee4', tablier: '#d8cdb8' },
+  // Léon, le facteur : uniforme bleu doux, casquette et sacoche.
+  leon: { peau: '#c99674', haut: '#6f86a6', bas: '#4a4f5c', cheveux: '#2f2723', chapeau: 'casquette', couleurChapeau: '#4f6585', sacoche: '#8a5a3a' },
+};
+
+// Crée un personnage à partir d'une tenue (voir TENUES et TENUES_PNJ).
+export function creerPersonnage(t, numero = 0) {
   const habitant = new THREE.Group();
   const corps = new THREE.Group();
   habitant.add(corps);
@@ -185,6 +199,20 @@ export function creerHabitant(numero) {
   } else if (t.chapeau === 'casquette') {
     piece(corps, new THREE.SphereGeometry(0.25, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2), t.couleurChapeau, 0, 1.68, 0);
     piece(corps, new THREE.BoxGeometry(0.3, 0.03, 0.18), t.couleurChapeau, 0, 1.69, 0.24);
+  } else if (t.chapeau === 'foulard') {
+    const foulard = piece(corps, new THREE.SphereGeometry(0.265, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), t.couleurChapeau, 0, 1.6, -0.02);
+    foulard.scale.set(1, 0.9, 1);
+    piece(corps, new THREE.IcosahedronGeometry(0.07, 0), t.couleurChapeau, 0, 1.55, -0.26);
+  } else if (t.chapeau === 'bonnet') {
+    const bonnet = piece(corps, new THREE.ConeGeometry(0.22, 0.4, 8), t.couleurChapeau, 0, 1.92, -0.04);
+    bonnet.rotation.x = -0.35;
+  }
+  // Un tablier sur le devant, et une sacoche en bandoulière.
+  if (t.tablier) piece(corps, new THREE.BoxGeometry(0.4, 0.58, 0.05), t.tablier, 0, 0.84, 0.28);
+  if (t.sacoche) {
+    piece(corps, new THREE.BoxGeometry(0.1, 0.3, 0.28), t.sacoche, 0.33, 0.78, 0.05);
+    const bandouliere = piece(corps, new THREE.BoxGeometry(0.05, 0.75, 0.04), t.sacoche, 0.05, 1.05, 0.27);
+    bandouliere.rotation.z = 0.6;
   }
 
   habitant.userData = { corps, jambeG, jambeD, brasG, brasD, phase: numero * 1.3 };

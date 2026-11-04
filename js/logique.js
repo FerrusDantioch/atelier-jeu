@@ -24,6 +24,13 @@ import {
   clientAuComptoir,
   servirClient,
 } from './logique-atelier.js';
+import {
+  creerEtatQuetes,
+  majDisponibilites,
+  objectifQuetes,
+  marqueursQuetes,
+  queteTerminee,
+} from './logique-quetes.js';
 
 // -----------------------------------------------------------------------------
 // 1. LE PLAN DE LA PLACE
@@ -159,8 +166,9 @@ export function calculerPas(entreeX, entreeZ, vitesse, dt) {
 // Résultat : la position corrigée. Cette méthode permet de « glisser » le long
 // d'un mur au lieu de rester bloqué net.
 export function resoudreCollisions(x, z, rayon, obstacles) {
-  // On répète quelques fois : sortir d'un obstacle peut en faire toucher un autre.
-  for (let passe = 0; passe < 4; passe++) {
+  // On répète plusieurs fois : sortir d'un obstacle peut en faire toucher un
+  // autre (dans un coin étroit, par exemple entre un mur et un personnage).
+  for (let passe = 0; passe < 12; passe++) {
     let corrige = false;
 
     for (const o of obstacles) {
@@ -262,6 +270,7 @@ export function creerEtatJeu() {
       engrenagesRamasses: [], // les identifiants des engrenages déjà ramassés
     },
     atelier: creerEtatAtelier(), // la gestion de l'atelier (étape 2)
+    quetes: creerEtatQuetes(),   // les quêtes enchaînées (étape 3)
   };
 }
 
@@ -291,11 +300,19 @@ export function objectifActuel(etat, monde = MONDE) {
     case ETAPES.LAMPE_REPAREE:
       return "Apporte la lampe réparée à Odile.";
     case ETAPES.TERMINEE:
-      // Quête finie : c'est maintenant la gestion de l'atelier qui guide le joueur.
-      return objectifAtelier(etat);
+      // Quête finie : la quête suivante guide le joueur ; s'il n'y en a plus,
+      // c'est la gestion de l'atelier.
+      return objectifQuetes(etat) || objectifAtelier(etat);
     default:
       return '';
   }
+}
+
+// Une deuxième ligne d'objectif, plus petite : quand une quête est en cours et
+// qu'un client attend au comptoir, on le rappelle (null sinon).
+export function objectifSecondaire(etat) {
+  if (etat.quete.etape !== ETAPES.TERMINEE || !objectifQuetes(etat)) return null;
+  return clientAuComptoir(etat) ? `Atelier : ${objectifAtelier(etat)}` : null;
 }
 
 // Les marqueurs flottants : faut-il en afficher un au-dessus d'Odile ? de
@@ -303,9 +320,10 @@ export function objectifActuel(etat, monde = MONDE) {
 export function marqueursActifs(etat) {
   const etape = etat.quete.etape;
   const atelier = marqueursAtelier(etat);
+  const quetes = marqueursQuetes(etat);
   return {
     odile: etape === ETAPES.PAS_COMMENCEE || etape === ETAPES.LAMPE_REPAREE,
-    etabli: etape === ETAPES.ENGRENAGES_REUNIS || atelier.etabli,
+    etabli: etape === ETAPES.ENGRENAGES_REUNIS || atelier.etabli || quetes.has('etabli'),
     comptoir: atelier.comptoir,
   };
 }
@@ -408,7 +426,13 @@ export function dialogueOdile(etat, monde = MONDE) {
     default:
       return {
         orateur: 'Odile',
-        repliques: ["Merci encore, Ferrus. Je parlerai de votre atelier à tout le quartier !"],
+        repliques: [
+          "Merci encore, Ferrus. Je parlerai de votre atelier à tout le quartier !",
+          // Un indice vers la quête suivante, tant qu'elle n'est pas finie.
+          queteTerminee(etat, 'balance-capucine')
+            ? 'On dit que vous aidez tout Cuivrebourg, maintenant. Je suis si fière !'
+            : 'Au fait : Capucine, la marchande, cherche un artisan habile. Le marché est derrière le portail du sud.',
+        ],
         choix: [{ texte: 'Au revoir', action: 'fermer' }],
       };
   }
@@ -454,5 +478,6 @@ export function livrerLampe(etat) {
   etat.quete.etape = ETAPES.TERMINEE;
   etat.argent += RECOMPENSE_LAMPE;
   // Odile va parler de l'atelier à tout le quartier : il ouvre ses portes.
-  return [`+${RECOMPENSE_LAMPE} pièces`, "Quête terminée : La lampe d'Odile", ...ouvrirAtelier(etat)];
+  // La quête suivante (celle de Capucine) devient disponible.
+  return [`+${RECOMPENSE_LAMPE} pièces`, "Quête terminée : La lampe d'Odile", ...ouvrirAtelier(etat), ...majDisponibilites(etat)];
 }

@@ -155,6 +155,10 @@ export function creerPanneauAtelier({ etat, surAction, surFermeture }) {
     for (const [id, r] of Object.entries(RECETTES)) {
       const carte = el('div', 'carte-atelier');
       const titre = el('div', 'carte-titre', r.nom);
+      if (r.quete) {
+        carte.classList.add('commandee');
+        titre.append(el('span', 'etiquette', 'Pour une quête'));
+      }
       if (client && client.commande === id) {
         carte.classList.add('commandee');
         titre.append(el('span', 'etiquette', `Commandé par ${client.nom}`));
@@ -162,6 +166,8 @@ export function creerPanneauAtelier({ etat, surAction, surFermeture }) {
       carte.append(titre);
 
       if (!recetteDebloquee(etat, id)) {
+        // Les objets de quête n'apparaissent que pendant leur quête.
+        if (r.quete) continue;
         carte.classList.add('verrouillee');
         carte.append(el('div', 'carte-detail', `Verrouillé : il faut les ${AMELIORATIONS[r.plans].nom.toLowerCase()} (onglet Améliorer).`));
         contenu.append(carte);
@@ -178,7 +184,9 @@ export function creerPanneauAtelier({ etat, surAction, surFermeture }) {
         ingredients.append(morceau);
       });
       carte.append(ingredients);
-      carte.append(el('div', 'carte-detail', `Durée : ${dureeFabrication(etat, id)} s · Vente : ${r.prixVente} pièces · En stock : ${a.stock[id]}`));
+      carte.append(el('div', 'carte-detail', r.quete
+        ? `Durée : ${dureeFabrication(etat, id)} s · En stock : ${a.stock[id]}`
+        : `Durée : ${dureeFabrication(etat, id)} s · Vente : ${r.prixVente} pièces · En stock : ${a.stock[id]}`));
 
       const verdict = peutFabriquer(etat, id);
       carte.append(bouton('Fabriquer', `fabriquer-${id}`, verdict.possible, () => surAction('fabriquer', id)));
