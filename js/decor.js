@@ -1,0 +1,484 @@
+// =============================================================================
+// decor.js — construit la place du village en 3D, avec des formes simples
+// -----------------------------------------------------------------------------
+// Tout est fait avec des formes de base (boîtes, cylindres, cônes…) : c'est le
+// style « low-poly ». Aucune image ni fichier 3D externe n'est nécessaire.
+//
+// Les positions viennent de MONDE (dans logique.js) : ainsi, ce qu'on voit
+// correspond exactement aux obstacles utilisés pour les collisions.
+//
+// Pour que le jeu reste fluide sur téléphone :
+//   - les objets répétés (arbres, buissons, pavés) sont des « InstancedMesh » :
+//     des centaines de copies dessinées en une seule fois ;
+//   - les matières (couleurs) sont partagées et réutilisées ;
+//   - seuls les bâtiments projettent une ombre (et les personnages, ailleurs).
+// =============================================================================
+
+import * as THREE from '../lib/three/three.module.js';
+
+// ----------------------------------------------------------------------------
+// Petits outils communs
+// ----------------------------------------------------------------------------
+
+// Une « matière » = la couleur et l'aspect d'une surface. On les garde en
+// mémoire pour ne jamais créer deux fois la même (économie de mémoire).
+const matieres = new Map();
+export function matiere(couleur, options = {}) {
+  const cle = couleur + JSON.stringify(options);
+  if (!matieres.has(cle)) {
+    // « Lambert » = un éclairage simple et doux, rapide à calculer.
+    // « flatShading » = chaque face a une couleur unie : l'effet facettes du low-poly.
+    matieres.set(cle, new THREE.MeshLambertMaterial({ color: couleur, flatShading: true, ...options }));
+  }
+  return matieres.get(cle);
+}
+
+// Crée un objet 3D (une forme + une matière) et le place.
+export function objet(forme, couleur, x = 0, y = 0, z = 0, options = {}) {
+  const maillage = new THREE.Mesh(forme, typeof couleur === 'string' ? matiere(couleur) : couleur);
+  maillage.position.set(x, y, z);
+  if (options.ombre) maillage.castShadow = true;
+  if (options.recoit) maillage.receiveShadow = true;
+  return maillage;
+}
+
+// Un toit à deux pans, avec le faîte (la ligne du haut) orienté vers la caméra.
+// - le « pignon » : le triangle de mur sous le toit (même couleur que les murs) ;
+// - les deux « pans » : deux planches inclinées qui dépassent un peu des murs.
+// Le soleil venant de la gauche, le pan gauche est plus clair que le droit :
+// on comprend tout de suite la forme du toit.
+function ajouterToit(parent, largeur, profondeur, hauteur, y, couleurToit, couleurPignon, ombre = false) {
+  const triangle = new THREE.Shape();
+  triangle.moveTo(-largeur / 2, 0);
+  triangle.lineTo(largeur / 2, 0);
+  triangle.lineTo(0, hauteur);
+  triangle.closePath();
+  const formePignon = new THREE.ExtrudeGeometry(triangle, { depth: profondeur, bevelEnabled: false });
+  formePignon.translate(0, 0, -profondeur / 2);
+  parent.add(objet(formePignon, couleurPignon, 0, y, 0, { ombre, recoit: true }));
+
+  const debord = 0.4;
+  const angle = Math.atan2(hauteur, largeur / 2);
+  const demi = largeur / 2 + debord;               // largeur horizontale d'un pan
+  const longueur = demi / Math.cos(angle);          // longueur réelle de la planche
+  const formePan = new THREE.BoxGeometry(longueur, 0.16, profondeur + debord * 2);
+  for (const cote of [-1, 1]) {
+    const pan = objet(formePan, couleurToit, cote * demi / 2, y + hauteur - (demi / 2) * Math.tan(angle) + 0.08, 0, { ombre, recoit: true });
+    pan.rotation.z = -cote * angle;
+    parent.add(pan);
+  }
+}
+
+// Un engrenage plat (avec des dents et un trou au milieu). Partagé entre les
+// engrenages de la quête et la décoration.
+export function formeEngrenage(rayon = 0.32, dents = 8, epaisseur = 0.09) {
+  const contour = new THREE.Shape();
+  const pas = (Math.PI * 2) / (dents * 4);
+  for (let i = 0; i < dents * 4; i++) {
+    // On alterne : bas de dent, haut de dent, haut de dent, bas de dent…
+    const r = i % 4 === 1 || i % 4 === 2 ? rayon : rayon * 0.76;
+    const angle = i * pas;
+    if (i === 0) contour.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
+    else contour.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+  }
+  contour.closePath();
+  const trou = new THREE.Path();
+  trou.absarc(0, 0, rayon * 0.3, 0, Math.PI * 2, true);
+  contour.holes.push(trou);
+  const forme = new THREE.ExtrudeGeometry(contour, { depth: epaisseur, bevelEnabled: false, curveSegments: 6 });
+  forme.center();
+  return forme;
+}
+
+// Un panneau avec du texte (« ATELIER ») : on dessine le texte sur une petite
+// image (un « canvas »), puis on l'applique sur un rectangle.
+function panneauTexte(texte, largeur, hauteur) {
+  const toile = document.createElement('canvas');
+  toile.width = 256;
+  toile.height = 64;
+  const ctx = toile.getContext('2d');
+  ctx.fillStyle = '#5e4330';
+  ctx.fillRect(0, 0, 256, 64);
+  ctx.strokeStyle = '#c48a4a';
+  ctx.lineWidth = 6;
+  ctx.strokeRect(3, 3, 250, 58);
+  ctx.fillStyle = '#f1dcb2';
+  ctx.font = 'bold 34px Georgia, serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(texte, 128, 34);
+  const texture = new THREE.CanvasTexture(toile);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return new THREE.Mesh(
+    new THREE.PlaneGeometry(largeur, hauteur),
+    new THREE.MeshLambertMaterial({ map: texture })
+  );
+}
+
+// Un petit générateur de « hasard » qui donne toujours la même suite de nombres :
+// les arbres et buissons ont donc toujours la même allure d'une partie à l'autre.
+function creerHasard(graine) {
+  let valeur = graine;
+  return () => {
+    valeur = (valeur * 16807) % 2147483647;
+    return (valeur - 1) / 2147483646;
+  };
+}
+
+// ----------------------------------------------------------------------------
+// Les couleurs du décor : douces, chaudes, peu saturées.
+// ----------------------------------------------------------------------------
+const COULEURS = {
+  herbe: '#a7b47c',
+  pavage: '#cdbc9e',
+  pave: '#bba98a',
+  chemin: '#c5b391',
+  pierre: '#a99d8d',
+  boisClair: '#9a7652',
+  boisFonce: '#5e4330',
+  brique: '#b67a5c',
+  cuivre: '#b87333',
+  vertDeGris: '#86a597',
+  creme: '#e7d6b4',
+  tuile: '#ab6c52',
+  haie: '#7d995e',
+  buisson: '#88a567',
+  feuillage: '#83a25e',
+  feuillageClair: '#98b46d',
+  tronc: '#7a5a3f',
+  eau: '#5d7d7c',
+  metal: '#6b6660',
+  laiton: '#c99a4a',
+  fenetre: '#f0cf8c',
+};
+
+// Les fenêtres ont une lueur chaude et douce (elles ne brillent pas fort).
+const matiereFenetre = new THREE.MeshLambertMaterial({ color: COULEURS.fenetre, emissive: '#7a5524', flatShading: true });
+
+// ----------------------------------------------------------------------------
+// Construction de toute la place
+// ----------------------------------------------------------------------------
+// Renvoie quelques objets que main.js doit pouvoir modifier pendant le jeu
+// (la lampe de l'établi, la lanterne d'Odile).
+export function construireDecor(scene, monde) {
+  construireSol(scene, monde);
+  construireHaies(scene, monde);
+  construireArbres(scene, monde);
+  construirePuits(scene, monde.puits);
+  construireAtelier(scene, monde.atelier);
+  construireMaisonOdile(scene, monde.maisonOdile);
+  const lampeEtabli = construireEtabli(scene, monde.etabli);
+  const lanterneOdile = construireLanterneOdile(scene, monde.maisonOdile);
+  return { lampeEtabli, lanterneOdile };
+}
+
+// --- Le sol : l'herbe, la place pavée et les chemins -------------------------
+function construireSol(scene, monde) {
+  // Une grande étendue d'herbe, qui se perd dans la brume au loin.
+  const herbe = objet(new THREE.PlaneGeometry(160, 160), COULEURS.herbe, 0, 0, 0, { recoit: true });
+  herbe.rotation.x = -Math.PI / 2;
+  scene.add(herbe);
+
+  // Les chemins (légèrement au-dessus de l'herbe pour ne pas « clignoter »).
+  const chemins = [
+    // [x, z, largeur, profondeur]
+    [monde.atelier.x, -4.5, 2.4, 6],     // vers la porte de l'atelier
+    [monde.maisonOdile.x, -4.5, 2.2, 6], // vers la porte d'Odile
+    [0, 9.5, 2.6, 6],                    // vers le portail du sud
+  ];
+  for (const [x, z, l, p] of chemins) {
+    const chemin = objet(new THREE.PlaneGeometry(l, p), COULEURS.chemin, x, 0.02, z, { recoit: true });
+    chemin.rotation.x = -Math.PI / 2;
+    scene.add(chemin);
+  }
+
+  // La place ronde, pavée, autour du puits.
+  const place = objet(new THREE.CircleGeometry(7.5, 28), COULEURS.pavage, monde.puits.x, 0.04, monde.puits.z, { recoit: true });
+  place.rotation.x = -Math.PI / 2;
+  scene.add(place);
+
+  // Quelques pavés plus foncés, tous dessinés d'un coup (InstancedMesh).
+  const hasard = creerHasard(7);
+  const nombre = 46;
+  const paves = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.32, 0.32, 0.02, 6), matiere(COULEURS.pave), nombre);
+  const m = new THREE.Matrix4();
+  let i = 0;
+  while (i < nombre) {
+    const angle = hasard() * Math.PI * 2;
+    const distance = 1.8 + hasard() * 5.3;
+    const x = monde.puits.x + Math.cos(angle) * distance;
+    const z = monde.puits.z + Math.sin(angle) * distance;
+    const echelle = 0.7 + hasard() * 0.6;
+    m.compose(new THREE.Vector3(x, 0.055, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, hasard() * 3, 0)), new THREE.Vector3(echelle, 1, echelle));
+    paves.setMatrixAt(i++, m);
+  }
+  paves.receiveShadow = true;
+  scene.add(paves);
+}
+
+// --- Les haies et le portail ---------------------------------------------------
+function construireHaies(scene, monde) {
+  const hauteur = 1.3;
+  const hasard = creerHasard(21);
+  const positionsBuissons = [];
+
+  for (const h of monde.haies) {
+    const haie = objet(new THREE.BoxGeometry(h.largeur, hauteur, h.profondeur), COULEURS.haie, h.x, hauteur / 2, h.z, { recoit: true });
+    scene.add(haie);
+    // Des « boules » de feuillage le long du dessus, pour un aspect plus naturel.
+    const longueur = Math.max(h.largeur, h.profondeur);
+    const surX = h.largeur > h.profondeur;
+    for (let d = -longueur / 2 + 0.6; d <= longueur / 2 - 0.4; d += 1.25) {
+      positionsBuissons.push([surX ? h.x + d : h.x, hauteur - 0.05, surX ? h.z : h.z + d, 0.55 + hasard() * 0.2]);
+    }
+  }
+
+  const buissons = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1, 0), matiere(COULEURS.buisson), positionsBuissons.length);
+  const m = new THREE.Matrix4();
+  positionsBuissons.forEach(([x, y, z, r], i) => {
+    m.compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, hasard() * 3, 0)), new THREE.Vector3(r, r * 0.8, r));
+    buissons.setMatrixAt(i, m);
+  });
+  scene.add(buissons);
+
+  // Le portail en bois, fermé (il mènera vers d'autres lieux dans une étape future).
+  const p = monde.portail;
+  const portail = new THREE.Group();
+  portail.position.set(p.x, 0, p.z);
+  const poteau = new THREE.BoxGeometry(0.3, 1.7, 0.3);
+  portail.add(objet(poteau, COULEURS.boisFonce, -p.largeur / 2, 0.85, 0));
+  portail.add(objet(poteau, COULEURS.boisFonce, p.largeur / 2, 0.85, 0));
+  for (let i = 0; i < 6; i++) {
+    // Les planches verticales.
+    portail.add(objet(new THREE.BoxGeometry(0.36, 1.25, 0.08), COULEURS.boisClair, -1.12 + i * 0.45, 0.72, 0));
+  }
+  const traverse = new THREE.BoxGeometry(p.largeur - 0.3, 0.12, 0.12);
+  portail.add(objet(traverse, COULEURS.boisFonce, 0, 0.4, 0.06));
+  portail.add(objet(traverse, COULEURS.boisFonce, 0, 1.05, 0.06));
+  scene.add(portail);
+}
+
+// --- Les arbres ----------------------------------------------------------------
+function construireArbres(scene, monde) {
+  const n = monde.arbres.length;
+  const troncs = new THREE.InstancedMesh(new THREE.CylinderGeometry(0.17, 0.25, 1.5, 6), matiere(COULEURS.tronc), n);
+  const bas = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(1.35, 0), matiere(COULEURS.feuillage), n);
+  const haut = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(0.95, 0), matiere(COULEURS.feuillageClair), n);
+  const hasard = creerHasard(3);
+  const m = new THREE.Matrix4();
+  const q = new THREE.Quaternion();
+
+  monde.arbres.forEach((a, i) => {
+    const taille = 0.85 + hasard() * 0.35;
+    q.setFromEuler(new THREE.Euler(0, hasard() * Math.PI, 0));
+    m.compose(new THREE.Vector3(a.x, 0.75 * taille, a.z), q, new THREE.Vector3(taille, taille, taille));
+    troncs.setMatrixAt(i, m);
+    m.compose(new THREE.Vector3(a.x, 2.1 * taille, a.z), q, new THREE.Vector3(taille, taille, taille));
+    bas.setMatrixAt(i, m);
+    m.compose(new THREE.Vector3(a.x + 0.15, 3.0 * taille, a.z - 0.1), q, new THREE.Vector3(taille, taille, taille));
+    haut.setMatrixAt(i, m);
+  });
+  // Les arbres ne projettent pas d'ombre (pour garder le jeu fluide).
+  scene.add(troncs, bas, haut);
+}
+
+// --- Le puits -------------------------------------------------------------------
+function construirePuits(scene, puits) {
+  const g = new THREE.Group();
+  g.position.set(puits.x, 0, puits.z);
+  g.add(objet(new THREE.CylinderGeometry(1.15, 1.25, 0.9, 10), COULEURS.pierre, 0, 0.45, 0));
+  g.add(objet(new THREE.CylinderGeometry(0.92, 0.92, 0.02, 10), COULEURS.eau, 0, 0.91, 0));
+  const poteau = new THREE.BoxGeometry(0.18, 1.9, 0.18);
+  g.add(objet(poteau, COULEURS.boisFonce, -1.0, 1.4, 0));
+  g.add(objet(poteau, COULEURS.boisFonce, 1.0, 1.4, 0));
+  ajouterToit(g, 2.2, 1.4, 0.75, 2.3, COULEURS.tuile, COULEURS.boisFonce);
+  // La manivelle et le seau.
+  const axe = objet(new THREE.CylinderGeometry(0.07, 0.07, 2.0, 6), COULEURS.boisClair, 0, 1.85, 0);
+  axe.rotation.z = Math.PI / 2;
+  g.add(axe);
+  g.add(objet(new THREE.CylinderGeometry(0.2, 0.16, 0.3, 8), COULEURS.cuivre, 0.3, 1.35, 0));
+  scene.add(g);
+}
+
+// --- Un bâtiment générique (murs, socle, toit, porte, fenêtres) ----------------
+function construireBatiment(scene, b, couleurs) {
+  const g = new THREE.Group();
+  g.position.set(b.x, 0, b.z);
+  const hauteurMurs = 3.0;
+  const avant = b.profondeur / 2; // la façade (côté sud, face à la caméra)
+
+  // Le socle en pierre et les murs.
+  g.add(objet(new THREE.BoxGeometry(b.largeur + 0.2, 0.4, b.profondeur + 0.2), COULEURS.pierre, 0, 0.2, 0, { ombre: true, recoit: true }));
+  g.add(objet(new THREE.BoxGeometry(b.largeur, hauteurMurs, b.profondeur), couleurs.murs, 0, 0.4 + hauteurMurs / 2, 0, { ombre: true, recoit: true }));
+
+  // Le toit, qui dépasse un peu des murs.
+  ajouterToit(g, b.largeur, b.profondeur, couleurs.hauteurToit, 0.4 + hauteurMurs, couleurs.toit, couleurs.murs, true);
+
+  // La porte.
+  g.add(objet(new THREE.BoxGeometry(1.3, 2.1, 0.12), COULEURS.boisFonce, couleurs.porteX, 1.45, avant + 0.05, { recoit: true }));
+  g.add(objet(new THREE.SphereGeometry(0.06, 6, 4), COULEURS.laiton, couleurs.porteX + 0.45, 1.4, avant + 0.14));
+
+  // Les fenêtres (avec un encadrement en bois).
+  for (const fx of couleurs.fenetres) {
+    g.add(objet(new THREE.BoxGeometry(1.25, 1.05, 0.08), COULEURS.boisFonce, fx, 2.05, avant + 0.03));
+    g.add(objet(new THREE.BoxGeometry(1.05, 0.85, 0.08), matiereFenetre, fx, 2.05, avant + 0.07));
+    g.add(objet(new THREE.BoxGeometry(0.06, 0.85, 0.1), COULEURS.boisFonce, fx, 2.05, avant + 0.09));
+  }
+
+  scene.add(g);
+  return { groupe: g, avant, hauteurMurs };
+}
+
+// --- L'atelier de Ferrus ----------------------------------------------------------
+function construireAtelier(scene, atelier) {
+  const porteX = 0;
+  const { groupe, avant, hauteurMurs } = construireBatiment(scene, atelier, {
+    murs: COULEURS.brique,
+    toit: COULEURS.vertDeGris, // un toit en cuivre patiné (vert-de-gris)
+    hauteurToit: 2.4,
+    porteX,
+    fenetres: [-2.6, 2.4],
+  });
+
+  // Le panneau « ATELIER » au-dessus de la porte.
+  const panneau = panneauTexte('ATELIER', 2.4, 0.6);
+  panneau.position.set(porteX, 2.95, avant + 0.08);
+  groupe.add(panneau);
+
+  // Deux engrenages décoratifs de part et d'autre du panneau.
+  const deco = formeEngrenage(0.3, 8, 0.06);
+  groupe.add(objet(deco, COULEURS.laiton, porteX - 1.5, 2.95, avant + 0.06));
+  groupe.add(objet(deco, COULEURS.cuivre, porteX + 1.5, 2.95, avant + 0.06));
+
+  // La cheminée en cuivre, et un tuyau le long du mur.
+  groupe.add(objet(new THREE.CylinderGeometry(0.32, 0.36, 2.4, 8), COULEURS.cuivre, -2.6, 0.4 + hauteurMurs + 1.4, -1.2, { ombre: true }));
+  groupe.add(objet(new THREE.CylinderGeometry(0.42, 0.42, 0.18, 8), '#8a5427', -2.6, 0.4 + hauteurMurs + 2.6, -1.2));
+  groupe.add(objet(new THREE.CylinderGeometry(0.09, 0.09, 3.0, 6), COULEURS.cuivre, -atelier.largeur / 2 + 0.25, 1.9, avant + 0.12));
+}
+
+// --- La maison d'Odile --------------------------------------------------------------
+function construireMaisonOdile(scene, maison) {
+  const { groupe, avant, hauteurMurs } = construireBatiment(scene, maison, {
+    murs: COULEURS.creme,
+    toit: COULEURS.tuile,
+    hauteurToit: 2.2,
+    porteX: 0,
+    fenetres: [-1.9, 1.9],
+  });
+  // Des jardinières fleuries sous les fenêtres.
+  for (const fx of [-1.9, 1.9]) {
+    groupe.add(objet(new THREE.BoxGeometry(1.2, 0.22, 0.3), COULEURS.boisClair, fx, 1.42, avant + 0.15));
+    for (let i = 0; i < 3; i++) {
+      groupe.add(objet(new THREE.IcosahedronGeometry(0.14, 0), i % 2 ? '#d9a08f' : '#e2c27e', fx - 0.35 + i * 0.35, 1.6, avant + 0.17));
+    }
+  }
+  // Une petite cheminée en briques.
+  groupe.add(objet(new THREE.BoxGeometry(0.6, 1.6, 0.6), COULEURS.brique, 1.8, 0.4 + hauteurMurs + 1.1, -0.9, { ombre: true }));
+}
+
+// --- La lampe à vapeur (sur l'établi, puis chez Odile) -----------------------------
+// Une lampe = un socle, un globe de verre, un chapeau et une anse.
+function creerLampe() {
+  const lampe = new THREE.Group();
+  lampe.add(objet(new THREE.CylinderGeometry(0.16, 0.2, 0.1, 8), COULEURS.laiton, 0, 0.05, 0));
+  // Le globe a sa propre matière : on change sa couleur quand la lampe s'allume.
+  const verre = new THREE.Mesh(
+    new THREE.IcosahedronGeometry(0.19, 1),
+    new THREE.MeshLambertMaterial({ color: '#b8ad94', emissive: '#000000', flatShading: true })
+  );
+  verre.position.y = 0.27;
+  lampe.add(verre);
+  lampe.add(objet(new THREE.ConeGeometry(0.17, 0.14, 8), COULEURS.cuivre, 0, 0.5, 0));
+  const anse = objet(new THREE.TorusGeometry(0.08, 0.018, 4, 10), COULEURS.cuivre, 0, 0.62, 0);
+  lampe.add(anse);
+  lampe.userData.verre = verre;
+  return lampe;
+}
+
+// Allume (lueur dorée douce) ou éteint (verre terne) une lampe.
+export function allumerLampe(lampe, allumee) {
+  const verre = lampe.userData.verre.material;
+  verre.color.set(allumee ? '#ffe2a6' : '#b8ad94');
+  verre.emissive.set(allumee ? '#b07a2c' : '#000000');
+}
+
+// --- L'établi devant l'atelier --------------------------------------------------------
+function construireEtabli(scene, etabli) {
+  const g = new THREE.Group();
+  g.position.set(etabli.x, 0, etabli.z);
+  const l = etabli.largeur;
+  const p = etabli.profondeur;
+  // Le plateau et les pieds.
+  g.add(objet(new THREE.BoxGeometry(l, 0.12, p), COULEURS.boisClair, 0, 0.92, 0));
+  const pied = new THREE.BoxGeometry(0.12, 0.88, 0.12);
+  for (const [px, pz] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {
+    g.add(objet(pied, COULEURS.boisFonce, px * (l / 2 - 0.12), 0.44, pz * (p / 2 - 0.12)));
+  }
+  g.add(objet(new THREE.BoxGeometry(l - 0.3, 0.08, p - 0.3), COULEURS.boisFonce, 0, 0.3, 0));
+  // Un étau en métal, et quelques outils.
+  g.add(objet(new THREE.BoxGeometry(0.3, 0.22, 0.26), COULEURS.metal, -0.85, 1.09, 0.15));
+  g.add(objet(new THREE.BoxGeometry(0.5, 0.05, 0.08), COULEURS.metal, -0.2, 1.0, 0.25));
+  g.add(objet(new THREE.CylinderGeometry(0.05, 0.05, 0.4, 6), COULEURS.cuivre, 0.05, 1.0, -0.2).rotateZ(Math.PI / 2));
+  scene.add(g);
+
+  // La lampe à réparer, posée sur l'établi.
+  const lampe = creerLampe();
+  lampe.position.set(etabli.x + 0.6, 0.98, etabli.z);
+  scene.add(lampe);
+  return lampe;
+}
+
+// --- La lanterne d'Odile (visible une fois la lampe livrée) ----------------------------
+function construireLanterneOdile(scene, maison) {
+  const g = new THREE.Group();
+  const avant = maison.z + maison.profondeur / 2;
+  // Une petite potence en bois fixée contre le mur, à droite de la porte.
+  g.position.set(maison.x + 1.05, 0, avant + 0.08);
+  g.add(objet(new THREE.BoxGeometry(0.12, 1.0, 0.1), COULEURS.boisFonce, 0, 2.3, 0));
+  g.add(objet(new THREE.BoxGeometry(0.1, 0.1, 0.5), COULEURS.boisFonce, 0, 2.75, 0.25));
+  const lampe = creerLampe();
+  lampe.position.set(0, 2.05, 0.42);
+  g.add(lampe);
+  allumerLampe(lampe, true);
+  g.visible = false;
+  scene.add(g);
+  return g;
+}
+
+// --- Les engrenages de la quête et les marqueurs --------------------------------------
+// Un engrenage à ramasser : il tourne doucement au-dessus d'un cercle clair posé
+// au sol, pour qu'on le repère facilement (sans clignoter).
+const formeEngrenageQuete = formeEngrenage(0.42, 8, 0.1);
+const matiereEngrenage = new THREE.MeshLambertMaterial({ color: COULEURS.laiton, emissive: '#4a3210', flatShading: true });
+export function creerEngrenageQuete() {
+  const g = new THREE.Group();
+  // Le « support » est incliné vers la caméra : on voit toujours l'engrenage de
+  // face (et pas par la tranche), même pendant qu'il tourne sur lui-même.
+  const support = new THREE.Group();
+  support.position.y = 0.65;
+  support.rotation.x = -0.87;
+  g.add(support);
+  const roue = new THREE.Mesh(formeEngrenageQuete, matiereEngrenage);
+  roue.castShadow = false;
+  support.add(roue);
+  const cercle = new THREE.Mesh(
+    new THREE.RingGeometry(0.55, 0.72, 24),
+    new THREE.MeshBasicMaterial({ color: '#f3dfb2', transparent: true, opacity: 0.75, depthWrite: false })
+  );
+  cercle.rotation.x = -Math.PI / 2;
+  cercle.position.y = 0.07;
+  g.add(cercle);
+  g.userData.roue = roue;
+  g.userData.support = support;
+  return g;
+}
+
+// Un marqueur flottant : un petit losange couleur ambre, discret.
+const formeMarqueur = new THREE.OctahedronGeometry(0.2, 0);
+const matiereMarqueur = new THREE.MeshLambertMaterial({ color: '#e3a95c', emissive: '#6a4216', flatShading: true });
+export function creerMarqueur() {
+  const marqueur = new THREE.Mesh(formeMarqueur, matiereMarqueur);
+  marqueur.scale.set(1, 1.5, 1);
+  marqueur.visible = false;
+  return marqueur;
+}

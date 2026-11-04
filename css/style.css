@@ -1,0 +1,382 @@
+/* ==========================================================================
+   style.css — l'apparence de l'interface (textes, panneaux, boutons)
+   --------------------------------------------------------------------------
+   Couleurs douces et chaudes (parchemin, cuivre, bois), aucun clignotement.
+   Les textes sont assez gros pour être lus sur un téléphone.
+   ========================================================================== */
+
+/* Les couleurs du jeu, rangées dans des « variables » pour les changer
+   facilement à un seul endroit. */
+:root {
+  --parchemin: #f3e6cc;
+  --parchemin-clair: #f8efdc;
+  --parchemin-fonce: #e3cfa8;
+  --encre: #3d2b1f;
+  --encre-douce: #6b5240;
+  --cuivre: #b87333;
+  --cuivre-fonce: #8a5427;
+  --ciel: #e9dcc3;
+  --ombre: 0 3px 10px rgba(50, 32, 18, 0.22);
+  --rayon: 14px;
+  /* Marges qui évitent l'encoche et les bords arrondis des téléphones. */
+  --marge-haut: max(12px, env(safe-area-inset-top));
+  --marge-bas: max(14px, env(safe-area-inset-bottom));
+  --marge-gauche: max(12px, env(safe-area-inset-left));
+  --marge-droite: max(12px, env(safe-area-inset-right));
+}
+
+/* La page occupe exactement l'écran, sans jamais défiler ni zoomer. */
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;   /* pas de « rebond » ni de rafraîchissement en tirant */
+  touch-action: none;          /* le navigateur ne fait ni défilement ni zoom au toucher */
+  background: var(--ciel);
+  color: var(--encre);
+  font-family: "Trebuchet MS", "Segoe UI", Roboto, system-ui, sans-serif;
+  font-size: 18px;
+  line-height: 1.35;
+  -webkit-text-size-adjust: 100%;
+  -webkit-user-select: none;
+  user-select: none;           /* pas de sélection de texte par appui long */
+  -webkit-tap-highlight-color: transparent; /* pas de flash bleu au toucher */
+  -webkit-touch-callout: none;
+}
+body { position: fixed; inset: 0; }
+
+[hidden] { display: none !important; }
+
+#scene, #scene canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+}
+
+h1, h2 { font-family: Georgia, "Times New Roman", serif; font-weight: bold; }
+
+button {
+  font: inherit;
+  color: inherit;
+  touch-action: manipulation;
+}
+
+/* Un « panneau » : le style commun des cadres façon parchemin cerclé de cuivre. */
+.panneau {
+  background: var(--parchemin);
+  border: 2px solid var(--cuivre);
+  border-radius: var(--rayon);
+  box-shadow: var(--ombre);
+}
+
+/* ---------------------------- Bandeau du haut ---------------------------- */
+#interface { position: absolute; inset: 0; pointer-events: none; }
+#interface > * { pointer-events: auto; }
+#interface > #haut, #interface > #messages, #interface > #indice { pointer-events: none; }
+
+#haut {
+  position: absolute;
+  top: var(--marge-haut);
+  left: var(--marge-gauche);
+  right: var(--marge-droite);
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+#argent {
+  flex: none;
+  padding: 8px 14px;
+  font-size: 20px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+/* Une pièce de cuivre dessinée en CSS. */
+.piece {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #e6b06e, var(--cuivre) 60%, var(--cuivre-fonce));
+  box-shadow: inset 0 0 0 2px rgba(90, 50, 20, 0.35);
+}
+
+#objectif {
+  margin-left: auto;
+  max-width: 460px;
+  padding: 8px 14px 10px;
+  font-size: 18px;
+}
+.objectif-titre {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cuivre-fonce);
+  font-weight: bold;
+}
+
+/* ------------------------ Messages temporaires -------------------------- */
+#messages {
+  position: absolute;
+  top: calc(var(--marge-haut) + 110px);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: min(90vw, 460px);
+}
+.message {
+  background: var(--parchemin-clair);
+  border: 2px solid var(--cuivre);
+  border-radius: 999px;
+  padding: 8px 20px;
+  font-size: 20px;
+  font-weight: bold;
+  text-align: center;
+  box-shadow: var(--ombre);
+  /* Apparition et disparition en fondu doux (pas de clignotement). */
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.message.visible { opacity: 1; }
+
+/* ------------------------- Aide d'interaction --------------------------- */
+#indice {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--marge-bas) + 12px);
+  transform: translateX(-50%);
+  padding: 8px 18px;
+  font-size: 19px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+#indice kbd { font-size: 16px; }
+
+kbd {
+  display: inline-block;
+  min-width: 1.4em;
+  padding: 1px 7px;
+  border: 2px solid var(--cuivre);
+  border-bottom-width: 3px;
+  border-radius: 7px;
+  background: var(--parchemin-clair);
+  font-family: inherit;
+  font-weight: bold;
+  text-align: center;
+}
+
+/* --------------------------- Commandes tactiles ------------------------- */
+/* Cachées par défaut, visibles quand le jeu détecte un écran tactile. */
+#joystick, #bouton-interagir { display: none; }
+
+body.tactile #joystick {
+  display: block;
+  position: absolute;
+  left: calc(var(--marge-gauche) + 8px);
+  bottom: calc(var(--marge-bas) + 8px);
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: rgba(243, 230, 204, 0.55);
+  border: 3px solid rgba(184, 115, 51, 0.75);
+  touch-action: none;
+}
+#joystick-bouton {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0 -32px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, #e3a868, var(--cuivre) 70%);
+  border: 3px solid var(--cuivre-fonce);
+  box-shadow: var(--ombre);
+}
+
+body.tactile #bouton-interagir {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  right: calc(var(--marge-droite) + 8px);
+  bottom: calc(var(--marge-bas) + 22px);
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 3px solid var(--cuivre-fonce);
+  background: radial-gradient(circle at 40% 35%, #f8efdc, var(--parchemin-fonce));
+  box-shadow: var(--ombre);
+  font-size: 19px;
+  font-weight: bold;
+  touch-action: none;
+}
+/* Quand il y a quelque chose à faire tout près, le bouton prend la couleur cuivre. */
+body.tactile #bouton-interagir.disponible {
+  background: radial-gradient(circle at 40% 35%, #e9b37a, var(--cuivre));
+  color: #fff8ec;
+}
+body.tactile #bouton-interagir.appuye { transform: scale(0.95); }
+
+/* Sur écran tactile, l'aide d'interaction se place au-dessus des commandes. */
+body.tactile #indice { bottom: calc(var(--marge-bas) + 175px); }
+
+/* Pendant un dialogue, on cache les commandes de déplacement. */
+body.dialogue-ouvert #joystick,
+body.dialogue-ouvert #bouton-interagir,
+body.dialogue-ouvert #indice { display: none !important; }
+
+/* ---------------------------- Boîte de dialogue ------------------------- */
+#dialogue {
+  position: absolute;
+  left: 50%;
+  bottom: var(--marge-bas);
+  transform: translateX(-50%);
+  width: min(calc(100% - 24px), 720px);
+  box-sizing: border-box;
+  padding: 14px 20px 12px;
+  background: var(--parchemin-clair);
+  cursor: pointer;
+}
+#dialogue-orateur {
+  font-family: Georgia, serif;
+  font-weight: bold;
+  font-size: 20px;
+  color: var(--cuivre-fonce);
+}
+#dialogue-texte {
+  margin: 6px 0 10px;
+  font-size: 21px;
+  line-height: 1.4;
+}
+#dialogue-choix {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+#dialogue-choix:empty { display: none; }
+.choix {
+  flex: 1 1 160px;
+  min-height: 54px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 2px solid var(--cuivre);
+  background: var(--parchemin);
+  font-size: 20px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.choix.selectionne {
+  background: var(--cuivre);
+  color: #fff8ec;
+  border-color: var(--cuivre-fonce);
+}
+#dialogue-suite {
+  text-align: right;
+  font-size: 15px;
+  color: var(--encre-douce);
+}
+.aide-tactile { display: none; }
+body.tactile .aide-tactile { display: inline; }
+body.tactile .aide-pc { display: none; }
+
+/* ------------------------ Écrans d'accueil et d'erreur ------------------ */
+.ecran {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--marge-haut) var(--marge-droite) var(--marge-bas) var(--marge-gauche);
+  background: rgba(233, 220, 195, 0.72);
+  overflow-y: auto;
+  touch-action: pan-y; /* on peut faire défiler l'accueil si l'écran est très petit */
+  box-sizing: border-box;
+}
+.carte {
+  width: min(100%, 640px);
+  box-sizing: border-box;
+  margin: auto;
+  padding: 22px 24px;
+  background: var(--parchemin-clair);
+  border: 3px solid var(--cuivre);
+  border-radius: 18px;
+  box-shadow: var(--ombre);
+  text-align: center;
+}
+.carte h1 {
+  margin: 0 0 10px;
+  font-size: clamp(26px, 6vw, 36px);
+  color: var(--cuivre-fonce);
+}
+.carte .intro { margin: 0 0 16px; font-size: 18px; }
+.commandes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+  text-align: left;
+}
+.bloc-commandes {
+  flex: 1 1 230px;
+  padding: 10px 14px;
+  background: var(--parchemin);
+  border-radius: 12px;
+  border: 1px solid var(--parchemin-fonce);
+}
+.bloc-commandes h2 { margin: 0 0 6px; font-size: 19px; }
+.bloc-commandes ul { margin: 0; padding-left: 0; list-style: none; }
+.bloc-commandes li { margin: 6px 0; }
+
+#bouton-commencer {
+  min-width: 220px;
+  min-height: 58px;
+  padding: 12px 28px;
+  border-radius: 14px;
+  border: 3px solid var(--cuivre-fonce);
+  background: var(--cuivre);
+  color: #fff8ec;
+  font-size: 22px;
+  font-weight: bold;
+  cursor: pointer;
+}
+#bouton-commencer:disabled { opacity: 0.6; cursor: wait; }
+#bouton-commencer:focus-visible, .choix:focus-visible { outline: 3px solid var(--encre); outline-offset: 2px; }
+
+.petit { font-size: 15px; color: var(--encre-douce); word-break: break-word; }
+
+/* ----------------------- Petits écrans (téléphones) --------------------- */
+@media (max-width: 600px) {
+  html, body { font-size: 17px; }
+  #haut { flex-wrap: wrap; }
+  #objectif { margin-left: 0; flex: 1 1 200px; font-size: 17px; }
+  #argent { font-size: 18px; }
+  .message { font-size: 18px; }
+  #dialogue-texte { font-size: 19px; }
+  .choix { font-size: 18px; }
+}
+
+/* Téléphone tenu à l'horizontale : peu de hauteur, on resserre. */
+@media (max-height: 480px) {
+  body.tactile #indice { bottom: calc(var(--marge-bas) + 12px); }
+  body.tactile #joystick { width: 130px; height: 130px; }
+  body.tactile #bouton-interagir { width: 104px; height: 104px; }
+  #dialogue-texte { margin: 4px 0 8px; }
+  .carte { padding: 14px 18px; }
+  .carte .intro { margin-bottom: 10px; }
+}
+
+/* Si l'utilisateur a demandé moins d'animations dans son système. */
+@media (prefers-reduced-motion: reduce) {
+  .message { transition: none; }
+}
