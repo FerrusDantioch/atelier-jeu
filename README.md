@@ -105,6 +105,7 @@ l'argent et les collisions. Tout doit être indiqué `pass`.
 | `atelier-cuivrebourg.zip` | Une sauvegarde de tout le projet (sans `node_modules`) |
 | `captures/` | Des captures d'écran du jeu (ordinateur et téléphone) |
 | `package.json` | La fiche du projet : nom, commandes, version de Three.js |
+| `LICENSE` | La licence du code (Creative Commons BY-NC-ND 4.0) |
 
 Le dossier `node_modules` (créé par `npm install`) n'est pas envoyé sur
 GitHub : le fichier `.gitignore` l'en empêche.
@@ -148,6 +149,14 @@ le jeu fonctionne toujours.
 
 ## Droits
 
-Code, textes et personnages © 2026 Ferrus Dantioch, tous droits réservés
-(aucune licence n'a encore été choisie pour ce dépôt).
-Three.js est un logiciel libre sous licence MIT (voir `lib/three/LICENSE`).
+**Code : © 2026 Ferrus Dantioch — Creative Commons BY-NC-ND 4.0**
+([résumé de la licence en français](https://creativecommons.org/licenses/by-nc-nd/4.0/deed.fr)),
+la même licence que pour l'Omni-système. En clair : le partage est autorisé,
+à l'identique et en citant l'auteur ; l'usage commercial est interdit ; la
+modification et les œuvres dérivées sont interdites. Le logiciel est fourni
+« en l'état », sans aucune garantie. Texte complet dans le fichier
+[LICENSE](LICENSE) : le texte officiel en anglais, suivi de la traduction
+française officielle publiée par Creative Commons.
+
+**Three.js** (le dossier `lib/three/`) n'est pas concerné : c'est un logiciel
+libre d'un autre auteur, sous licence MIT (voir `lib/three/LICENSE`).
