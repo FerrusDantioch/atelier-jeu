@@ -6,6 +6,8 @@
 //    dans sa propre « scène » avec sa lumière, son décor et ses personnages.
 // 3. Branche les commandes (clavier, tactile), l'interface (textes) et la
 //    sauvegarde automatique.
+//    Étape 4 : les options (musique douce, petits sons, qualité de l'image),
+//    et l'installation du jeu comme une application (service worker).
 // 4. Lance la « boucle de jeu » : environ 60 fois par seconde, on déplace
 //    Ferrus, on vérifie ce qu'il touche, on bouge la caméra et on redessine
 //    le lieu où il se trouve.
@@ -83,6 +85,9 @@ import {
 import { creerCommandes } from './commandes.js';
 import { creerInterface } from './interface.js';
 import { creerPanneauAtelier } from './interface-atelier.js';
+import { creerPanneauOptions } from './interface-options.js';
+import { CLE_REGLAGES, VERSION_JEU, lireReglages, ecrireReglages, parametresQualite } from './logique-reglages.js';
+import { creerAudio } from './musique.js';
 
 // -----------------------------------------------------------------------------
 // 1. La 3D est-elle disponible ?
@@ -139,19 +144,52 @@ function effacerSauvegarde() {
   }
 }
 
+// Les réglages (musique, sons, qualité) sont rangés à part de la partie.
+function lireReglagesNavigateur() {
+  try {
+    return lireReglages(window.localStorage.getItem(CLE_REGLAGES));
+  } catch {
+    return lireReglages(null);
+  }
+}
+function ecrireReglagesNavigateur(reglages) {
+  try {
+    window.localStorage.setItem(CLE_REGLAGES, ecrireReglages(reglages));
+  } catch {
+    // Tant pis : les réglages resteront valables jusqu'à la fermeture de la page.
+  }
+}
+
+// Le « service worker » (sw.js) permet de jouer sans connexion et d'installer
+// le jeu. Il ne marche que sur un site sécurisé (https) ou sur son ordinateur.
+function enregistrerServiceWorker() {
+  const local = ['localhost', '127.0.0.1'].includes(location.hostname);
+  if (!('serviceWorker' in navigator) || (location.protocol !== 'https:' && !local)) return;
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {
+      // Sans service worker, le jeu marche quand même (mais pas hors ligne).
+    });
+  });
+}
+enregistrerServiceWorker();
+
 function demarrer() {
   // Économie d'énergie pour les téléphones.
   const tactile = window.matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
   // Si le système demande moins d'animations, les objets ne flottent plus.
   const moinsDeMouvement = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Les options du joueur (étape 4) et le synthétiseur de musique.
+  const reglages = lireReglagesNavigateur();
+  const audio = creerAudio();
+  audio.regler(reglages);
 
   // ---------------------------------------------------------------------------
   // 2. Le moteur 3D et les lieux
   // ---------------------------------------------------------------------------
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
   // Le « pixel ratio » : sur les écrans très fins, on ne dessine pas plus de 1,5
-  // pixel par point. L'image reste nette et le téléphone ne chauffe pas.
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  // pixel par point (1 seul en mode « Économie »). L'image reste nette et le
+  // téléphone ne chauffe pas. Voir appliquerQualite() plus bas.
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -167,6 +205,7 @@ function demarrer() {
   const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.5, 120);
 
   // Une scène vide avec le ciel, la brume et la lumière (la même pour chaque lieu).
+  const soleils = []; // le « soleil » de chaque lieu (pour couper les ombres en mode Économie)
   function creerSceneDeBase() {
     const scene = new THREE.Scene();
     // Un ciel couleur sable doux et une brume légère qui cache l'horizon.
@@ -186,6 +225,7 @@ function demarrer() {
     soleil.shadow.bias = -0.0005;
     soleil.shadow.normalBias = 0.03;
     scene.add(soleil, soleil.target);
+    soleils.push(soleil);
     return scene;
   }
 
@@ -268,6 +308,17 @@ function demarrer() {
   ferrus.position.set(MONDE.joueur.x, 0, MONDE.joueur.z);
   lieux.place.scene.add(ferrus);
 
+  // La qualité de l'image (option « Normale » ou « Économie »).
+  let imagesParSeconde = 60;
+  function appliquerQualite() {
+    const q = parametresQualite(reglages.qualite, window.devicePixelRatio || 1);
+    renderer.setPixelRatio(q.pixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    for (const soleil of soleils) soleil.castShadow = q.ombres;
+    imagesParSeconde = q.imagesParSeconde;
+  }
+  appliquerQualite();
+
   // ---------------------------------------------------------------------------
   // 3. L'état du jeu, l'interface et les commandes
   // ---------------------------------------------------------------------------
@@ -294,9 +345,30 @@ function demarrer() {
     },
     surFermeture: () => commandes.relacherTout(),
   });
+  // Le panneau des options (étape 4). À chaque changement : on enregistre les
+  // réglages, puis on les applique (son, image).
+  const options = creerPanneauOptions({
+    reglages,
+    surChangement: (cle) => {
+      ecrireReglagesNavigateur(reglages);
+      audio.regler(reglages);
+      audio.preparer(); // on est dans un geste du joueur : le son a le droit de démarrer
+      if (cle === 'qualite') appliquerQualite();
+      // Un petit son d'essai quand on active les sons ou qu'on change leur volume.
+      if ((cle === 'sons' || cle === 'volumeSons') && reglages.sons) setTimeout(() => audio.jouerSon('ramasser'), 150);
+    },
+    surFermeture: () => {
+      commandes.relacherTout();
+      tempsPrecedent = performance.now();
+    },
+    estDisponible: () => !ui.dialogueOuvert() && !panneau.estOuvert() && !enTransition,
+    afficherMessage: (texte) => ui.afficherMessage(texte),
+  });
+  const enPause = () => options.estOuvert();
+
   const commandes = creerCommandes({
-    // Les commandes du jeu sont en pause pendant que le panneau est ouvert.
-    estActif: () => jeuActif && !panneau.estOuvert(),
+    // Les commandes du jeu sont en pause pendant que le panneau ou les options sont ouverts.
+    estActif: () => jeuActif && !panneau.estOuvert() && !enPause(),
     surInteraction: interagir,
     surNavigation: (sens) => {
       if (ui.dialogueOuvert()) ui.changerChoix(sens);
@@ -317,7 +389,11 @@ function demarrer() {
   });
 
   // Met à jour tout ce qui dépend de l'état du jeu (et sauvegarde).
+  let argentPrecedent = etat.argent;
   function majEtat() {
+    // Des pièces gagnées : une petite clochette (si les sons sont activés).
+    if (jeuActif && etat.argent > argentPrecedent) audio.jouerSon('pieces');
+    argentPrecedent = etat.argent;
     ui.majArgent(etat.argent);
     ui.majObjectif(objectifActuel(etat), objectifSecondaire(etat));
     obstacles = obstaclesZone(zone, etat);
@@ -442,6 +518,7 @@ function demarrer() {
 
   function placerDansLieu(nouveauLieu, x, z, orientation) {
     zone = nouveauLieu;
+    audio.changerAmbiance(zone); // chaque lieu a sa musique
     lieux[zone].scene.add(ferrus); // Ferrus quitte l'ancienne scène et entre dans la nouvelle
     obstacles = obstaclesZone(zone, etat);
     // Sécurité : si le point d'arrivée touche un obstacle, on le pousse dehors.
@@ -585,8 +662,15 @@ function demarrer() {
   // ---------------------------------------------------------------------------
   let tempsPrecedent = performance.now();
   let tempsTotal = 0;
+  let dernierDessin = 0;
 
   function boucle(maintenant) {
+    // Mode « Économie » : on ne dessine qu'une image sur deux (30 par seconde).
+    if (imagesParSeconde < 60 && maintenant - dernierDessin < 1000 / imagesParSeconde - 4) {
+      requestAnimationFrame(boucle);
+      return;
+    }
+    dernierDessin = maintenant;
     // dt = le temps écoulé depuis l'image précédente (limité, pour éviter les
     // grands sauts quand on revient sur l'onglet après une pause).
     const dt = Math.min(0.05, Math.max(0, (maintenant - tempsPrecedent) / 1000));
@@ -595,8 +679,13 @@ function demarrer() {
     const lieu = lieux[zone];
 
     // --- L'atelier vit, même quand Ferrus est ailleurs (fabrication, clients) ---
-    if (jeuActif) {
+    // (Pendant les options, le jeu est en pause : l'atelier attend aussi.)
+    if (jeuActif && !enPause()) {
+      const fabricationAvant = etat.atelier.fabrication;
+      const clientsAvant = etat.atelier.clients.length;
       const evenements = avancerTemps(etat, dt);
+      if (fabricationAvant && !etat.atelier.fabrication) audio.jouerSon('fabrication');
+      else if (etat.atelier.clients.length > clientsAvant) audio.jouerSon('client');
       if (evenements.length > 0) {
         // Une fabrication finie peut faire avancer une quête.
         afficherMessages([...evenements, ...verifierQuetes(etat)]);
@@ -608,11 +697,11 @@ function demarrer() {
       // Sauvegarde de sécurité toutes les 5 secondes.
       if (maintenant - derniereSauvegarde > 5000) sauvegarder();
     }
-    animerClients(dt);
+    if (!enPause()) animerClients(dt);
 
     // --- Déplacement de Ferrus ---
     let vitesse = 0;
-    if (jeuActif && !enTransition && !ui.dialogueOuvert() && !panneau.estOuvert()) {
+    if (jeuActif && !enTransition && !ui.dialogueOuvert() && !panneau.estOuvert() && !enPause()) {
       const direction = commandes.direction();
       const { dx, dz } = calculerPas(direction.x, direction.z, MONDE.joueur.vitesse, dt);
       const avant = position;
@@ -626,6 +715,7 @@ function demarrer() {
         ...ramasserObjetsQuete(etat, zone, position.x, position.z),
       ];
       if (messages.length > 0) {
+        audio.jouerSon('ramasser');
         afficherMessages(messages);
         majEtat();
       }
@@ -707,15 +797,16 @@ function demarrer() {
   boutonCommencer.disabled = false;
   boutonCommencer.textContent = sauvegarde ? 'Continuer la partie' : 'Commencer';
   boutonNouvelle.hidden = !sauvegarde;
-  infoSauvegarde.textContent = sauvegarde
+  infoSauvegarde.textContent = `${sauvegarde
     ? 'Une partie est sauvegardée sur cet appareil.'
-    : 'La partie se sauvegarde toute seule sur cet appareil.';
+    : 'La partie se sauvegarde toute seule sur cet appareil.'} Version ${VERSION_JEU}.`;
   boutonCommencer.focus();
 
   function lancerJeu() {
     document.getElementById('accueil').hidden = true;
     document.getElementById('interface').hidden = false;
     if (document.activeElement) document.activeElement.blur();
+    argentPrecedent = etat.argent; // pas de clochette pour l'argent d'une partie reprise
     jeuActif = true;
     tempsPrecedent = performance.now();
     majEtat();
@@ -754,5 +845,9 @@ function demarrer() {
     zone: () => zone,
     dessin: () => ({ ...renderer.info.render }),
     clients3d: () => clients3d.size,
+    reglages,
+    audio: () => audio.etat(),
+    imagesParSeconde: () => imagesParSeconde,
+    ombres: () => soleils.every((s) => s.castShadow),
   };
 }

@@ -626,3 +626,157 @@ body.panneau-ouvert #messages {
 }
 #bouton-nouvelle.attention { border-color: #9a4a2a; color: #9a4a2a; }
 #info-sauvegarde { margin: 10px 0 0; }
+
+/* ==========================================================================
+   ÉTAPE 4 : les options, le joystick qui suit le pouce, les finitions
+   ========================================================================== */
+
+/* --- Le bouton ⚙ des options, dans le bandeau du haut --- */
+#bouton-options {
+  flex: none;
+  pointer-events: auto;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--cuivre-fonce);
+}
+#bouton-options svg { width: 28px; height: 28px; fill: currentColor; }
+#bouton-options:focus-visible { outline: 3px solid var(--encre); outline-offset: 2px; }
+body.tactile #bouton-options { width: 52px; height: 52px; }
+
+/* --- Le panneau des options --- */
+#panneau-options {
+  position: fixed;
+  z-index: 50; /* au-dessus de l'écran d'accueil */
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(calc(100% - 24px), 560px);
+  max-height: calc(100% - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px;
+  background: var(--parchemin-clair);
+}
+.options-pause {
+  margin-left: auto;
+  font-size: 15px;
+  color: var(--encre-douce);
+}
+.options-contenu { margin-top: 10px; }
+.option {
+  padding: 10px 14px 12px;
+  border-radius: 12px;
+  background: var(--parchemin);
+  border: 2px solid var(--parchemin-fonce);
+}
+.option-titre { font-size: 19px; font-weight: bold; }
+.option-ligne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 12px;
+}
+.option-ligne + .option-ligne { margin-top: 8px; }
+.option-detail { margin: 6px 0 0; font-size: 15px; color: var(--encre-douce); }
+.option-ligne .option-detail { margin: 0; }
+
+.bouton-fermer,
+.interrupteur,
+.choix-qualite button,
+.volume button,
+.boutons-accueil.secondaires button {
+  min-height: 48px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 2px solid var(--cuivre);
+  background: var(--parchemin-clair);
+  font-size: 17px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.bouton-fermer { border-color: var(--cuivre-fonce); background: var(--parchemin); }
+.interrupteur { min-width: 120px; }
+.interrupteur.actif,
+.choix-qualite button.actif {
+  background: var(--cuivre);
+  border-color: var(--cuivre-fonce);
+  color: #fff8ec;
+}
+.choix-qualite { justify-content: flex-start; margin-top: 8px; }
+.choix-qualite button { flex: 1 1 140px; }
+
+/* Le volume : un bouton −, cinq crans, un bouton +. */
+.volume { display: flex; align-items: center; gap: 10px; }
+.volume button { width: 52px; padding: 0; font-size: 24px; line-height: 1; }
+.volume button:disabled { opacity: 0.45; cursor: default; }
+.crans { display: flex; align-items: flex-end; gap: 5px; height: 30px; }
+.crans span {
+  width: 12px;
+  border-radius: 4px;
+  background: var(--parchemin-fonce);
+}
+.crans span:nth-child(1) { height: 30%; }
+.crans span:nth-child(2) { height: 47%; }
+.crans span:nth-child(3) { height: 64%; }
+.crans span:nth-child(4) { height: 82%; }
+.crans span:nth-child(5) { height: 100%; }
+.crans span.plein { background: var(--cuivre); }
+
+#options-version { margin: 4px 0 0; text-align: center; }
+
+.bouton-fermer:focus-visible, .interrupteur:focus-visible, .choix-qualite button:focus-visible,
+.volume button:focus-visible, .boutons-accueil.secondaires button:focus-visible {
+  outline: 3px solid var(--encre);
+  outline-offset: 2px;
+}
+
+/* L'écran d'accueil : les boutons « Options » et « Installer ». */
+.boutons-accueil.secondaires { margin-top: 10px; }
+.boutons-accueil.secondaires button { font-size: 16px; }
+
+/* Options ouvertes : on cache les commandes de déplacement et l'aide. */
+body.options-ouvert #joystick,
+body.options-ouvert #zone-joystick,
+body.options-ouvert #bouton-interagir,
+body.options-ouvert #indice { display: none !important; }
+
+/* --- Le joystick qui vient sous le pouce --- */
+/* Une grande zone invisible (en bas à gauche) : où que le pouce se pose, le
+   joystick glisse doucement sous lui. Plus besoin de viser le petit cercle. */
+#zone-joystick { display: none; }
+body.tactile #zone-joystick {
+  display: block;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 50%;
+  height: 58%;
+  touch-action: none;
+}
+body.tactile #joystick {
+  pointer-events: none !important;
+  transition: transform 0.15s ease;
+}
+body.tactile #joystick.actif { background: rgba(243, 230, 204, 0.7); }
+body.dialogue-ouvert #zone-joystick,
+body.panneau-ouvert #zone-joystick { display: none !important; }
+
+/* Téléphone tenu à l'horizontale : options resserrées. */
+@media (max-height: 480px) {
+  #panneau-options { padding: 8px 12px; }
+  .option { padding: 6px 12px 8px; }
+  .option-detail { font-size: 14px; }
+  #bouton-options { width: 44px; height: 44px; }
+  body.tactile #bouton-options { width: 46px; height: 46px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.tactile #joystick { transition: none; }
+}

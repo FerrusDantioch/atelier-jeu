@@ -54,14 +54,31 @@ export function creerCommandes({ surInteraction, surNavigation, estActif }) {
   });
 
   // --- Joystick tactile ---------------------------------------------------------------
-  const zone = document.getElementById('joystick');
+  // Le pouce peut se poser n'importe où dans la grande zone en bas à gauche :
+  // le joystick glisse alors sous lui (étape 4). Au lâcher, il revient à sa place.
+  const zone = document.getElementById('zone-joystick');
+  const socle = document.getElementById('joystick');
   const bouton = document.getElementById('joystick-bouton');
+  const centre = { x: 0, y: 0 };
+  let rayonMax = 57;
+
+  function poserJoystick(e) {
+    // La place « normale » du joystick (offsetLeft/offsetTop ignorent le
+    // décalage en cours : le calcul reste juste même s'il glisse encore).
+    const demi = socle.offsetWidth / 2;
+    rayonMax = demi - 18;
+    const xNormal = socle.offsetLeft + demi;
+    const yNormal = socle.offsetTop + demi;
+    // Le centre vient sous le pouce, sans que le joystick sorte de l'écran.
+    centre.x = Math.min(window.innerWidth - demi, Math.max(demi, e.clientX));
+    centre.y = Math.min(window.innerHeight - demi, Math.max(demi, e.clientY));
+    socle.style.transform = `translate(${centre.x - xNormal}px, ${centre.y - yNormal}px)`;
+    socle.classList.add('actif');
+  }
 
   function placerJoystick(e) {
-    const r = zone.getBoundingClientRect();
-    const rayonMax = r.width / 2 - 18;
-    let dx = e.clientX - (r.left + r.width / 2);
-    let dy = e.clientY - (r.top + r.height / 2);
+    let dx = e.clientX - centre.x;
+    let dy = e.clientY - centre.y;
     const distance = Math.hypot(dx, dy);
     if (distance > rayonMax) {
       dx = (dx / distance) * rayonMax;
@@ -83,21 +100,28 @@ export function creerCommandes({ surInteraction, surNavigation, estActif }) {
     joystick.x = 0;
     joystick.z = 0;
     bouton.style.transform = '';
+    socle.style.transform = '';
+    socle.classList.remove('actif');
   }
 
   zone.addEventListener('pointerdown', (e) => {
     e.preventDefault();
+    if (joystick.doigt !== null) return; // un seul pouce à la fois
     joystick.doigt = e.pointerId;
-    // On « capture » ce doigt : on le suit même s'il sort du cercle.
+    // On « capture » ce doigt : on le suit même s'il sort de la zone.
     try { zone.setPointerCapture(e.pointerId); } catch { /* sans gravité */ }
+    poserJoystick(e);
     placerJoystick(e);
   });
   zone.addEventListener('pointermove', (e) => {
     if (e.pointerId === joystick.doigt) placerJoystick(e);
   });
-  zone.addEventListener('pointerup', relacherJoystick);
-  zone.addEventListener('pointercancel', relacherJoystick);
-  zone.addEventListener('lostpointercapture', relacherJoystick);
+  const finDoigt = (e) => {
+    if (e.pointerId === joystick.doigt) relacherJoystick();
+  };
+  zone.addEventListener('pointerup', finDoigt);
+  zone.addEventListener('pointercancel', finDoigt);
+  zone.addEventListener('lostpointercapture', finDoigt);
 
   // --- Bouton « Interagir » -------------------------------------------------------------
   const boutonInteragir = document.getElementById('bouton-interagir');
