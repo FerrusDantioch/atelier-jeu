@@ -159,7 +159,8 @@ const matiereFenetre = new THREE.MeshLambertMaterial({ color: COULEURS.fenetre, 
 // Construction de toute la place
 // ----------------------------------------------------------------------------
 // Renvoie quelques objets que main.js doit pouvoir modifier pendant le jeu
-// (la lampe de l'établi, la lanterne d'Odile).
+// (la lampe de l'établi, la lanterne d'Odile, le rouage de l'établi, les
+// améliorations de l'atelier).
 export function construireDecor(scene, monde) {
   construireSol(scene, monde);
   construireHaies(scene, monde);
@@ -169,7 +170,10 @@ export function construireDecor(scene, monde) {
   construireMaisonOdile(scene, monde.maisonOdile);
   const lampeEtabli = construireEtabli(scene, monde.etabli);
   const lanterneOdile = construireLanterneOdile(scene, monde.maisonOdile);
-  return { lampeEtabli, lanterneOdile };
+  construireComptoir(scene, monde.comptoir);
+  const rouageEtabli = construireRouageEtabli(scene, monde.etabli);
+  const ameliorations = construireAmeliorations(scene, monde);
+  return { lampeEtabli, lanterneOdile, rouageEtabli, ameliorations };
 }
 
 // --- Le sol : l'herbe, la place pavée et les chemins -------------------------
@@ -443,6 +447,84 @@ function construireLanterneOdile(scene, maison) {
   g.visible = false;
   scene.add(g);
   return g;
+}
+
+// --- Le comptoir (étape 2) ---------------------------------------------------------------
+// Un meuble en bois avec un plateau de laiton, une petite clochette (muette !)
+// et un panneau « COMMANDES ».
+function construireComptoir(scene, comptoir) {
+  const g = new THREE.Group();
+  g.position.set(comptoir.x, 0, comptoir.z);
+  const l = comptoir.largeur;
+  const p = comptoir.profondeur;
+  g.add(objet(new THREE.BoxGeometry(l, 1.0, p), COULEURS.boisFonce, 0, 0.5, 0, { recoit: true }));
+  g.add(objet(new THREE.BoxGeometry(l + 0.12, 0.08, p + 0.12), COULEURS.laiton, 0, 1.04, 0));
+  const panneau = panneauTexte('COMMANDES', 1.5, 0.38);
+  panneau.position.set(0, 0.62, p / 2 + 0.01);
+  g.add(panneau);
+  // La clochette : un petit dôme sur un socle.
+  g.add(objet(new THREE.CylinderGeometry(0.1, 0.12, 0.04, 8), COULEURS.boisClair, 0.6, 1.1, 0.05));
+  g.add(objet(new THREE.SphereGeometry(0.1, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2), COULEURS.laiton, 0.6, 1.12, 0.05));
+  // Un registre ouvert pour noter les commandes.
+  g.add(objet(new THREE.BoxGeometry(0.42, 0.03, 0.3), '#efe2c4', -0.45, 1.1, 0));
+  scene.add(g);
+}
+
+// --- Le rouage de l'établi : il tourne doucement pendant une fabrication ---------------------
+function construireRouageEtabli(scene, etabli) {
+  const rouage = objet(formeEngrenage(0.2, 8, 0.06), COULEURS.laiton, etabli.x + 0.15, 1.2, etabli.z - 0.32);
+  const axe = objet(new THREE.BoxGeometry(0.06, 0.26, 0.06), COULEURS.metal, etabli.x + 0.15, 1.05, etabli.z - 0.36);
+  scene.add(rouage, axe);
+  return rouage;
+}
+
+// --- Les améliorations de l'atelier (visibles une fois achetées) -----------------------------
+function construireAmeliorations(scene, monde) {
+  const atelier = monde.atelier;
+  const avant = atelier.z + atelier.profondeur / 2; // la façade de l'atelier
+  const etabli = monde.etabli;
+
+  // Les étagères : un petit meuble entre le comptoir et la porte, garni de bocaux.
+  const etageres = new THREE.Group();
+  etageres.position.set(-8.12, 0, avant + 0.16);
+  const montant = new THREE.BoxGeometry(0.06, 1.7, 0.3);
+  etageres.add(objet(montant, COULEURS.boisClair, -0.38, 0.85, 0));
+  etageres.add(objet(montant, COULEURS.boisClair, 0.38, 0.85, 0));
+  for (const y of [0.35, 0.85, 1.35]) {
+    etageres.add(objet(new THREE.BoxGeometry(0.82, 0.05, 0.3), COULEURS.boisClair, 0, y, 0));
+    etageres.add(objet(new THREE.CylinderGeometry(0.07, 0.07, 0.18, 6), y > 1 ? COULEURS.cuivre : COULEURS.laiton, -0.18, y + 0.12, 0));
+    etageres.add(objet(new THREE.BoxGeometry(0.2, 0.16, 0.18), COULEURS.boisFonce, 0.16, y + 0.11, 0));
+  }
+
+  // Le soufflet de forge : posé au bout de l'établi (là où était la lampe).
+  const soufflet = new THREE.Group();
+  soufflet.position.set(etabli.x + 0.75, 0.98, etabli.z + 0.05);
+  const planche = new THREE.BoxGeometry(0.5, 0.04, 0.3);
+  const dessous = objet(planche, COULEURS.boisClair, 0, 0.02, 0);
+  const dessus = objet(planche, COULEURS.boisClair, 0, 0.16, 0);
+  dessus.rotation.z = 0.25;
+  soufflet.add(dessous, dessus);
+  soufflet.add(objet(new THREE.BoxGeometry(0.4, 0.1, 0.26), '#8a5a3a', 0.02, 0.08, 0));
+  const bec = objet(new THREE.ConeGeometry(0.05, 0.22, 6), COULEURS.cuivre, -0.32, 0.06, 0);
+  bec.rotation.z = Math.PI / 2;
+  soufflet.add(bec);
+
+  // L'enseigne en cuivre : un grand engrenage sur le pignon de l'atelier.
+  const enseigne = objet(formeEngrenage(0.6, 10, 0.08), COULEURS.cuivre, atelier.x, 4.2, avant + 0.06);
+
+  // Les plans d'horloger : un rouleau de papier bleu sur l'établi.
+  const plans = new THREE.Group();
+  const rouleau = objet(new THREE.CylinderGeometry(0.06, 0.06, 0.55, 8), '#7f9bb5', etabli.x - 0.35, 1.04, etabli.z - 0.25);
+  rouleau.rotation.z = Math.PI / 2;
+  plans.add(rouleau);
+  plans.add(objet(new THREE.BoxGeometry(0.36, 0.01, 0.26), '#9fb6c9', etabli.x + 0.27, 0.99, etabli.z + 0.18));
+
+  const objets = { etageres, soufflet, enseigne, 'plans-horloge': plans };
+  for (const o of Object.values(objets)) {
+    o.visible = false;
+    scene.add(o);
+  }
+  return objets;
 }
 
 // --- Les engrenages de la quête et les marqueurs --------------------------------------

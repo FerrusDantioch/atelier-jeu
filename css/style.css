@@ -380,3 +380,203 @@ body.tactile .aide-pc { display: none; }
 @media (prefers-reduced-motion: reduce) {
   .message { transition: none; }
 }
+
+/* ==========================================================================
+   ÉTAPE 2 : la gestion de l'atelier
+   ========================================================================== */
+
+/* --- La fabrication en cours, dans le bandeau du haut --- */
+#fabrication {
+  flex: none;
+  padding: 8px 14px;
+  min-width: 150px;
+  font-size: 16px;
+  font-weight: bold;
+}
+.barre {
+  margin-top: 6px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--parchemin-fonce);
+  overflow: hidden;
+}
+.barre > div {
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: var(--cuivre);
+  /* La barre glisse doucement d'une valeur à l'autre. */
+  transition: width 0.25s linear;
+}
+
+/* Les messages passent au-dessus du panneau de l'établi. */
+#messages { z-index: 30; }
+
+/* --- Le panneau de l'établi --- */
+#panneau-atelier {
+  position: absolute;
+  z-index: 20;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(calc(100% - 24px), 680px);
+  max-height: calc(100% - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px;
+  background: var(--parchemin-clair);
+}
+.atelier-entete {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.atelier-entete h2 { margin: 0; font-size: 24px; color: var(--cuivre-fonce); }
+.atelier-argent {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: bold;
+  margin-left: auto;
+  white-space: nowrap;
+}
+#atelier-fermer {
+  min-height: 46px;
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 2px solid var(--cuivre-fonce);
+  background: var(--parchemin);
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.onglets {
+  display: flex;
+  gap: 6px;
+  margin: 12px 0 8px;
+}
+.onglets button {
+  flex: 1;
+  min-height: 48px;
+  padding: 8px 6px;
+  border-radius: 12px;
+  border: 2px solid var(--cuivre);
+  background: var(--parchemin);
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.onglets button.actif {
+  background: var(--cuivre);
+  color: #fff8ec;
+  border-color: var(--cuivre-fonce);
+}
+
+.stock {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.pastille {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--parchemin);
+  border: 1px solid var(--parchemin-fonce);
+  font-size: 15px;
+  white-space: nowrap;
+}
+.pastille.objet { border-color: var(--cuivre); }
+
+/* La liste défile (avec le doigt ou la molette) si elle dépasse. */
+.defilable {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 2px;
+}
+
+.carte-atelier {
+  padding: 10px 14px 12px;
+  border-radius: 12px;
+  background: var(--parchemin);
+  border: 2px solid var(--parchemin-fonce);
+}
+.carte-atelier.commandee { border-color: var(--cuivre); }
+.carte-atelier.en-cours { border-color: var(--cuivre); background: var(--parchemin-clair); }
+.carte-atelier.verrouillee, .carte-atelier.installee { opacity: 0.8; }
+.carte-titre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 19px;
+  font-weight: bold;
+}
+.etiquette, .etiquette-installee {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--cuivre);
+  color: #fff8ec;
+  font-size: 14px;
+}
+.etiquette-installee {
+  display: inline-block;
+  margin-top: 8px;
+  background: #7f9c7a;
+  font-weight: bold;
+}
+.carte-detail { margin-top: 4px; font-size: 16px; }
+.carte-detail .manque { color: #9a4a2a; font-weight: bold; }
+.carte-raison { margin-top: 6px; font-size: 15px; color: var(--encre-douce); }
+
+.ligne-boutons { display: flex; flex-wrap: wrap; gap: 8px; }
+.bouton-action {
+  margin-top: 8px;
+  min-height: 48px;
+  padding: 8px 18px;
+  border-radius: 12px;
+  border: 2px solid var(--cuivre-fonce);
+  background: var(--cuivre);
+  color: #fff8ec;
+  font-size: 17px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.bouton-action:disabled {
+  background: var(--parchemin-fonce);
+  border-color: var(--parchemin-fonce);
+  color: var(--encre-douce);
+  cursor: default;
+}
+.onglets button:focus-visible, .bouton-action:focus-visible, #atelier-fermer:focus-visible {
+  outline: 3px solid var(--encre);
+  outline-offset: 2px;
+}
+
+/* Pendant que le panneau est ouvert, on cache les commandes de déplacement. */
+body.panneau-ouvert #joystick,
+body.panneau-ouvert #bouton-interagir,
+body.panneau-ouvert #indice { display: none !important; }
+
+/* Téléphone tenu à l'horizontale : le panneau prend toute la hauteur. */
+@media (max-height: 480px) {
+  #panneau-atelier { padding: 8px 12px; }
+  .onglets { margin: 6px 0 4px; }
+  .onglets button { min-height: 40px; }
+  .atelier-entete h2 { font-size: 20px; }
+}
+
+/* Panneau de l'établi ouvert : les petits messages s'affichent en bas de
+   l'écran, pour ne pas cacher les onglets. */
+body.panneau-ouvert #messages {
+  top: auto !important;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  flex-direction: column-reverse;
+}

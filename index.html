@@ -26,6 +26,11 @@
       <span class="piece" aria-hidden="true"></span>
       <span id="argent-valeur">0</span>&nbsp;pièces
     </div>
+    <!-- La fabrication en cours (étape 2) : le nom de l'objet et une barre qui se remplit. -->
+    <div id="fabrication" class="panneau" hidden>
+      <span id="fabrication-nom"></span>
+      <div class="barre" aria-hidden="true"><div id="fabrication-barre"></div></div>
+    </div>
     <div id="objectif" class="panneau" role="status" aria-live="polite">
       <div class="objectif-titre">Objectif</div>
       <div id="objectif-texte"></div>
@@ -43,6 +48,22 @@
     <div id="joystick-bouton"></div>
   </div>
   <button id="bouton-interagir" type="button">Interagir</button>
+
+  <!-- Le panneau de l'établi (étape 2) : fabriquer, acheter, améliorer. -->
+  <div id="panneau-atelier" class="panneau" role="dialog" aria-modal="true" aria-labelledby="atelier-titre" hidden>
+    <div class="atelier-entete">
+      <h2 id="atelier-titre">L'établi</h2>
+      <div class="atelier-argent"><span class="piece" aria-hidden="true"></span> <span id="atelier-argent"></span></div>
+      <button id="atelier-fermer" type="button">Fermer</button>
+    </div>
+    <div class="onglets" role="tablist">
+      <button type="button" role="tab" data-onglet="fabriquer">Fabriquer</button>
+      <button type="button" role="tab" data-onglet="acheter">Acheter</button>
+      <button type="button" role="tab" data-onglet="ameliorer">Améliorer</button>
+    </div>
+    <div id="atelier-stock" class="stock"></div>
+    <div id="atelier-contenu" class="defilable"></div>
+  </div>
 
   <!-- La boîte de dialogue. -->
   <div id="dialogue" class="panneau" hidden>

@@ -144,3 +144,60 @@ export function animerOdile(odile, dt) {
   d.temps += dt;
   d.corps.scale.y = 1 + Math.sin(d.temps * 1.6) * 0.008;
 }
+
+// -----------------------------------------------------------------------------
+// LES HABITANTS (clients de l'atelier, étape 2)
+// -----------------------------------------------------------------------------
+// Même gabarit que Ferrus, mais avec des tenues et des chapeaux variés.
+// « numero » choisit la tenue : chaque client a donc toujours la même allure.
+const TENUES = [
+  { peau: '#e8c3a0', haut: '#7d8fa6', bas: '#4f4a45', cheveux: '#6b4a33', chapeau: 'haut-de-forme', couleurChapeau: '#4a4240' },
+  { peau: '#d9a882', haut: '#b0786a', bas: '#5a4d42', cheveux: '#2f2723', chapeau: 'beret', couleurChapeau: '#6f7f5c', jupe: '#8a6a5e' },
+  { peau: '#f0cdb0', haut: '#9c8bb0', bas: '#4c4652', cheveux: '#b9864f', chapeau: 'aucun' },
+  { peau: '#c99674', haut: '#8aa07a', bas: '#55493f', cheveux: '#3a2c24', chapeau: 'casquette', couleurChapeau: '#5b6a78' },
+  { peau: '#efc6a6', haut: '#c9a36a', bas: '#5c4a3c', cheveux: '#d8d0c4', chapeau: 'aucun', jupe: '#7f6f8f' },
+  { peau: '#dcb393', haut: '#6f8f8a', bas: '#463f3a', cheveux: '#8a5a3a', chapeau: 'haut-de-forme', couleurChapeau: '#5e4330' },
+];
+
+export function creerHabitant(numero) {
+  const t = TENUES[numero % TENUES.length];
+  const habitant = new THREE.Group();
+  const corps = new THREE.Group();
+  habitant.add(corps);
+
+  const jambeG = membre(habitant, 0.18, 0.58, t.bas, -0.12, 0.62, 0, '#3a2a20', [0.21, 0.12, 0.28, 0.04]);
+  const jambeD = membre(habitant, 0.18, 0.58, t.bas, 0.12, 0.62, 0, '#3a2a20', [0.21, 0.12, 0.28, 0.04]);
+  if (t.jupe) piece(corps, new THREE.CylinderGeometry(0.27, 0.38, 0.5, 8), t.jupe, 0, 0.55, 0);
+  piece(corps, new THREE.CylinderGeometry(0.25, 0.29, 0.7, 8), t.haut, 0, 0.98, 0);
+  const brasG = membre(corps, 0.13, 0.54, t.haut, -0.35, 1.27, 0, t.peau, [0.12, 0.12, 0.12]);
+  const brasD = membre(corps, 0.13, 0.54, t.haut, 0.35, 1.27, 0, t.peau, [0.12, 0.12, 0.12]);
+  piece(corps, new THREE.IcosahedronGeometry(0.23, 1), t.peau, 0, 1.56, 0);
+  const coiffe = piece(corps, new THREE.SphereGeometry(0.245, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2), t.cheveux, 0, 1.6, -0.02);
+  coiffe.scale.set(1, 0.85, 1);
+
+  // Le chapeau.
+  if (t.chapeau === 'haut-de-forme') {
+    piece(corps, new THREE.CylinderGeometry(0.3, 0.3, 0.03, 10), t.couleurChapeau, 0, 1.76, 0);
+    piece(corps, new THREE.CylinderGeometry(0.18, 0.19, 0.32, 10), t.couleurChapeau, 0, 1.92, 0);
+  } else if (t.chapeau === 'beret') {
+    const beret = piece(corps, new THREE.CylinderGeometry(0.27, 0.25, 0.08, 10), t.couleurChapeau, 0.03, 1.78, 0);
+    beret.rotation.z = 0.15;
+  } else if (t.chapeau === 'casquette') {
+    piece(corps, new THREE.SphereGeometry(0.25, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2), t.couleurChapeau, 0, 1.68, 0);
+    piece(corps, new THREE.BoxGeometry(0.3, 0.03, 0.18), t.couleurChapeau, 0, 1.69, 0.24);
+  }
+
+  habitant.userData = { corps, jambeG, jambeD, brasG, brasD, phase: numero * 1.3 };
+  return habitant;
+}
+
+// Les habitants marchent exactement comme Ferrus (même gabarit, mêmes membres).
+export const animerMarche = animerFerrus;
+
+// Libère la mémoire utilisée par un personnage qui quitte la scène.
+export function supprimerPersonnage(personnage) {
+  personnage.removeFromParent();
+  personnage.traverse((o) => {
+    if (o.geometry) o.geometry.dispose();
+  });
+}

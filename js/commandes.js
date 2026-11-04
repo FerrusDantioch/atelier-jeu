@@ -112,7 +112,9 @@ export function creerCommandes({ surInteraction, surNavigation, estActif }) {
   boutonInteragir.addEventListener('pointerleave', relacherBouton);
 
   // --- Empêcher le téléphone de zoomer ou de faire défiler la page ------------------------
-  const dansUnEcran = (cible) => cible instanceof Element && cible.closest('.ecran');
+  // Exceptions : l'écran d'accueil et la liste du panneau de l'établi peuvent
+  // défiler avec le doigt (si l'écran est trop petit pour tout afficher).
+  const dansUnEcran = (cible) => cible instanceof Element && cible.closest('.ecran, .defilable');
   document.addEventListener('touchmove', (e) => {
     if (!dansUnEcran(e.target)) e.preventDefault();
   }, { passive: false });
