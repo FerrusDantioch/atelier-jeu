@@ -1,13 +1,15 @@
 // =============================================================================
 // logique-zones.js — LES LIEUX DE CUIVREBOURG (étape 3), sans aucune 3D
 // -----------------------------------------------------------------------------
-// Trois lieux reliés par des sorties :
+// Quatre lieux reliés par des sorties :
 //
-//      [ La place ]  ── portail du sud ──  [ Le marché ]  ── chemin de l'est ──  [ Le moulin ]
+//   [ La place ] ─ portail du sud ─ [ Le marché ] ─ chemin de l'est ─ [ Le moulin ] ─ route de l'est ─ [ La gare ]
 //
 // - Le portail de la place s'ouvre quand l'atelier ouvre (fin de la quête d'Odile).
 // - Le chemin du moulin est bloqué par un arbre tombé jusqu'à la fin de la
 //   quête de Capucine.
+// - La route de la gare (version 1.2) est fermée par une barrière jusqu'à la
+//   fin de la quête de Barnabé.
 //
 // Pour chaque lieu : ses limites, ses obstacles, ses personnages, les choses
 // avec lesquelles on peut interagir, ses sorties et ses points d'arrivée.
@@ -17,6 +19,7 @@
 
 import { MONDE, obstaclesDuMonde, libelleInteraction } from './logique.js';
 import { queteTerminee, queteEnCours, objetsARamasser } from './logique-quetes.js';
+import { heureAffichee } from './logique-temps.js';
 
 // Raccourci : un rectangle d'obstacle.
 const rect = (id, x, z, largeur, profondeur) => ({ type: 'rectangle', id, x, z, largeur, profondeur });
@@ -37,6 +40,8 @@ export const ZONES = Object.freeze({
       { id: 'etabli', ...pick(MONDE.etabli) },
       { id: 'comptoir', ...pick(MONDE.comptoir) },
     ],
+    // Les lanternes de la place (elles s'allument le soir).
+    lampadaires: MONDE.lampadaires,
     sorties: [
       // Le portail du sud : on sort en marchant tout au bout, entre les poteaux.
       { vers: 'marche', minX: -1.4, maxX: 1.4, minZ: 11.35, maxZ: 99, condition: 'portail' },
@@ -76,7 +81,8 @@ export const ZONES = Object.freeze({
     arbres: [{ x: -12, z: 6.5 }, { x: -8.5, z: 7.2 }, { x: 11.5, z: 6.6 }, { x: -12, z: -2.5 }],
     rayonArbre: 0.65,
     // L'arbre tombé qui bloque le chemin du moulin (tant que la quête de Capucine n'est pas finie).
-    barriere: { id: 'barriere', x: 13.2, z: 0, largeur: 0.8, profondeur: 3.2 },
+    barriere: { id: 'barriere', x: 13.2, z: 0, largeur: 0.8, profondeur: 3.2, ouverteSi: 'chemin-moulin' },
+    lampadaires: [{ x: -3, z: -3.5 }, { x: 3, z: -3.5 }, { x: -3.4, z: 6.4 }],
     pnj: [
       { id: 'capucine', nom: 'Capucine', x: -4.2, z: 0.4, rayon: 0.45, distanceInteraction: 2.2 },
       { id: 'leon', nom: 'Léon', x: 2.6, z: 6.6, rayon: 0.45, distanceInteraction: 2.2 },
@@ -108,8 +114,13 @@ export const ZONES = Object.freeze({
       { id: 'haie-sud', x: 0, z: 9.5, largeur: 30, profondeur: 1 },
       { id: 'haie-ouest-haut', x: -14.5, z: -5.75, largeur: 1, profondeur: 8.5 },
       { id: 'haie-ouest-bas', x: -14.5, z: 5.75, largeur: 1, profondeur: 8.5 },
-      { id: 'haie-est', x: 14.5, z: 0, largeur: 1, profondeur: 20 },
+      // À l'est, une ouverture pour la route de la gare (version 1.2).
+      { id: 'haie-est-haut', x: 14.5, z: -5.75, largeur: 1, profondeur: 8.5 },
+      { id: 'haie-est-bas', x: 14.5, z: 5.75, largeur: 1, profondeur: 8.5 },
     ],
+    // La barrière de la route de la gare (ouverte après la quête de Barnabé).
+    barriere: { id: 'barriere-gare', x: 13.9, z: 0, largeur: 0.5, profondeur: 3, ouverteSi: 'chemin-gare' },
+    lampadaires: [{ x: -0.6, z: 2.6 }, { x: 12.2, z: 2.5 }],
     // Le canal coule d'ouest en est ; on ne peut pas y entrer.
     canal: { id: 'canal', x: 0, z: -6.5, largeur: 30, profondeur: 3 },
     // Le moulin, adossé au canal ; sa roue est juste à côté, à l'est, dans l'eau.
@@ -127,12 +138,65 @@ export const ZONES = Object.freeze({
     interactifs: [
       { id: 'barnabe', x: -5.6, z: 1.0, distanceInteraction: 2.2 },
       { id: 'mecanisme', x: 0.9, z: -3.6, distanceInteraction: 1.9 },
+      { id: 'barriere-gare', x: 13, z: 0, distanceInteraction: 2.2, condition: 'gare-fermee' },
     ],
     sorties: [
       { vers: 'marche', minX: -99, maxX: -13.4, minZ: -1.4, maxZ: 1.4 },
+      { vers: 'gare', minX: 13.4, maxX: 99, minZ: -1.4, maxZ: 1.4, condition: 'chemin-gare' },
     ],
     arrivees: {
       marche: { x: -12.3, z: 0, orientation: Math.PI / 2 },
+      gare: { x: 12.3, z: 0, orientation: -Math.PI / 2 },
+    },
+  },
+
+  // --- La gare à vapeur (version 1.2) : la voie ferrée au nord, le quai, la
+  // grande horloge, la locomotive, et Augustin, le chef de gare.
+  gare: {
+    id: 'gare',
+    nom: 'La gare de Cuivrebourg',
+    limites: { minX: -14, maxX: 14, minZ: -9, maxZ: 9 },
+    joueur: MONDE.joueur,
+    camera: { minX: -7, maxX: 7, minZ: -4, maxZ: 5 },
+    haies: [
+      { id: 'haie-nord', x: 0, z: -9.5, largeur: 30, profondeur: 1 },
+      { id: 'haie-sud', x: 0, z: 9.5, largeur: 30, profondeur: 1 },
+      // À l'ouest : l'entrée depuis le moulin (et le passage de la voie ferrée).
+      { id: 'haie-ouest-haut', x: -14.5, z: -3.5, largeur: 1, profondeur: 4 },
+      { id: 'haie-ouest-bas', x: -14.5, z: 5.75, largeur: 1, profondeur: 8.5 },
+      // À l'est : seulement le passage de la voie ferrée.
+      { id: 'haie-est', x: 14.5, z: 2.25, largeur: 1, profondeur: 15.5 },
+    ],
+    // La voie ferrée traverse tout le lieu, au nord. On ne marche pas dessus.
+    voie: { id: 'voie', x: 0, z: -7, largeur: 30, profondeur: 2.6 },
+    // Le bâtiment de la gare, à l'ouest du quai.
+    batiments: [
+      { id: 'gare', x: -9, z: -3, largeur: 7, profondeur: 3, murs: '#dcc4a0', toit: '#6f7d8c', enseigne: 'GARE' },
+    ],
+    // La grande horloge, sur un pilier au milieu du quai.
+    horloge: { id: 'horloge', x: 1, z: -4.7, rayon: 0.3 },
+    // La locomotive attend sur la voie, à l'est du quai (son centre).
+    locomotive: { x: 6, z: -7 },
+    // Le château d'eau qui remplit la chaudière de la locomotive.
+    chateauEau: { id: 'chateau-eau', x: 11.6, z: -3.6, rayon: 0.95 },
+    // Un banc sur le quai.
+    bancs: [{ id: 'banc', x: -3.4, z: -4.75, largeur: 1.5, profondeur: 0.55 }],
+    lampadaires: [{ x: -4.9, z: -4.6 }, { x: 3.6, z: -4.6 }, { x: 9.4, z: -4.6 }, { x: -6, z: 1.4 }],
+    arbres: [{ x: -11.5, z: 6.5 }, { x: -5.5, z: 7.3 }, { x: 4, z: 7.4 }, { x: 10.5, z: 6.8 }, { x: 12.2, z: 2.8 }],
+    rayonArbre: 0.65,
+    pnj: [
+      { id: 'augustin', nom: 'Augustin', x: -1.3, z: -3.3, rayon: 0.45, distanceInteraction: 2.2 },
+    ],
+    interactifs: [
+      { id: 'augustin', x: -1.3, z: -3.3, distanceInteraction: 2.2 },
+      { id: 'horloge', x: 1, z: -4.7, distanceInteraction: 1.9 },
+      { id: 'locomotive', x: 6, z: -5.3, distanceInteraction: 2.1 },
+    ],
+    sorties: [
+      { vers: 'moulin', minX: -99, maxX: -13.4, minZ: -1.4, maxZ: 1.4 },
+    ],
+    arrivees: {
+      moulin: { x: -12.3, z: 0, orientation: Math.PI / 2 },
     },
   },
 });
@@ -155,6 +219,10 @@ export function conditionRemplie(etat, condition) {
       return queteTerminee(etat, 'balance-capucine');
     case 'chemin-bloque':
       return !queteTerminee(etat, 'balance-capucine');
+    case 'chemin-gare': // la barrière de la gare s'ouvre après la quête de Barnabé
+      return queteTerminee(etat, 'roue-moulin');
+    case 'gare-fermee':
+      return !queteTerminee(etat, 'roue-moulin');
     default:
       return false;
   }
@@ -177,13 +245,20 @@ export function obstaclesZone(zoneId, etat) {
   (z.haies || []).forEach(ajouterRect);
   (z.batiments || []).forEach(ajouterRect);
   (z.etals || []).forEach(ajouterRect);
+  (z.bancs || []).forEach(ajouterRect);
   if (z.canal) ajouterRect(z.canal);
-  if (z.barriere && !conditionRemplie(etat, 'chemin-moulin')) ajouterRect(z.barriere);
-  for (const c of [z.fontaine, z.mecanisme].filter(Boolean)) liste.push({ type: 'cercle', id: c.id, x: c.x, z: c.z, rayon: c.rayon });
+  if (z.voie) ajouterRect(z.voie);
+  // Une barrière (arbre tombé, barrière de la gare) bloque tant qu'elle n'est pas ouverte.
+  if (z.barriere && !conditionRemplie(etat, z.barriere.ouverteSi)) ajouterRect(z.barriere);
+  for (const c of [z.fontaine, z.mecanisme, z.horloge, z.chateauEau].filter(Boolean)) liste.push({ type: 'cercle', id: c.id, x: c.x, z: c.z, rayon: c.rayon });
+  (z.lampadaires || []).forEach((l, i) => liste.push({ type: 'cercle', id: `lampadaire-${i + 1}`, x: l.x, z: l.z, rayon: RAYON_LAMPADAIRE }));
   for (const p of z.pnj || []) liste.push({ type: 'cercle', id: p.id, x: p.x, z: p.z, rayon: p.rayon });
   (z.arbres || []).forEach((a, i) => liste.push({ type: 'cercle', id: `arbre-${i + 1}`, x: a.x, z: a.z, rayon: z.rayonArbre }));
   return liste;
 }
+
+// Le pied d'une lanterne : on ne passe pas au travers.
+export const RAYON_LAMPADAIRE = 0.2;
 
 // Ferrus est-il dans une sortie ouverte ? Renvoie { zone, x, z, orientation } ou null.
 export function sortieAtteinte(zoneId, x, z, etat) {
@@ -212,10 +287,13 @@ export function libelleZone(etat, cible) {
   const pnj = Object.values(ZONES).flatMap((z) => z.pnj || []).find((p) => p.id === cible);
   if (pnj) return `Parler à ${pnj.nom}`;
   if (cible === 'barriere') return 'Le chemin du moulin';
-  if (cible === 'mecanisme') {
-    const enCours = queteEnCours(etat);
-    return enCours && enCours.etape.type === 'utiliser' ? "Installer l'axe" : 'Le mécanisme de la roue';
-  }
+  if (cible === 'barriere-gare') return 'La route de la gare';
+  // Un objet du décor que la quête en cours demande d'utiliser ?
+  const enCours = queteEnCours(etat);
+  const aUtiliser = enCours && enCours.etape.type === 'utiliser' && enCours.etape.cible === cible;
+  if (cible === 'mecanisme') return aUtiliser ? "Installer l'axe" : 'Le mécanisme de la roue';
+  if (cible === 'horloge') return aUtiliser ? 'Réparer l\'horloge' : "L'horloge de la gare";
+  if (cible === 'locomotive') return aUtiliser ? 'Installer le sifflet' : 'La locomotive';
   return libelleInteraction(etat, cible);
 }
 
@@ -238,7 +316,12 @@ export function objetsQueteZone(etat, zoneId) {
 // Léon, le facteur, connaît toutes les nouvelles : il donne des indices.
 export function dialogueLeon(etat) {
   let repliques;
-  if (!queteTerminee(etat, 'balance-capucine')) {
+  if (!queteTerminee(etat, 'lampe-odile')) {
+    repliques = [
+      'Bonjour ! Moi, c\'est Léon, le facteur. Vous êtes le nouvel artisan ?',
+      'Odile, sur la place, cherche quelqu\'un pour réparer sa lampe. Allez la voir !',
+    ];
+  } else if (!queteTerminee(etat, 'balance-capucine')) {
     repliques = [
       'Bonjour, Ferrus ! Moi, c\'est Léon, le facteur. Je connais tout le monde ici.',
       'Capucine, à son étal, a un souci avec sa balance. Allez donc la voir !',
@@ -248,9 +331,19 @@ export function dialogueLeon(etat) {
       "Le chemin du moulin est enfin dégagé ! Il part à l'est du marché.",
       'Barnabé, le meunier, a bien besoin de vous : sa roue ne tourne plus.',
     ];
+  } else if (!queteTerminee(etat, 'horloge-gare')) {
+    repliques = [
+      "La route de la gare est rouverte, à l'est du moulin ! J'y passe chercher le courrier.",
+      "Augustin, le chef de gare, a bien besoin d'un artisan : sa grande horloge s'est arrêtée.",
+    ];
+  } else if (!queteTerminee(etat, 'train-cuivrebourg')) {
+    repliques = [
+      "L'horloge de la gare donne de nouveau l'heure ! Il ne manque plus que le train…",
+      'Augustin dit que la locomotive a juste besoin d\'un sifflet neuf.',
+    ];
   } else {
     repliques = [
-      'Toutes mes lettres disent la même chose : « Cuivrebourg revit ! »',
+      'Le train m\'apporte des lettres de partout ! Elles disent toutes : « Cuivrebourg revit ! »',
       "Et c'est grâce à vous, Ferrus. Bravo !",
     ];
   }
@@ -271,5 +364,30 @@ export function messageObjet(etat, cible) {
     if (queteTerminee(etat, 'roue-moulin')) return ['La roue tourne à merveille.'];
     return ["Le mécanisme de la roue est bloqué : il manque des pales et l'axe est tordu."];
   }
+  if (cible === 'barriere-gare') {
+    return ['La barrière de la route de la gare est fermée. Barnabé, le meunier, sait peut-être pourquoi.'];
+  }
+  if (cible === 'horloge') {
+    if (horlogeReparee(etat)) return [`L'horloge de la gare indique ${heureAffichee(etat.journee)}.`];
+    return ["La grande horloge est arrêtée à quatre heures dix. Il lui manque des rouages et un régulateur."];
+  }
+  if (cible === 'locomotive') {
+    if (queteTerminee(etat, 'train-cuivrebourg')) return ['Le train de Cuivrebourg roule de nouveau !'];
+    return ['Une belle locomotive, froide et silencieuse. Son vieux sifflet est tout rouillé.'];
+  }
   return [];
+}
+
+// L'horloge de la gare est-elle réparée ? (dès que le régulateur est installé)
+export function horlogeReparee(etat) {
+  if (queteTerminee(etat, 'horloge-gare')) return true;
+  const enCours = queteEnCours(etat);
+  return Boolean(enCours && enCours.id === 'horloge-gare' && enCours.etape.type === 'parler');
+}
+
+// La locomotive est-elle prête ? (dès que le sifflet est installé : elle fume)
+export function locomotiveEnMarche(etat) {
+  if (queteTerminee(etat, 'train-cuivrebourg')) return true;
+  const enCours = queteEnCours(etat);
+  return Boolean(enCours && enCours.id === 'train-cuivrebourg' && enCours.etape.type === 'parler');
 }

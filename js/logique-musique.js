@@ -53,6 +53,15 @@ export const AMBIANCES = {
     progression: [0, 3, 0, 6, 0, 3, 4, 6],
     densite: 0.34,
   },
+  // Version 1.2 : la gare, un peu plus allante (comme un train qui roule tranquillement).
+  gare: {
+    nom: 'La gare',
+    tempo: 70,
+    tonique: 52, // mi
+    gamme: 'majeur',
+    progression: [0, 4, 5, 3, 0, 4, 1, 4],
+    densite: 0.46,
+  },
 };
 
 export const TEMPS_PAR_MESURE = 4;
@@ -227,4 +236,9 @@ export const SONS = {
   ],
   // Un client arrive : une seule note, très discrète.
   client: [{ temps: 0, duree: 0.8, midi: 72, force: 0.3 }],
+  // Le train part (version 1.2) : un « tchou » tout doux, deux notes qui descendent.
+  sifflet: [
+    { temps: 0, duree: 0.45, midi: 81, force: 0.28 },
+    { temps: 0.32, duree: 0.8, midi: 77, force: 0.24 },
+  ],
 };

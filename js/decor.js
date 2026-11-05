@@ -18,6 +18,7 @@
 import * as THREE from '../lib/three/three.module.js';
 import { boite, cylindre, boule } from './formes.js';
 import { EAU_CALME, creerRonds } from './eau.js';
+import { MATIERE_FENETRE, matiereFeuillage, creerFumee, creerLampadaire } from './vie.js';
 
 // ----------------------------------------------------------------------------
 // Petits outils communs
@@ -164,8 +165,9 @@ export const COULEURS = {
   fenetre: '#f0cf8c',
 };
 
-// Les fenêtres ont une lueur chaude et douce (elles ne brillent pas fort).
-const matiereFenetre = new THREE.MeshLambertMaterial({ color: COULEURS.fenetre, emissive: '#7a5524' });
+// Les fenêtres ont une lueur chaude et douce (elles ne brillent pas fort le
+// jour, un peu plus la nuit : voir vie.js).
+const matiereFenetre = MATIERE_FENETRE;
 
 // Une porte au sommet arrondi (en arc), aux bords adoucis.
 function formePorte(largeur, hauteur, epaisseur) {
@@ -199,15 +201,25 @@ export function construireDecor(scene, monde) {
   const portail = construireHaies(scene, monde);
   construireArbres(scene, monde);
   const eau = [construirePuits(scene, monde.puits)];
-  construireAtelier(scene, monde.atelier);
-  construireMaisonOdile(scene, monde.maisonOdile);
+  const fumeeAtelier = construireAtelier(scene, monde.atelier);
+  const fumeeOdile = construireMaisonOdile(scene, monde.maisonOdile);
+  ajouterLampadaires(scene, monde.lampadaires);
   const lampeEtabli = construireEtabli(scene, monde.etabli);
   const lanterneOdile = construireLanterneOdile(scene, monde.maisonOdile);
   construireComptoir(scene, monde.comptoir);
   const rouageEtabli = construireRouageEtabli(scene, monde.etabli);
   const ameliorations = construireAmeliorations(scene, monde);
-  // « eau » : les animations de l'eau de ce lieu (main.js les fait vivre).
-  return { lampeEtabli, lanterneOdile, rouageEtabli, ameliorations, portail, eau };
+  // « eau » et « vie » : ce qui s'anime dans ce lieu (main.js les fait vivre).
+  return { lampeEtabli, lanterneOdile, rouageEtabli, ameliorations, portail, eau, vie: [fumeeAtelier, fumeeOdile], fumeeAtelier };
+}
+
+// Les lanternes sur leur poteau (elles s'allument le soir : voir vie.js).
+export function ajouterLampadaires(scene, liste = []) {
+  for (const l of liste) {
+    const lampadaire = creerLampadaire();
+    lampadaire.position.set(l.x, 0, l.z);
+    scene.add(lampadaire);
+  }
 }
 
 // --- Le sol : l'herbe, la place pavée et les chemins -------------------------
@@ -271,7 +283,7 @@ export function construireHaies(scene, monde) {
     }
   }
 
-  const buissons = new THREE.InstancedMesh(boule(1, 1), matiere(COULEURS.buisson), positionsBuissons.length);
+  const buissons = new THREE.InstancedMesh(boule(1, 1), matiereFeuillage(COULEURS.buisson, 0.5), positionsBuissons.length);
   const m = new THREE.Matrix4();
   positionsBuissons.forEach(([x, y, z, r], i) => {
     m.compose(new THREE.Vector3(x, y, z), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, hasard() * 3, 0)), new THREE.Vector3(r, r * 0.8, r));
@@ -306,8 +318,8 @@ export function construireHaies(scene, monde) {
 export function construireArbres(scene, monde) {
   const n = monde.arbres.length;
   const troncs = new THREE.InstancedMesh(cylindre(0.17, 0.25, 1.5), matiere(COULEURS.tronc), n);
-  const bas = new THREE.InstancedMesh(boule(1.35, 2), matiere(COULEURS.feuillage), n);
-  const haut = new THREE.InstancedMesh(boule(0.95, 2), matiere(COULEURS.feuillageClair), n);
+  const bas = new THREE.InstancedMesh(boule(1.35, 2), matiereFeuillage(COULEURS.feuillage), n);
+  const haut = new THREE.InstancedMesh(boule(0.95, 2), matiereFeuillage(COULEURS.feuillageClair, 1.4), n);
   const hasard = creerHasard(3);
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion();
@@ -411,6 +423,11 @@ function construireAtelier(scene, atelier) {
   groupe.add(objet(cylindre(0.32, 0.36, 2.4), COULEURS.cuivre, -2.6, 0.4 + hauteurMurs + 1.4, -1.2, { ombre: true }));
   groupe.add(objet(cylindre(0.42, 0.42, 0.18), '#8a5427', -2.6, 0.4 + hauteurMurs + 2.6, -1.2));
   groupe.add(objet(cylindre(0.09, 0.09, 3.0), COULEURS.cuivre, -atelier.largeur / 2 + 0.25, 1.9, avant + 0.12));
+  // La fumée de la forge (plus épaisse pendant une fabrication : voir main.js).
+  const fumee = creerFumee({ taille: 0.32, force: 0.6 });
+  fumee.position.set(-2.6, 0.4 + hauteurMurs + 2.75, -1.2);
+  groupe.add(fumee);
+  return fumee;
 }
 
 // --- La maison d'Odile --------------------------------------------------------------
@@ -431,6 +448,11 @@ function construireMaisonOdile(scene, maison) {
   }
   // Une petite cheminée en briques.
   groupe.add(objet(boite(0.6, 1.6, 0.6), COULEURS.brique, 1.8, 0.4 + hauteurMurs + 1.1, -0.9, { ombre: true }));
+  // Un petit feu chez Odile : une fumée légère.
+  const fumee = creerFumee({ taille: 0.24, opacite: 0.45, periode: 8, nombre: 4 });
+  fumee.position.set(1.8, 0.4 + hauteurMurs + 1.95, -0.9);
+  groupe.add(fumee);
+  return fumee;
 }
 
 // --- La lampe à vapeur (sur l'établi, puis chez Odile) -----------------------------

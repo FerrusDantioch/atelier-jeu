@@ -2,8 +2,9 @@
 // main.js — le point de départ du jeu : il assemble tout et fait tourner le jeu
 // -----------------------------------------------------------------------------
 // 1. Vérifie que la 3D est disponible (sinon, message d'erreur clair).
-// 2. Prépare les trois lieux en 3D (la place, le marché, le moulin), chacun
-//    dans sa propre « scène » avec sa lumière, son décor et ses personnages.
+// 2. Prépare les quatre lieux en 3D (la place, le marché, le moulin, la gare),
+//    chacun dans sa propre « scène » avec sa lumière, son décor et ses
+//    personnages. Version 1.2 : la lumière suit le jour et la nuit.
 // 3. Branche les commandes (clavier, tactile), l'interface (textes) et la
 //    sauvegarde automatique.
 //    Étape 4 : les options (musique douce, petits sons, qualité de l'image),
@@ -68,11 +69,16 @@ import {
   dialogueLeon,
   dialogueParDefaut,
   messageObjet,
+  horlogeReparee,
+  locomotiveEnMarche,
 } from './logique-zones.js';
+import { MOMENT_JOUR_FIXE, lumiereDuMoment, avancerJournee, anglesAiguilles, etatTrain } from './logique-temps.js';
 import { CLE_SAUVEGARDE, serialiserPartie, chargerPartie } from './logique-sauvegarde.js';
 import { construireDecor, creerEngrenageQuete, creerMarqueur, allumerLampe } from './decor.js';
 import { construireMarche, construireMoulin, creerPaleQuete } from './decor-zones.js';
+import { construireGare } from './decor-gare.js';
 import { animerEau } from './eau.js';
+import { animerVent, eclairerNuit } from './vie.js';
 import {
   creerFerrus,
   animerFerrus,
@@ -216,7 +222,8 @@ function demarrer() {
     scene.fog = new THREE.Fog(couleurCiel, 34, 70);
     // La lumière : douce et chaude, sans contraste violent.
     // - une lumière « ciel / sol » qui éclaire tout doucement ;
-    scene.add(new THREE.HemisphereLight('#fff1d8', '#8a7558', 1.75));
+    const ciel = new THREE.HemisphereLight('#fff1d8', '#8a7558', 1.75);
+    scene.add(ciel);
     // - un « soleil » de fin d'après-midi qui fait les ombres. Il reste fixe et
     //   couvre tout le lieu : les ombres ne bougent pas et ne scintillent pas.
     const soleil = new THREE.DirectionalLight('#ffe0b8', 1.5);
@@ -228,7 +235,25 @@ function demarrer() {
     soleil.shadow.normalBias = 0.03;
     scene.add(soleil, soleil.target);
     soleils.push(soleil);
+    // Les lumières que le jour et la nuit font changer (voir appliquerLumiere).
+    scene.userData.lumieres = { ciel, soleil };
     return scene;
+  }
+
+  // Le jour et la nuit (version 1.2) : on change doucement les couleurs du ciel,
+  // de la brume et des lumières. Le soleil ne bouge pas : les ombres restent
+  // immobiles. Les fenêtres et les lanternes s'allument avec la nuit.
+  function appliquerLumiere(scene, moment) {
+    const l = lumiereDuMoment(moment);
+    const { ciel, soleil } = scene.userData.lumieres;
+    scene.background.setRGB(...l.ciel, THREE.SRGBColorSpace);
+    scene.fog.color.setRGB(...l.ciel, THREE.SRGBColorSpace);
+    ciel.color.setRGB(...l.hautCiel, THREE.SRGBColorSpace);
+    ciel.groundColor.setRGB(...l.basSol, THREE.SRGBColorSpace);
+    ciel.intensity = l.forceCiel;
+    soleil.color.setRGB(...l.soleil, THREE.SRGBColorSpace);
+    soleil.intensity = l.forceSoleil;
+    eclairerNuit(l.nuit);
   }
 
   // Ajoute un marqueur flottant (losange ambre) au-dessus d'un point d'un lieu.
@@ -239,7 +264,7 @@ function demarrer() {
     lieu.marqueurs.set(id, { objet: marqueur, hauteur });
   }
 
-  // Ajoute un personnage avec un nom (Capucine, Léon, Barnabé) dans un lieu.
+  // Ajoute un personnage avec un nom (Capucine, Léon, Barnabé, Augustin) dans un lieu.
   function ajouterPnj(lieu, p) {
     const objet = creerPersonnage(TENUES_PNJ[p.id], p.x * 3);
     objet.position.set(p.x, 0, p.z);
@@ -248,7 +273,7 @@ function demarrer() {
     ajouterMarqueur(lieu, p.id, p.x, p.z, 2.45);
   }
 
-  // Les trois lieux. Chacun : { scene, marqueurs, pnj, objetsQuete, … }
+  // Les quatre lieux. Chacun : { scene, marqueurs, pnj, objetsQuete, … }
   const lieux = {};
 
   // --- La place (étapes 1 et 2) ---
@@ -302,6 +327,28 @@ function demarrer() {
       lieu.objetsQuete.set(o.id, pale);
     });
     lieux.moulin = lieu;
+  }
+
+  // --- La gare (version 1.2) ---
+  {
+    const scene = creerSceneDeBase();
+    const lieu = { scene, marqueurs: new Map(), pnj: [], objetsQuete: new Map() };
+    lieu.decor = construireGare(scene, ZONES.gare);
+    for (const p of ZONES.gare.pnj) ajouterPnj(lieu, p);
+    const h = ZONES.gare.horloge;
+    ajouterMarqueur(lieu, 'horloge', h.x, h.z, 4.45);
+    const loco = ZONES.gare.locomotive;
+    ajouterMarqueur(lieu, 'locomotive', loco.x - 1.4, loco.z, 3.25);
+    // Les rouages de l'horloge à ramasser (cachés tant que la quête ne les demande pas).
+    QUETES['horloge-gare'].etapes[0].objets.forEach((o, i) => {
+      const rouage = creerEngrenageQuete();
+      rouage.position.set(o.x, 0, o.z);
+      rouage.visible = false;
+      rouage.userData.decalage = i * 2.1;
+      scene.add(rouage);
+      lieu.objetsQuete.set(o.id, rouage);
+    });
+    lieux.gare = lieu;
   }
 
   // Ferrus, qui passe d'une scène à l'autre selon le lieu.
@@ -413,11 +460,15 @@ function demarrer() {
     // Le marché : l'arbre tombé disparaît quand le chemin est dégagé.
     lieux.marche.decor.barriere.visible = !conditionRemplie(etat, 'chemin-moulin');
 
-    // Le moulin : les pales manquantes reviennent quand l'axe est installé.
+    // Le moulin : les pales manquantes reviennent quand l'axe est installé, et la
+    // barrière de la route de la gare se lève à la fin de la quête.
     const roueReparee = roueEstReparee();
     for (const pale of lieux.moulin.decor.roue.palesManquantes) pale.visible = roueReparee;
-    // Les objets de quête à ramasser (engrenages sur la place, pales au moulin).
-    for (const nom of ['place', 'moulin']) {
+    lieux.moulin.decor.barriereGare.visible = !conditionRemplie(etat, 'chemin-gare');
+    // La gare : le sifflet neuf apparaît sur la locomotive une fois installé.
+    lieux.gare.decor.train.sifflet.visible = locomotiveEnMarche(etat);
+    // Les objets de quête à ramasser (engrenages, pales, rouages).
+    for (const nom of ['place', 'moulin', 'gare']) {
       const aRamasser = new Set(objetsQueteZone(etat, nom).map((o) => o.id));
       for (const [id, objet3d] of lieux[nom].objetsQuete) objet3d.visible = aRamasser.has(id);
     }
@@ -426,7 +477,7 @@ function demarrer() {
     const marqueursPlace = marqueursActifs(etat);
     const marqueursQ = marqueursQuetes(etat);
     for (const [id, m] of lieux.place.marqueurs) m.objet.visible = Boolean(marqueursPlace[id]);
-    for (const nom of ['marche', 'moulin']) {
+    for (const nom of ['marche', 'moulin', 'gare']) {
       for (const [id, m] of lieux[nom].marqueurs) m.objet.visible = marqueursQ.has(id);
     }
 
@@ -487,15 +538,15 @@ function demarrer() {
     } else if (cible === 'leon') {
       commandes.relacherTout();
       await ui.ouvrirDialogue(dialogueLeon(etat));
-    } else if (cible === 'capucine' || cible === 'barnabe') {
+    } else if (cible === 'capucine' || cible === 'barnabe' || cible === 'augustin') {
       commandes.relacherTout();
       const dialogue = dialoguePnjQuete(etat, cible, nomPnj(cible)) || dialogueParDefaut(cible);
       const action = await ui.ouvrirDialogue(dialogue);
       messages = appliquerActionQuete(etat, action);
-    } else if (cible === 'mecanisme') {
-      messages = utiliserObjetQuete(etat, 'mecanisme') || messageObjet(etat, 'mecanisme');
     } else {
-      messages = messageObjet(etat, cible);
+      // Un objet du décor (mécanisme, horloge, locomotive, barrière…) : la quête
+      // en cours le demande-t-elle ? Sinon, un petit message sur cet objet.
+      messages = utiliserObjetQuete(etat, cible) || messageObjet(etat, cible);
     }
     afficherMessages([...messages, ...verifierQuetes(etat)]);
     majEtat();
@@ -667,6 +718,8 @@ function demarrer() {
   let tempsPrecedent = performance.now();
   let tempsTotal = 0;
   let dernierDessin = 0;
+  let debutTrain = null;     // le moment où le train a commencé à rouler
+  let trainRoulait = false;  // pour le petit « tchou » au départ
 
   function boucle(maintenant) {
     // Mode « Économie » : on ne dessine qu'une image sur deux (30 par seconde).
@@ -698,6 +751,8 @@ function demarrer() {
       ui.majFabrication(progressionFabrication(etat));
       panneau.majProgression();
       synchroniserClients();
+      // Le temps passe : le soleil se couche, la nuit tombe, le jour revient.
+      afficherMessages(avancerJournee(etat, dt, reglages.jourNuit));
       // Sauvegarde de sécurité toutes les 5 secondes.
       if (maintenant - derniereSauvegarde > 5000) sauvegarder();
     }
@@ -774,7 +829,18 @@ function demarrer() {
       // L'eau ondule, fait des ronds, et emporte quelques feuilles (version 1.1).
       animerEau(tempsTotal);
       for (const e of lieu.decor.eau || []) e.userData.animer(tempsTotal);
+      // Le vent dans les feuillages (version 1.2).
+      animerVent(tempsTotal);
     }
+
+    // --- Version 1.2 : la fumée, l'horloge et le train de la gare ---
+    // La forge fume davantage pendant une fabrication.
+    lieux.place.decor.fumeeAtelier.userData.force = etat.atelier.fabrication ? 1 : 0.55;
+    animerGare(dt);
+    // La fumée monte (immobile si le système demande moins d'animations).
+    for (const v of lieu.decor.vie || []) v.userData.animer(moinsDeMouvement ? 0 : tempsTotal);
+    // La lumière du moment (toujours le jour si le cycle est coupé dans les options).
+    appliquerLumiere(lieu.scene, reglages.jourNuit ? etat.journee : MOMENT_JOUR_FIXE);
 
     // --- La caméra suit Ferrus en douceur (sans secousse) ---
     // À chaque image, elle parcourt une petite partie du chemin qui la sépare
@@ -787,6 +853,34 @@ function demarrer() {
 
     renderer.render(lieu.scene, camera);
     requestAnimationFrame(boucle);
+  }
+
+  // L'horloge et le train de la gare (version 1.2).
+  function animerGare(dt) {
+    const { horloge, train } = lieux.gare.decor;
+    // Une fois réparée, l'horloge donne l'heure du jeu.
+    if (horlogeReparee(etat)) {
+      const a = anglesAiguilles(etat.journee);
+      horloge.heures.rotation.z = -a.heures;
+      horloge.minutes.rotation.z = -a.minutes;
+    }
+    // Le train roule seulement une fois la dernière quête finie ; avant, il
+    // attend à quai (froid, puis fumant doucement une fois le sifflet installé).
+    let e = { decalage: 0, vitesse: 0, visible: true };
+    if (queteTerminee(etat, 'train-cuivrebourg')) {
+      if (debutTrain === null) debutTrain = tempsTotal;
+      e = etatTrain(tempsTotal - debutTrain);
+    }
+    train.groupe.position.x = train.depart + e.decalage;
+    train.groupe.visible = e.visible;
+    for (const r of train.roues) r.rotation.z -= (e.vitesse * dt) / r.userData.rayon;
+    const enMarche = locomotiveEnMarche(etat);
+    train.fumee.userData.force = !enMarche ? 0 : e.vitesse > 0.1 ? 1 : 0.5;
+    train.fumee.userData.vent = [0.9 - e.vitesse * 1.1, -0.25];
+    // Un petit « tchou » quand le train démarre (si on est à la gare, et si les sons sont activés).
+    const roule = e.vitesse > 0.05 && e.decalage > 0;
+    if (roule && !trainRoulait && zone === 'gare') audio.jouerSon('sifflet');
+    trainRoulait = roule;
   }
 
   // ---------------------------------------------------------------------------
@@ -869,5 +963,10 @@ function demarrer() {
     audio: () => audio.etat(),
     imagesParSeconde: () => imagesParSeconde,
     ombres: () => soleils.every((s) => s.castShadow),
+    // Version 1.2 : le temps du jeu (en secondes) et la position du train.
+    temps: () => tempsTotal,
+    train: () => ({ x: lieux.gare.decor.train.groupe.position.x, visible: lieux.gare.decor.train.groupe.visible, debut: debutTrain }),
+    // Pour les vérifications : avance l'horaire du train de quelques secondes.
+    avancerTrain: (secondes) => { if (debutTrain !== null) debutTrain -= secondes; },
   };
 }

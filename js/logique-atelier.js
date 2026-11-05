@@ -72,6 +72,23 @@ export const RECETTES = Object.freeze({
     prixVente: 0,
     quete: 'roue-moulin',
   },
+  // Objets de quête de la gare (version 1.2).
+  regulateur: {
+    nom: "Régulateur d'horloge",
+    article: "un régulateur d'horloge",
+    ingredients: { cuivre: 1, ressort: 2 },
+    duree: 10,
+    prixVente: 0,
+    quete: 'horloge-gare',
+  },
+  sifflet: {
+    nom: 'Sifflet à vapeur',
+    article: 'un sifflet à vapeur',
+    ingredients: { cuivre: 2, bois: 1 },
+    duree: 8,
+    prixVente: 0,
+    quete: 'train-cuivrebourg',
+  },
 });
 
 // Les améliorations de l'atelier (chacune ne s'achète qu'une fois).

@@ -1,7 +1,7 @@
 // =============================================================================
 // logique-reglages.js — LES OPTIONS DU JOUEUR (étape 4)
 // -----------------------------------------------------------------------------
-// Musique, petits sons, qualité de l'image. Les réglages sont enregistrés à
+// Musique, petits sons, qualité de l'image, cycle du jour et de la nuit. Les réglages sont enregistrés à
 // part de la partie : « Nouvelle partie » ne les efface pas.
 //
 // Confort avant tout : la musique et les sons sont COUPÉS au départ. C'est le
@@ -12,7 +12,7 @@
 // =============================================================================
 
 // Le numéro de version du jeu (le même que dans package.json et sw.js).
-export const VERSION_JEU = '1.1.0';
+export const VERSION_JEU = '1.2.0';
 
 export const CLE_REGLAGES = 'atelier-cuivrebourg-reglages';
 
@@ -31,6 +31,7 @@ export function creerReglages() {
     sons: false,      // coupés au départ
     volumeSons: 3,
     qualite: 'normale',
+    jourNuit: true,   // le jour et la nuit se succèdent (version 1.2) ; sinon, toujours le jour
   };
 }
 
@@ -47,6 +48,7 @@ export function lireReglages(texte) {
   if (lu === null || typeof lu !== 'object' || Array.isArray(lu)) return reglages;
   if (typeof lu.musique === 'boolean') reglages.musique = lu.musique;
   if (typeof lu.sons === 'boolean') reglages.sons = lu.sons;
+  if (typeof lu.jourNuit === 'boolean') reglages.jourNuit = lu.jourNuit;
   for (const cle of ['volumeMusique', 'volumeSons']) {
     if (Number.isInteger(lu[cle])) reglages[cle] = Math.min(NIVEAUX_VOLUME, Math.max(1, lu[cle]));
   }

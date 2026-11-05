@@ -15,7 +15,7 @@
 // alors effacées.
 // =============================================================================
 
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 const NOM_CACHE = `cuivrebourg-${VERSION}`;
 
 // Tous les fichiers nécessaires pour jouer, gardés dès l'installation.
@@ -33,6 +33,8 @@ const FICHIERS = [
   'js/decor-zones.js',
   'js/decor.js',
   'js/eau.js',
+  'js/decor-gare.js',
+  'js/vie.js',
   'js/formes.js',
   'js/interface-atelier.js',
   'js/interface-options.js',
@@ -42,6 +44,7 @@ const FICHIERS = [
   'js/logique-quetes.js',
   'js/logique-reglages.js',
   'js/logique-sauvegarde.js',
+  'js/logique-temps.js',
   'js/logique-zones.js',
   'js/logique.js',
   'js/main.js',

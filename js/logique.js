@@ -36,6 +36,7 @@ import {
   appliquerActionQuete,
   utiliserObjetQuete,
 } from './logique-quetes.js';
+import { DEBUT_JOURNEE } from './logique-temps.js';
 
 // -----------------------------------------------------------------------------
 // 1. LE PLAN DE LA PLACE
@@ -119,6 +120,9 @@ export const MONDE = Object.freeze({
   ],
   portail: { id: 'portail', x: 0, z: 12.5, largeur: 3, profondeur: 0.6 },
 
+  // Les lanternes autour de la place (version 1.2) : elles s'allument le soir.
+  lampadaires: [{ x: -5.8, z: -2.6 }, { x: 10.4, z: -5.4 }, { x: 6.5, z: 5.5 }],
+
   // Les 3 engrenages perdus par Odile (invisibles tant que la quête n'est pas
   // acceptée). Ils sont décrits dans la quête elle-même (logique-quetes.js).
   engrenages: QUETES['lampe-odile'].etapes[0].objets,
@@ -137,6 +141,7 @@ export function obstaclesDuMonde(monde = MONDE) {
     { type: 'cercle', id: monde.puits.id, x: monde.puits.x, z: monde.puits.z, rayon: monde.puits.rayon },
     { type: 'cercle', id: monde.odile.id, x: monde.odile.x, z: monde.odile.z, rayon: monde.odile.rayon },
     ...monde.arbres.map((a, i) => ({ type: 'cercle', id: `arbre-${i + 1}`, x: a.x, z: a.z, rayon: monde.rayonArbre })),
+    ...(monde.lampadaires || []).map((l, i) => ({ type: 'cercle', id: `lampadaire-${i + 1}`, x: l.x, z: l.z, rayon: 0.2 })),
   ];
   return liste;
 }
@@ -296,6 +301,7 @@ export function creerEtatJeu() {
     argent: ARGENT_DEPART,
     atelier: creerEtatAtelier(), // la gestion de l'atelier (étape 2)
     quetes: creerEtatQuetes(),   // toutes les quêtes, la lampe d'Odile comprise
+    journee: DEBUT_JOURNEE,      // le moment de la journée (version 1.2) : 0 = minuit, 0,5 = midi
   };
 }
 

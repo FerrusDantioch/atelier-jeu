@@ -23,6 +23,11 @@ habitants : chaque habitant a un problème à résoudre, ce sont les quêtes.
   les quêtes (la lampe d'Odile comprise) passent par le même moteur.
 - **Version 1.1** : des personnages et un décor aux formes arrondies (fini
   l'aspect « carré »), et de l'eau qui bouge doucement.
+- **Version 1.2** : une **gare à vapeur** avec Augustin le chef de gare et
+  deux nouvelles quêtes, **le jour et la nuit** (les lanternes s'allument le
+  soir), de la **fumée** qui sort des cheminées et du **vent** dans les arbres.
+
+![La gare de Cuivrebourg, avec sa locomotive](captures/pc-gare.png)
 
 ![L'atelier ouvert, avec des clients au comptoir](captures/pc-atelier.png)
 
@@ -151,11 +156,12 @@ Odile prête 30 pièces pour repartir.
 
 ## Les lieux et les quêtes (étape 3)
 
-Cuivrebourg compte maintenant trois lieux. On passe de l'un à l'autre en
-marchant jusqu'à la sortie, avec un fondu doux.
+Cuivrebourg compte maintenant quatre lieux (la gare est arrivée avec la
+version 1.2). On passe de l'un à l'autre en marchant jusqu'à la sortie, avec
+un fondu doux.
 
 ```
-[ La place ]  ── portail du sud ──  [ Le marché ]  ── chemin de l'est ──  [ Le moulin ]
+[ La place ] ─ portail du sud ─ [ Le marché ] ─ chemin de l'est ─ [ Le moulin ] ─ route de l'est ─ [ La gare ]
 ```
 
 - **La place** : l'atelier, Odile, le puits. Le portail du sud s'ouvre quand
@@ -164,6 +170,10 @@ marchant jusqu'à la sortie, avec un fondu doux.
   **Léon** le facteur (il connaît toutes les nouvelles et donne des indices).
   Le chemin du moulin est d'abord bloqué par un arbre tombé.
 - **Le moulin** : le canal, la grande roue à aubes et **Barnabé** le meunier.
+  La route de la gare, à l'est, est fermée par une barrière rayée.
+- **La gare** (version 1.2) : la voie ferrée, le quai, la grande horloge, une
+  locomotive verte et son wagon, un château d'eau, et **Augustin** le chef de
+  gare.
 
 Les quêtes s'enchaînent : chacune ouvre la suivante.
 
@@ -174,7 +184,15 @@ Les quêtes s'enchaînent : chacune ouvre la suivante.
 3. **La roue du moulin** : retrouver 3 pales dans l'herbe près du moulin,
    fabriquer un axe en laiton à l'établi (1 cuivre, 2 bois), l'installer sur
    le mécanisme au bord du canal, puis revenir voir Barnabé. Récompense :
-   150 pièces, et la roue tourne de nouveau.
+   150 pièces, la roue tourne de nouveau, et la barrière de la gare se lève.
+4. **L'horloge de la gare** : retrouver les 3 rouages de l'horloge autour de
+   la gare, fabriquer un régulateur d'horloge (1 cuivre, 2 ressorts),
+   l'installer dans l'horloge du quai, puis revenir voir Augustin.
+   Récompense : 170 pièces. L'horloge donne ensuite l'heure du jeu.
+5. **Le premier train** : fabriquer un sifflet à vapeur (2 cuivres, 1 bois),
+   l'installer sur la locomotive, puis prévenir Augustin (« En voiture ! »).
+   Récompense : 200 pièces. Ensuite, le train part régulièrement vers l'est,
+   puis revient de l'ouest en ralentissant doucement.
 
 Les objets de quête n'apparaissent à l'établi que pendant leur quête, et les
 clients ne les commandent jamais. L'atelier continue de vivre pendant que
@@ -208,6 +226,7 @@ sur l'appareil, à part de la partie : « Nouvelle partie » ne les efface pas.
 |---|---|---|
 | Musique douce | **Coupée** | Une musique lente et calme, différente dans chaque lieu (fa majeur sur la place, sol majeur plus enjoué au marché, ré plus rêveur au moulin). Volume en 5 crans. |
 | Petits sons | **Coupés** | De douces notes de clochette : objet ramassé, pièces gagnées, fabrication terminée, client qui arrive. Volume en 5 crans. |
+| Jour et nuit | Activé | Le soir tombe, les lanternes s'allument, puis le jour revient (une journée dure 8 minutes). « Toujours le jour » : la lumière ne change plus. |
 | Qualité de l'image | Normale | « Économie » : image moins fine, sans ombres, 30 images par seconde. Pour un téléphone qui chauffe ou se décharge vite. |
 | Écran | — | Passer en plein écran (si le navigateur le permet). |
 | Application | — | Installer le jeu (quand Chrome le propose). |
@@ -263,13 +282,54 @@ légères : le téléphone dessine à peu près le même nombre d'objets qu'avan
 Tout est lent et peu contrasté : rien ne clignote. Si votre système demande
 « moins d'animations », l'eau reste immobile.
 
+## La gare à vapeur (version 1.2)
+
+On y arrive par la route à l'est du moulin, une fois la roue réparée.
+**Augustin**, le chef de gare, a deux problèmes : sa grande horloge s'est
+arrêtée (à quatre heures dix), et le sifflet de sa locomotive a rouillé.
+Sans l'heure et sans sifflet, aucun train ne peut partir !
+
+Une fois l'horloge réparée, elle **donne l'heure du jeu** (on peut la lire en
+s'approchant). Une fois le train réparé, il fait un tour toutes les
+100 secondes : il attend à quai en fumant, démarre lentement vers l'est (avec
+un petit « tchou » si les sons sont activés), disparaît, puis revient de
+l'ouest en ralentissant. Ses roues tournent, sa fumée traîne derrière lui.
+
+## Le jour et la nuit (version 1.2)
+
+Une journée entière de Cuivrebourg dure **8 minutes**. Une nouvelle partie
+commence le matin, vers 8 heures, et l'heure est sauvegardée avec la partie.
+
+- Le soir, le ciel prend des couleurs chaudes, puis bleues ; un petit message
+  prévient : « Le soir tombe sur Cuivrebourg ».
+- La nuit, **les fenêtres et les lanternes s'allument**, avec un halo doré.
+  Il y a des lanternes dans chaque lieu.
+- Au matin, le jour se lève doucement.
+
+Pour le confort : tout change très lentement (le test automatique vérifie
+qu'aucune image ne change de plus de 0,2 % par rapport à la précédente), la
+nuit reste claire, et **les ombres ne bougent pas**. Dans les options, on peut
+choisir « Toujours le jour ».
+
+![La place la nuit, avec ses lanternes allumées](captures/pc-nuit.png)
+
+## Un décor qui vit (version 1.2)
+
+- De la **fumée** sort doucement des cheminées : la forge de l'atelier (plus
+  épaisse pendant une fabrication), la maison d'Odile, la boutique d'épices,
+  le moulin, la gare et la locomotive. Les bouffées montent, grossissent,
+  penchent avec le vent et s'effacent.
+- Le **vent** fait bouger un tout petit peu le feuillage des arbres et des
+  buissons, chacun à son rythme.
+
 ## Confort visuel et sonore
 
 Couleurs douces et chaudes, éclairage doux, aucun clignotement, aucune
 secousse de caméra. **Aucun son tant qu'on ne l'a pas activé** dans les
 options ; et même activés, musique et sons restent doux. Si votre système
 demande « moins d'animations », les engrenages et les marqueurs ne flottent
-plus, l'eau reste immobile, et le joystick ne glisse plus.
+plus, l'eau, la fumée et le feuillage restent immobiles, et le joystick ne
+glisse plus.
 
 ## Vérifier les règles du jeu (tests automatiques)
 
@@ -277,12 +337,13 @@ plus, l'eau reste immobile, et le joystick ne glisse plus.
 npm test
 ```
 
-(C'est la même chose que `node --test`.) 104 tests vérifient les quêtes,
-l'argent, les collisions dans les trois lieux, la gestion de l'atelier (dont
+(C'est la même chose que `node --test`.) 122 tests vérifient les quêtes,
+l'argent, les collisions dans les quatre lieux, la gestion de l'atelier (dont
 une partie de 15 minutes jouée automatiquement), la sauvegarde (y compris
 des sauvegardes abîmées ou trafiquées), les options, la musique (toutes les
 notes dans la gamme, pas de grand saut, des silences pour respirer), les
-formes arrondies (bonne taille, aucune surface à l'envers) et les fichiers
+formes arrondies (bonne taille, aucune surface à l'envers), le jour et la
+nuit (aucun changement brusque), l'horaire du train et les fichiers
 d'installation. Tout doit être indiqué `pass`.
 
 ## L'organisation des fichiers
@@ -296,16 +357,19 @@ d'installation. Tout doit être indiqué `pass`.
 | `js/logique-quetes.js` | **Le moteur de quêtes**, sans aucune 3D : toutes les quêtes (la lampe d'Odile, la balance, la roue) décrites comme des données, leurs étapes et leurs textes |
 | `js/logique-zones.js` | **Les lieux**, sans aucune 3D : plan du marché et du moulin, sorties, portes fermées ou ouvertes, répliques de Léon |
 | `js/logique-sauvegarde.js` | Transforme la partie en texte et la relit en vérifiant tout |
+| `js/logique-temps.js` | **Le jour et la nuit**, sans aucune 3D : l'heure, les couleurs de chaque moment, l'horaire du train |
 | `js/logique-reglages.js` | **Les options**, sans navigateur : valeurs de départ, volumes, qualité, numéro de version |
 | `js/logique-musique.js` | **La composition de la musique**, sans son : gammes, accords, mélodie, petits sons |
 | `js/musique.js` | Fait sonner la musique et les petits sons (Web Audio, le synthétiseur du navigateur) |
 | `js/interface-options.js` | Le panneau des options (musique, sons, qualité, plein écran, installer) |
 | `js/main.js` | Le chef d'orchestre : crée la scène 3D, la caméra, la lumière, et fait tourner le jeu |
 | `js/decor.js` | La place en 3D : sol, haies, arbres, puits, atelier, maison d'Odile, établi, lampe, comptoir, améliorations |
-| `js/decor-zones.js` | Le marché et le moulin en 3D : étals, fontaine, canal, roue à aubes, pales |
+| `js/decor-zones.js` | Le marché et le moulin en 3D : étals, fontaine, canal, roue à aubes, pales, barrière de la gare |
+| `js/decor-gare.js` | La gare en 3D : voie ferrée, quai, horloge, locomotive et wagon, château d'eau |
+| `js/vie.js` | Le décor qui vit : fumée des cheminées, vent dans les feuillages, lanternes et fenêtres qui s'allument la nuit |
 | `js/formes.js` | Les formes de base aux bords arrondis : boîtes, cylindres, gélules, formes « tournées » comme un vase |
 | `js/eau.js` | L'eau qui bouge : reflets qui ondulent, ronds dans l'eau, feuilles au fil du canal |
-| `js/personnages.js` | Ferrus (avec ses lunettes d'artisan), Odile, Capucine, Barnabé, Léon, les clients, et leurs animations |
+| `js/personnages.js` | Ferrus (avec ses lunettes d'artisan), Odile, Capucine, Barnabé, Léon, Augustin, les clients, et leurs animations |
 | `js/commandes.js` | Le clavier, le joystick tactile (qui vient sous le pouce) et le bouton « Interagir » |
 | `js/interface.js` | L'argent, l'objectif, la barre de fabrication, les petits messages, la boîte de dialogue |
 | `js/interface-atelier.js` | Le panneau de l'établi (onglets Fabriquer, Acheter, Améliorer) |
@@ -315,6 +379,7 @@ d'installation. Tout doit être indiqué `pass`.
 | `tests/etape3.test.js` | Les tests automatiques des quêtes, des lieux et de la sauvegarde |
 | `tests/etape4.test.js` | Les tests automatiques des options, de la musique et des fichiers d'installation |
 | `tests/formes.test.js` | Les tests automatiques des formes arrondies |
+| `tests/version12.test.js` | Les tests automatiques de la gare, du jour et de la nuit, et du train |
 | `manifest.webmanifest` | La « fiche d'identité » de l'application : nom, icône, couleurs, plein écran |
 | `sw.js` | Le « service worker » : garde une copie du jeu pour jouer sans connexion |
 | `icones/` | L'icône du jeu (un engrenage de cuivre et une flamme) : le dessin `icone.svg` et ses versions PNG |
@@ -359,7 +424,7 @@ https://ferrusdantioch.github.io/atelier-jeu/ . Dans les messageries, le
 lien s'affiche avec le titre du jeu et une image du marché.
 
 **Publier une nouvelle version** : changez le numéro de version (par exemple
-`1.1.0` → `1.1.1`) aux **trois** endroits suivants, puis envoyez sur `main` :
+`1.2.0` → `1.2.1`) aux **trois** endroits suivants, puis envoyez sur `main` :
 `package.json`, `js/logique-reglages.js` (`VERSION_JEU`) et `sw.js`
 (`VERSION`). Un test vérifie qu'ils sont identiques. Les téléphones qui ont
 installé le jeu reçoivent la nouvelle version à la prochaine ouverture avec

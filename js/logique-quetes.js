@@ -13,7 +13,8 @@
 //                   ayant l'objet demandé dans le stock s'il y en a un ;
 //   - 'parler'    : simplement parler à un personnage.
 //
-// Les quêtes s'enchaînent : chacune a pour prérequis la précédente. La toute
+// Les quêtes s'enchaînent : chacune a pour prérequis la précédente
+// (la lampe → la balance → la roue → l'horloge de la gare → le premier train). La toute
 // première (la lampe d'Odile) n'a pas de prérequis : elle est disponible dès
 // le début de la partie, et la terminer ouvre l'atelier.
 //
@@ -166,8 +167,107 @@ export const QUETES = Object.freeze({
       fin: [
         "Écoutez-moi ce bruit… la roue tourne ! Le moulin revit !",
         "Voici vos 150 pièces. Demain, tout Cuivrebourg aura du pain frais, grâce à vous.",
+        "Et j'ai ouvert la barrière de la route de la gare, à l'est. Augustin, le chef de gare, cherche quelqu'un d'habile.",
       ],
-      apres: ["La roue tourne comme une horloge. Merci encore, Ferrus !"],
+      apres: ["La roue tourne comme une horloge. Mais celle de la gare, elle, ne tourne plus… Allez voir Augustin, à l'est !"],
+    },
+  },
+
+  // --- Version 1.2 : la gare à vapeur ---------------------------------------------
+  'horloge-gare': {
+    titre: "L'horloge de la gare",
+    donneur: 'augustin',
+    lieuDonneur: "à la gare, par la route à l'est du moulin",
+    prerequis: 'roue-moulin',
+    recettes: ['regulateur'],
+    etapes: [
+      {
+        type: 'ramasser',
+        // Les rouages de l'horloge, que des enfants ont semés en jouant.
+        objets: [
+          { id: 'rouage-1', lieu: 'gare', x: -8.5, z: 4.2 },
+          { id: 'rouage-2', lieu: 'gare', x: 2.5, z: 5 },
+          { id: 'rouage-3', lieu: 'gare', x: 11, z: -0.8 },
+        ],
+        ramasse: 'Rouage ramassé',
+        messageFin: "Tous les rouages ! Il manque encore un régulateur neuf.",
+        objectif: "Retrouve les rouages de l'horloge, autour de la gare",
+      },
+      {
+        type: 'fabriquer',
+        objet: 'regulateur',
+        objectif: "Fabrique un régulateur d'horloge à l'établi de l'atelier (1 cuivre, 2 ressorts).",
+      },
+      {
+        type: 'utiliser',
+        cible: 'horloge',
+        objet: 'regulateur',
+        messageFait: "L'horloge de la gare repart !",
+        objectif: "Installe le régulateur et les rouages dans la grande horloge, sur le quai de la gare.",
+      },
+      {
+        type: 'parler',
+        pnj: 'augustin',
+        objectif: "L'horloge tourne ! Retourne voir Augustin, sur le quai.",
+      },
+    ],
+    recompense: 170,
+    textes: {
+      proposition: [
+        "Bonjour ! Augustin, chef de gare. Barnabé m'a dit que vous étiez l'artisan qui répare tout.",
+        "Notre grande horloge s'est arrêtée. Sans l'heure, impossible de faire partir un train !",
+        'Ses trois rouages sont tombés, et des enfants les ont emportés pour jouer : ils sont quelque part autour de la gare.',
+        'Il lui faudra aussi un régulateur neuf. Je vous paierai 170 pièces.',
+      ],
+      enCours: ['Trois rouages, un régulateur neuf, et notre horloge repartira. Je compte sur vous !'],
+      fin: [
+        "Tic, tac… Elle repart ! Et elle donne l'heure juste.",
+        "Voici vos 170 pièces. Maintenant, il ne manque plus qu'une chose pour que le train reparte…",
+      ],
+      apres: ['Notre horloge est la plus précise de la région. Merci, Ferrus !'],
+    },
+  },
+
+  'train-cuivrebourg': {
+    titre: 'Le premier train',
+    donneur: 'augustin',
+    lieuDonneur: 'à la gare, sur le quai',
+    prerequis: 'horloge-gare',
+    recettes: ['sifflet'],
+    etapes: [
+      {
+        type: 'fabriquer',
+        objet: 'sifflet',
+        objectif: "Fabrique un sifflet à vapeur à l'établi de l'atelier (2 cuivres, 1 bois).",
+      },
+      {
+        type: 'utiliser',
+        cible: 'locomotive',
+        objet: 'sifflet',
+        messageFait: 'Le sifflet est installé : la locomotive chauffe !',
+        objectif: 'Installe le sifflet à vapeur sur la locomotive, à la gare.',
+      },
+      {
+        type: 'parler',
+        pnj: 'augustin',
+        choix: 'En voiture !',
+        objectif: 'La locomotive est prête ! Va prévenir Augustin, sur le quai.',
+      },
+    ],
+    recompense: 200,
+    textes: {
+      proposition: [
+        'La locomotive est en bon état, mais son sifflet a rouillé.',
+        "Sans sifflet, pas de départ : c'est le règlement ! Pourriez-vous en fabriquer un neuf ?",
+        'Si le train repart, Cuivrebourg sera de nouveau reliée au monde. Je vous offrirai 200 pièces.',
+      ],
+      enCours: ["Un sifflet à vapeur, bien sonore mais pas trop. Je l'attends avec impatience !"],
+      fin: [
+        'Écoutez… Tchou-tchou ! Le premier train de Cuivrebourg depuis des années !',
+        "Voici vos 200 pièces. Le train passera maintenant régulièrement, à l'heure de notre horloge.",
+        "Cuivrebourg revit, Ferrus. Et c'est grâce à vous.",
+      ],
+      apres: ["Le train passe à l'heure, grâce à votre horloge et à votre sifflet. Bravo !"],
     },
   },
 });
@@ -391,7 +491,7 @@ export function objectifQuetes(etat) {
   return null;
 }
 
-const NOMS = { odile: 'Odile', capucine: 'Capucine', barnabe: 'Barnabé' };
+const NOMS = { odile: 'Odile', capucine: 'Capucine', barnabe: 'Barnabé', augustin: 'Augustin' };
 function nomDonneur(pnj) {
   return NOMS[pnj] || pnj;
 }
