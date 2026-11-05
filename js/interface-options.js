@@ -9,6 +9,7 @@
 //   - la musique douce (coupée au départ) et son volume ;
 //   - les petits sons (coupés au départ) et leur volume ;
 //   - la qualité de l'image (« Économie » pour les téléphones qui chauffent) ;
+//   - le cycle du jour et de la nuit (version 1.2) ;
 //   - le plein écran (sur les navigateurs qui le permettent) ;
 //   - l'installation du jeu comme une application (quand Chrome le propose).
 //
@@ -24,6 +25,7 @@ export function creerPanneauOptions({ reglages, surChangement, surFermeture, est
   const panneau = $('panneau-options');
   const boutonMusique = $('option-musique');
   const boutonSons = $('option-sons');
+  const boutonJourNuit = $('option-jour-nuit');
   const boutonsQualite = [...panneau.querySelectorAll('[data-qualite]')];
   const sectionEcran = $('option-section-ecran');
   const boutonEcran = $('option-plein-ecran');
@@ -80,6 +82,11 @@ export function creerPanneauOptions({ reglages, surChangement, surFermeture, est
     reglages.sons = !reglages.sons;
     majAffichage();
     surChangement('sons');
+  });
+  boutonJourNuit.addEventListener('click', () => {
+    reglages.jourNuit = !reglages.jourNuit;
+    majAffichage();
+    surChangement('jourNuit');
   });
   for (const volume of panneau.querySelectorAll('[data-volume]')) {
     const cle = volume.dataset.volume;
@@ -155,6 +162,7 @@ export function creerPanneauOptions({ reglages, surChangement, surFermeture, est
   function majAffichage() {
     majInterrupteur(boutonMusique, reglages.musique, 'Activée', 'Coupée');
     majInterrupteur(boutonSons, reglages.sons, 'Activés', 'Coupés');
+    majInterrupteur(boutonJourNuit, reglages.jourNuit, 'Activé', 'Toujours le jour');
     for (const volume of panneau.querySelectorAll('[data-volume]')) {
       const niveau = reglages[volume.dataset.volume];
       [...volume.querySelectorAll('.crans span')].forEach((c, i) => c.classList.toggle('plein', i < niveau));

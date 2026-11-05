@@ -61,7 +61,7 @@ test('des réglages abîmés ou trafiqués redonnent des valeurs sûres', () => 
 });
 
 test('les réglages enregistrés se relisent à l\'identique', () => {
-  const r = { musique: true, volumeMusique: 2, sons: false, volumeSons: 5, qualite: 'economie' };
+  const r = { musique: true, volumeMusique: 2, sons: false, volumeSons: 5, qualite: 'economie', jourNuit: false };
   assert.deepEqual(lireReglages(ecrireReglages(r)), r);
 });
 
@@ -111,7 +111,7 @@ test('les notes de base : le la 69 vaut 440 Hz, une octave double la fréquence'
 });
 
 test('chaque lieu a une musique lente', () => {
-  for (const nom of ['place', 'marche', 'moulin']) {
+  for (const nom of ['place', 'marche', 'moulin', 'gare']) {
     const a = AMBIANCES[nom];
     assert.ok(a, nom);
     assert.ok(a.tempo >= 50 && a.tempo <= 80, `${nom} : tempo ${a.tempo}`);

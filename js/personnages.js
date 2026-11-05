@@ -271,6 +271,8 @@ export const TENUES_PNJ = {
   barnabe: { peau: '#dcae8c', haut: '#ece6da', bas: '#b9ad99', cheveux: '#6b5a4a', chapeau: 'bonnet', couleurChapeau: '#f3eee4', tablier: '#d8cdb8' },
   // Léon, le facteur : uniforme bleu doux, casquette et sacoche.
   leon: { peau: '#c99674', haut: '#6f86a6', bas: '#4a4f5c', cheveux: '#2f2723', chapeau: 'casquette', couleurChapeau: '#4f6585', sacoche: '#8a5a3a' },
+  // Augustin, le chef de gare (version 1.2) : uniforme gris-bleu, casquette rouge, moustache grise.
+  augustin: { peau: '#e2b48f', haut: '#56677a', bas: '#3f434a', cheveux: '#9a948a', chapeau: 'casquette', couleurChapeau: '#a05a4c', moustache: '#9a948a', boutons: '#c99a4a' },
 };
 
 // Crée un personnage à partir d'une tenue (voir TENUES et TENUES_PNJ).
@@ -296,6 +298,15 @@ export function creerPersonnage(t, numero = 0) {
   yeux(corps, 1.58, 0.205);
   const coiffe = piece(corps, calotte(0.245), t.cheveux, 0, 1.6, -0.02);
   coiffe.scale.set(1, 0.85, 1);
+  // Une belle moustache, et des boutons dorés sur la veste.
+  if (t.moustache) {
+    for (const cote of [-1, 1]) {
+      const m = piece(corps, boule(0.06, 1), t.moustache, cote * 0.055, 1.5, 0.21);
+      m.scale.set(1.3, 0.55, 0.7);
+      m.rotation.z = cote * 0.35;
+    }
+  }
+  if (t.boutons) for (const [y, z] of [[0.88, 0.288], [1.03, 0.28], [1.18, 0.268]]) piece(corps, boule(0.025, 1), t.boutons, 0, y, z);
 
   // Le chapeau.
   if (t.chapeau === 'haut-de-forme') {

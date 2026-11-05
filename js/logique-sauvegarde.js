@@ -18,6 +18,7 @@ import { creerEtatJeu } from './logique.js';
 import { RECETTES } from './logique-atelier.js';
 import { ZONES } from './logique-zones.js';
 import { QUETES, majDisponibilites } from './logique-quetes.js';
+import { bouclerJournee } from './logique-temps.js';
 
 export const CLE_SAUVEGARDE = 'atelier-cuivrebourg-sauvegarde';
 // Version 2 : la quête de la lampe d'Odile est rangée avec les autres quêtes.
@@ -105,6 +106,8 @@ export function chargerPartie(texte) {
     .filter((c) => estObjet(c) && estNombre(c.id) && typeof c.nom === 'string' && RECETTES[c.commande])
     .slice(0, 3)
     .map((c) => ({ id: c.id, nom: c.nom, salut: typeof c.salut === 'string' ? c.salut : 'Bonjour !', commande: c.commande }));
+  // Le moment de la journée (version 1.2) : toujours entre 0 et 1.
+  etat.journee = bouclerJournee(etat.journee);
   // Les quêtes.
   const statuts = ['verrouillee', 'disponible', 'en_cours', 'terminee'];
   for (const [id, s] of Object.entries(etat.quetes)) {

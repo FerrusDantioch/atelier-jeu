@@ -19,6 +19,17 @@ import {
 } from './decor.js';
 import { boite, cylindre, boule, tour } from './formes.js';
 import { EAU_CALME, EAU_COURANTE, creerRonds, creerFeuilles } from './eau.js';
+import { creerFumee } from './vie.js';
+import { ajouterLampadaires } from './decor.js';
+
+// Une cheminée de briques sur un toit, avec sa fumée. Renvoie la fumée.
+function cheminee(groupe, x, z, opacite = 0.45) {
+  groupe.add(objet(boite(0.55, 1.6, 0.55), COULEURS.brique, x, 0.4 + 3 + 1.1, z, { ombre: true }));
+  const fumee = creerFumee({ taille: 0.24, opacite, periode: 8, nombre: 4 });
+  fumee.position.set(x, 0.4 + 3 + 1.95, z);
+  groupe.add(fumee);
+  return fumee;
+}
 
 // Un sac (de farine, de grain) : un profil de sac « tourné », posé au sol.
 const formeSac = tour([[0, 0], [0.19, 0], [0.24, 0.06], [0.26, 0.2], [0.23, 0.34], [0.14, 0.42], [0.07, 0.46], [0, 0.47]], 14);
@@ -65,7 +76,7 @@ function batimentAvecEnseigne(scene, b, hauteurToit, fenetres) {
 }
 
 // Un poteau avec un panneau indicateur (« MOULIN », « PLACE »…), pour s'orienter.
-function poteauIndicateur(scene, texte, x, z) {
+export function poteauIndicateur(scene, texte, x, z) {
   const g = new THREE.Group();
   g.position.set(x, 0, z);
   g.add(objet(boite(0.14, 2.0, 0.14), COULEURS.boisFonce, 0, 1.0, 0));
@@ -76,7 +87,7 @@ function poteauIndicateur(scene, texte, x, z) {
 }
 
 // Deux poteaux de portail (le passage est ouvert).
-function poteauxPassage(scene, x, z, ecart, surX = true) {
+export function poteauxPassage(scene, x, z, ecart, surX = true) {
   const poteau = boite(0.3, 1.8, 0.3);
   for (const s of [-1, 1]) {
     scene.add(objet(poteau, COULEURS.boisFonce, surX ? x + s * ecart : x, 0.9, surX ? z : z + s * ecart));
@@ -92,8 +103,10 @@ export function construireMarche(scene, zone) {
   construireHaies(scene, zone);
   construireArbres(scene, zone);
 
-  // Les deux boutiques du nord.
-  for (const b of zone.batiments) batimentAvecEnseigne(scene, b, 2.0, [-2.2, 2.2]);
+  // Les deux boutiques du nord (le marchand d'épices a allumé son poêle).
+  const boutiques = zone.batiments.map((b) => batimentAvecEnseigne(scene, b, 2.0, [-2.2, 2.2]));
+  const fumeeEpices = cheminee(boutiques[1], 1.8, -0.6);
+  ajouterLampadaires(scene, zone.lampadaires);
 
   // L'entrée vers la place (au nord) et le chemin du moulin (à l'est).
   poteauxPassage(scene, 0, -9.5, 1.5);
@@ -146,7 +159,7 @@ export function construireMarche(scene, zone) {
   barriere.add(objet(boule(0.7, 2), COULEURS.feuillageClair, -0.3, 0.6, 2.7));
   scene.add(barriere);
 
-  return { barriere, eau: [eauFontaine] };
+  return { barriere, eau: [eauFontaine], vie: [fumeeEpices] };
 }
 
 // Un étal : une table, quatre poteaux et un auvent à rayures.
@@ -216,8 +229,23 @@ export function construireMoulin(scene, zone) {
     scene.add(objet(boite(c.largeur + 10, 0.2, 0.3), COULEURS.pierre, c.x, 0.1, c.z + s * (c.profondeur / 2 + 0.05), { recoit: true }));
   }
 
-  // Le moulin, avec son enseigne.
-  for (const b of zone.batiments) batimentAvecEnseigne(scene, b, 2.6, [-1.9]);
+  // Le moulin, avec son enseigne et sa cheminée.
+  const batiment = batimentAvecEnseigne(scene, zone.batiments[0], 2.6, [-1.9]);
+  const fumeeMoulin = cheminee(batiment, 1.6, -0.8, 0.4);
+  ajouterLampadaires(scene, zone.lampadaires);
+
+  // La route de la gare, à l'est (version 1.2) : deux poteaux, un panneau, et
+  // une barrière rayée qui reste baissée jusqu'à la fin de la quête de Barnabé.
+  const bg = zone.barriere;
+  poteauxPassage(scene, bg.x, bg.z, 1.6, false);
+  poteauIndicateur(scene, 'GARE', 13.2, -2.4);
+  const barriereGare = new THREE.Group();
+  barriereGare.position.set(bg.x, 0, bg.z);
+  for (let i = 0; i < 6; i++) {
+    barriereGare.add(objet(boite(0.16, 0.16, 0.52, 0.05), i % 2 ? '#efe2c4' : '#c98b7a', 0, 1.0, -1.3 + i * 0.52));
+  }
+  barriereGare.add(objet(boite(0.14, 0.8, 0.14), COULEURS.boisFonce, 0, 0.5, 0));
+  scene.add(barriereGare);
 
   // Des sacs de farine contre le mur, à droite de la porte.
   const avant = zone.batiments[0].z + zone.batiments[0].profondeur / 2;
@@ -240,7 +268,7 @@ export function construireMoulin(scene, zone) {
   meca.add(levier);
   scene.add(meca);
 
-  return { roue, eau: [feuilles] };
+  return { roue, barriereGare, eau: [feuilles], vie: [fumeeMoulin] };
 }
 
 // La roue : deux cercles, des rayons et des pales. Trois pales manquent tant

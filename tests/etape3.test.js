@@ -193,11 +193,10 @@ test('quête du moulin : pales, axe, mécanisme, Barnabé', () => {
   appliquerActionQuete(etat, fin.choix[0].action);
   assert.equal(etat.argent, argentAvant + QUETES['roue-moulin'].recompense);
   assert.equal(queteEnCours(etat), null);
-  assert.equal(queteDisponible(etat), null);
-  // Plus de quête : l'objectif revient à l'atelier.
-  assert.equal(objectifQuetes(etat), null);
-  assert.ok(objectifActuel(etat).length > 10);
-  assert.match(dialogueLeon(etat).repliques[0], /Cuivrebourg revit/);
+  // Version 1.2 : la quête suivante attend à la gare, chez Augustin.
+  assert.equal(queteDisponible(etat).id, 'horloge-gare');
+  assert.match(objectifQuetes(etat), /Augustin/);
+  assert.match(dialogueLeon(etat).repliques[0], /gare/);
 });
 
 test('une seule quête en cours à la fois, et on ne peut pas tricher avec les actions', () => {
