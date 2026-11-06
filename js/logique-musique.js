@@ -62,6 +62,15 @@ export const AMBIANCES = {
     progression: [0, 4, 5, 3, 0, 4, 1, 4],
     densite: 0.46,
   },
+  // Version 1.3 : la mine, grave et paisible (l'écho des collines).
+  mine: {
+    nom: 'La mine de cuivre',
+    tempo: 58,
+    tonique: 52, // mi (en mode dorien : plus grave et rêveur que la gare)
+    gamme: 'dorien',
+    progression: [0, 6, 3, 0, 4, 3, 6, 0],
+    densite: 0.3,
+  },
 };
 
 export const TEMPS_PAR_MESURE = 4;
@@ -236,6 +245,13 @@ export const SONS = {
   ],
   // Un client arrive : une seule note, très discrète.
   client: [{ temps: 0, duree: 0.8, midi: 72, force: 0.3 }],
+  // Une boîte à musique vendue (version 1.3) : sa petite ritournelle.
+  boiteMusique: [
+    { temps: 0, duree: 0.4, midi: 84, force: 0.3 },
+    { temps: 0.22, duree: 0.4, midi: 79, force: 0.28 },
+    { temps: 0.44, duree: 0.4, midi: 81, force: 0.28 },
+    { temps: 0.66, duree: 0.7, midi: 76, force: 0.26 },
+  ],
   // Le train part (version 1.2) : un « tchou » tout doux, deux notes qui descendent.
   sifflet: [
     { temps: 0, duree: 0.45, midi: 81, force: 0.28 },

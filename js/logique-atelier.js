@@ -54,6 +54,23 @@ export const RECETTES = Object.freeze({
     prixVente: 75,
     plans: 'plans-horloge',
   },
+  // Version 1.3 : deux nouveaux objets pour les clients.
+  'boite-musique': {
+    nom: 'Boîte à musique',
+    article: 'une boîte à musique',
+    ingredients: { cuivre: 1, bois: 2, ressort: 1 },
+    duree: 12,
+    prixVente: 70,
+    plans: 'plans-boite-musique',
+  },
+  automate: {
+    nom: 'Automate de cuivre',
+    article: 'un automate de cuivre',
+    ingredients: { cuivre: 3, ressort: 2 },
+    duree: 18,
+    prixVente: 120,
+    plans: 'plans-automate',
+  },
   // Objets de quête (étape 3) : on ne peut les fabriquer que pendant la quête
   // qui les demande (« quete »), et les clients ne les commandent jamais.
   balance: {
@@ -89,6 +106,14 @@ export const RECETTES = Object.freeze({
     prixVente: 0,
     quete: 'train-cuivrebourg',
   },
+  'roue-wagonnet': {
+    nom: 'Roue de wagonnet',
+    article: 'une roue de wagonnet',
+    ingredients: { cuivre: 1, bois: 1, ressort: 1 },
+    duree: 9,
+    prixVente: 0,
+    quete: 'wagonnet-mine',
+  },
 });
 
 // Les améliorations de l'atelier (chacune ne s'achète qu'une fois).
@@ -97,6 +122,10 @@ export const AMELIORATIONS = Object.freeze({
   soufflet: { nom: 'Soufflet de forge', description: 'La fabrication va deux fois plus vite.', prix: 90 },
   enseigne: { nom: 'Enseigne en cuivre', description: 'Les clients viennent plus souvent.', prix: 110 },
   'plans-horloge': { nom: "Plans d'horloger", description: 'Débloque la fabrication des horloges.', prix: 140 },
+  // Version 1.3.
+  'plans-boite-musique': { nom: 'Plans de boîte à musique', description: 'Débloque la fabrication des boîtes à musique.', prix: 120 },
+  // Celle-ci ne s'achète pas : c'est le cadeau de Sidonie, à la fin de sa quête à la mine.
+  'plans-automate': { nom: "Plans d'automate", description: 'Débloque la fabrication des automates de cuivre.', prix: 0, cadeau: 'wagonnet-mine' },
 });
 
 // Les habitants qui viennent acheter (ils arrivent chacun leur tour).
@@ -282,6 +311,7 @@ export function acheterAmelioration(etat, id) {
   if (!amelioration) return [];
   if (!a.ouvert) return ["L'atelier n'est pas encore ouvert."];
   if (possedeAmelioration(etat, id)) return ['Déjà installé.'];
+  if (amelioration.cadeau) return ["Ces plans ne s'achètent pas : Sidonie, à la mine de cuivre, pourrait vous les offrir."];
   if (etat.argent < amelioration.prix) return [`Pas assez d'argent (${amelioration.prix} pièces).`];
   etat.argent -= amelioration.prix;
   a.ameliorations.push(id);
@@ -403,7 +433,7 @@ export function objectifAtelier(etat) {
     return `${client.nom} veut ${r.article} : lance la fabrication à l'établi.`;
   }
   if (a.fabrication) return `Fabrication en cours : ${RECETTES[a.fabrication.recette].nom}. Des clients vont arriver.`;
-  const amelioration = Object.entries(AMELIORATIONS).find(([id, am]) => !possedeAmelioration(etat, id) && etat.argent >= am.prix);
+  const amelioration = Object.entries(AMELIORATIONS).find(([id, am]) => !am.cadeau && !possedeAmelioration(etat, id) && etat.argent >= am.prix);
   if (amelioration) return `En attendant les clients : améliore l'atelier à l'établi (${amelioration[1].nom}, ${amelioration[1].prix} pièces).`;
   return "En attendant les clients, prépare des objets à l'établi.";
 }

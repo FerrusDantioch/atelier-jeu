@@ -10,6 +10,8 @@
 //   quête de Capucine.
 // - La route de la gare (version 1.2) est fermée par une barrière jusqu'à la
 //   fin de la quête de Barnabé.
+// - La mine de cuivre (version 1.3) n'a pas de chemin : on y va EN TRAIN,
+//   depuis la gare, une fois la quête du premier train terminée.
 //
 // Pour chaque lieu : ses limites, ses obstacles, ses personnages, les choses
 // avec lesquelles on peut interagir, ses sorties et ses points d'arrivée.
@@ -174,14 +176,15 @@ export const ZONES = Object.freeze({
       { id: 'gare', x: -9, z: -3, largeur: 7, profondeur: 3, murs: '#dcc4a0', toit: '#6f7d8c', enseigne: 'GARE' },
     ],
     // La grande horloge, sur un pilier au milieu du quai.
-    horloge: { id: 'horloge', x: 1, z: -4.7, rayon: 0.3 },
+    horloge: { id: 'horloge', x: 1, z: -4.4, rayon: 0.3 },
     // La locomotive attend sur la voie, à l'est du quai (son centre).
     locomotive: { x: 6, z: -7 },
     // Le château d'eau qui remplit la chaudière de la locomotive.
     chateauEau: { id: 'chateau-eau', x: 11.6, z: -3.6, rayon: 0.95 },
     // Un banc sur le quai.
-    bancs: [{ id: 'banc', x: -3.4, z: -4.75, largeur: 1.5, profondeur: 0.55 }],
-    lampadaires: [{ x: -4.9, z: -4.6 }, { x: 3.6, z: -4.6 }, { x: 9.4, z: -4.6 }, { x: -6, z: 1.4 }],
+    // (Entre le quai et la voie, on laisse toujours au moins 1 m pour passer.)
+    bancs: [{ id: 'banc', x: -3.4, z: -4.4, largeur: 1.5, profondeur: 0.55 }],
+    lampadaires: [{ x: -4.9, z: -4.4 }, { x: 3.6, z: -4.4 }, { x: 9.4, z: -4.4 }, { x: -6, z: 1.4 }],
     arbres: [{ x: -11.5, z: 6.5 }, { x: -5.5, z: 7.3 }, { x: 4, z: 7.4 }, { x: 10.5, z: 6.8 }, { x: 12.2, z: 2.8 }],
     rayonArbre: 0.65,
     pnj: [
@@ -189,7 +192,7 @@ export const ZONES = Object.freeze({
     ],
     interactifs: [
       { id: 'augustin', x: -1.3, z: -3.3, distanceInteraction: 2.2 },
-      { id: 'horloge', x: 1, z: -4.7, distanceInteraction: 1.9 },
+      { id: 'horloge', x: 1, z: -4.4, distanceInteraction: 1.9 },
       { id: 'locomotive', x: 6, z: -5.3, distanceInteraction: 2.1 },
     ],
     sorties: [
@@ -197,6 +200,55 @@ export const ZONES = Object.freeze({
     ],
     arrivees: {
       moulin: { x: -12.3, z: 0, orientation: Math.PI / 2 },
+      mine: { x: 6, z: -4.3, orientation: 0 }, // en descendant du train
+    },
+  },
+
+  // --- La mine de cuivre (version 1.3) : dans les collines, au bout de la voie
+  // ferrée. Une petite gare en bois, la cabane des mineurs, l'entrée de la
+  // mine creusée dans les rochers, le wagonnet et Sidonie, la mineuse.
+  mine: {
+    id: 'mine',
+    nom: 'La mine de cuivre',
+    limites: { minX: -14, maxX: 14, minZ: -9, maxZ: 9 },
+    joueur: MONDE.joueur,
+    camera: { minX: -7, maxX: 7, minZ: -4, maxZ: 5 },
+    haies: [
+      { id: 'haie-nord', x: 0, z: -9.5, largeur: 30, profondeur: 1 },
+      { id: 'haie-sud', x: 0, z: 9.5, largeur: 30, profondeur: 1 },
+      { id: 'haie-ouest', x: -14.5, z: 0, largeur: 1, profondeur: 20 },
+      { id: 'haie-est', x: 14.5, z: 0, largeur: 1, profondeur: 20 },
+    ],
+    voie: { id: 'voie', x: 0, z: -7, largeur: 30, profondeur: 2.6 },
+    batiments: [
+      { id: 'cabane', x: -9.5, z: -2.6, largeur: 6, profondeur: 3, murs: '#c4a582', toit: '#7d6a5a', enseigne: 'MINE' },
+    ],
+    // Le train qui attend à quai pour redescendre à Cuivrebourg (son centre).
+    locomotive: { x: 1, z: -7 },
+    // L'entrée de la mine, dans la colline, et les gros rochers autour.
+    entree: { id: 'entree-mine', x: 10, z: -3.4, largeur: 2.6, profondeur: 1.9 },
+    rochers: [
+      { x: 8, z: -3.5, rayon: 1.2 },
+      { x: 12.4, z: -3.3, rayon: 1.5 },
+      { x: 13, z: -0.8, rayon: 1.3 },
+      { x: 12.6, z: 1.2, rayon: 0.9 }, // collé au précédent : pas de passage trop étroit
+    ],
+    // Le wagonnet, sur ses petits rails qui sortent de la mine.
+    wagonnet: { id: 'wagonnet', x: 9.6, z: 0.4, largeur: 1, profondeur: 1.5 },
+    lampadaires: [{ x: -4.8, z: -4.4 }, { x: 4.6, z: -4.4 }, { x: 7, z: 1.6 }, { x: -6, z: 1.4 }],
+    arbres: [{ x: -11.5, z: 6.5 }, { x: -5, z: 7.2 }, { x: 4, z: 7.2 }, { x: 9.5, z: 7 }],
+    rayonArbre: 0.65,
+    pnj: [
+      { id: 'sidonie', nom: 'Sidonie', x: 3.4, z: -1.3, rayon: 0.45, distanceInteraction: 2.2 },
+    ],
+    interactifs: [
+      { id: 'sidonie', x: 3.4, z: -1.3, distanceInteraction: 2.2 },
+      { id: 'wagonnet', x: 9.6, z: 0.4, distanceInteraction: 2.0 },
+      { id: 'train-retour', x: 1.5, z: -5.3, distanceInteraction: 2.1 },
+    ],
+    sorties: [],
+    arrivees: {
+      gare: { x: 1, z: -4.3, orientation: 0 }, // en descendant du train
     },
   },
 });
@@ -248,6 +300,9 @@ export function obstaclesZone(zoneId, etat) {
   (z.bancs || []).forEach(ajouterRect);
   if (z.canal) ajouterRect(z.canal);
   if (z.voie) ajouterRect(z.voie);
+  if (z.entree) ajouterRect(z.entree);
+  if (z.wagonnet) ajouterRect(z.wagonnet);
+  (z.rochers || []).forEach((r, i) => liste.push({ type: 'cercle', id: `rocher-${i + 1}`, x: r.x, z: r.z, rayon: r.rayon }));
   // Une barrière (arbre tombé, barrière de la gare) bloque tant qu'elle n'est pas ouverte.
   if (z.barriere && !conditionRemplie(etat, z.barriere.ouverteSi)) ajouterRect(z.barriere);
   for (const c of [z.fontaine, z.mecanisme, z.horloge, z.chateauEau].filter(Boolean)) liste.push({ type: 'cercle', id: c.id, x: c.x, z: c.z, rayon: c.rayon });
@@ -293,7 +348,12 @@ export function libelleZone(etat, cible) {
   const aUtiliser = enCours && enCours.etape.type === 'utiliser' && enCours.etape.cible === cible;
   if (cible === 'mecanisme') return aUtiliser ? "Installer l'axe" : 'Le mécanisme de la roue';
   if (cible === 'horloge') return aUtiliser ? 'Réparer l\'horloge' : "L'horloge de la gare";
-  if (cible === 'locomotive') return aUtiliser ? 'Installer le sifflet' : 'La locomotive';
+  if (cible === 'locomotive') {
+    if (aUtiliser) return 'Installer le sifflet';
+    return voyageTrain(etat, 'gare') ? 'Monter dans le train (vers la mine)' : 'La locomotive';
+  }
+  if (cible === 'train-retour') return 'Rentrer à Cuivrebourg en train';
+  if (cible === 'wagonnet') return aUtiliser ? 'Poser la roue neuve' : 'Le wagonnet';
   return libelleInteraction(etat, cible);
 }
 
@@ -341,6 +401,11 @@ export function dialogueLeon(etat) {
       "L'horloge de la gare donne de nouveau l'heure ! Il ne manque plus que le train…",
       'Augustin dit que la locomotive a juste besoin d\'un sifflet neuf.',
     ];
+  } else if (!queteTerminee(etat, 'wagonnet-mine')) {
+    repliques = [
+      "Le train monte jusqu'à la mine de cuivre, dans les collines ! Montez-y depuis la gare.",
+      'Sidonie, la mineuse, a des ennuis avec son wagonnet, paraît-il.',
+    ];
   } else {
     repliques = [
       'Le train m\'apporte des lettres de partout ! Elles disent toutes : « Cuivrebourg revit ! »',
@@ -371,11 +436,34 @@ export function messageObjet(etat, cible) {
     if (horlogeReparee(etat)) return [`L'horloge de la gare indique ${heureAffichee(etat.journee)}.`];
     return ["La grande horloge est arrêtée à quatre heures dix. Il lui manque des rouages et un régulateur."];
   }
+  if (cible === 'wagonnet') {
+    if (wagonnetRepare(etat)) return ['Le wagonnet est plein de beau cuivre, prêt à descendre en ville.'];
+    return ['Le wagonnet a déraillé : il lui manque une roue.'];
+  }
+  if (cible === 'train-retour') return ['Le train attend à quai.'];
   if (cible === 'locomotive') {
     if (queteTerminee(etat, 'train-cuivrebourg')) return ['Le train de Cuivrebourg roule de nouveau !'];
     return ['Une belle locomotive, froide et silencieuse. Son vieux sifflet est tout rouillé.'];
   }
   return [];
+}
+
+// Le voyage en train (version 1.3) : depuis la gare, le train mène à la mine ;
+// depuis la mine, il ramène à la gare. Possible seulement une fois la quête du
+// premier train terminée. Renvoie { zone, x, z, orientation } ou null.
+export function voyageTrain(etat, depuis) {
+  if (!queteTerminee(etat, 'train-cuivrebourg')) return null;
+  const vers = { gare: 'mine', mine: 'gare' }[depuis];
+  if (!vers) return null;
+  const a = ZONES[vers].arrivees[depuis];
+  return { zone: vers, x: a.x, z: a.z, orientation: a.orientation };
+}
+
+// Le wagonnet de la mine est-il réparé ? (dès que la roue neuve est posée)
+export function wagonnetRepare(etat) {
+  if (queteTerminee(etat, 'wagonnet-mine')) return true;
+  const enCours = queteEnCours(etat);
+  return Boolean(enCours && enCours.id === 'wagonnet-mine' && enCours.etape.type === 'parler');
 }
 
 // L'horloge de la gare est-elle réparée ? (dès que le régulateur est installé)

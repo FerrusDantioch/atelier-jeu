@@ -12,7 +12,7 @@
 // =============================================================================
 
 // Le numéro de version du jeu (le même que dans package.json et sw.js).
-export const VERSION_JEU = '1.2.0';
+export const VERSION_JEU = '1.3.0';
 
 export const CLE_REGLAGES = 'atelier-cuivrebourg-reglages';
 

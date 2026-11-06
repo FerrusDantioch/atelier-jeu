@@ -111,7 +111,7 @@ test('les notes de base : le la 69 vaut 440 Hz, une octave double la fréquence'
 });
 
 test('chaque lieu a une musique lente', () => {
-  for (const nom of ['place', 'marche', 'moulin', 'gare']) {
+  for (const nom of ['place', 'marche', 'moulin', 'gare', 'mine']) {
     const a = AMBIANCES[nom];
     assert.ok(a, nom);
     assert.ok(a.tempo >= 50 && a.tempo <= 80, `${nom} : tempo ${a.tempo}`);

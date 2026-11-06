@@ -7,6 +7,9 @@
 //      lentement en grossissant, penchent avec le vent et s'effacent.
 //   3. LA NUIT : les fenêtres et les lanternes s'allument doucement quand le
 //      soir tombe, avec un halo chaud autour des lanternes.
+//   4. LES LUCIOLES (version 1.3) : la nuit, de petites lueurs vertes et dorées
+//      flottent lentement au bord du canal, sur la place et à la mine. Elles
+//      ne clignotent pas : leur lueur grossit et diminue très doucement.
 //
 // Confort : tout est lent et doux, rien ne clignote. Si le système demande
 // « moins d'animations », main.js n'anime ni le vent ni la fumée.
@@ -139,6 +142,71 @@ export function eclairerNuit(nuit) {
   MATIERE_FENETRE.emissiveIntensity = 1 + nuit * 1.5;
   MATIERE_LUEUR.emissiveIntensity = 0.1 + nuit * 1.7;
   obtenirMatiereHalo().opacity = nuit * 0.6;
+  // Les lucioles n'apparaissent qu'à la nuit tombée.
+  obtenirMatiereLuciole().opacity = Math.max(0, Math.min(1, (nuit - 0.5) / 0.45)) * 0.9;
+}
+
+// -----------------------------------------------------------------------------
+// 4. LES LUCIOLES
+// -----------------------------------------------------------------------------
+let matiereLuciole = null;
+function obtenirMatiereLuciole() {
+  if (matiereLuciole) return matiereLuciole;
+  const toile = document.createElement('canvas');
+  toile.width = 32;
+  toile.height = 32;
+  const ctx = toile.getContext('2d');
+  const degrade = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+  degrade.addColorStop(0, 'rgba(250, 255, 200, 1)');
+  degrade.addColorStop(0.3, 'rgba(220, 240, 140, 0.6)');
+  degrade.addColorStop(1, 'rgba(200, 230, 120, 0)');
+  ctx.fillStyle = degrade;
+  ctx.fillRect(0, 0, 32, 32);
+  const texture = new THREE.CanvasTexture(toile);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  matiereLuciole = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+  return matiereLuciole;
+}
+
+// Un nuage de lucioles dans un rectangle (x, z = son centre). Chacune flotte
+// sur une petite boucle lente, à sa propre vitesse. Renvoie un groupe avec
+// « userData.animer(t) ».
+export function creerLucioles({ x, z, largeur, profondeur, nombre = 10, graine = 1 }) {
+  const groupe = new THREE.Group();
+  let valeur = graine * 7919;
+  const hasard = () => ((valeur = (valeur * 16807) % 2147483647) / 2147483647);
+  const lucioles = [];
+  for (let i = 0; i < nombre; i++) {
+    const l = new THREE.Sprite(obtenirMatiereLuciole());
+    l.userData = {
+      x: x + (hasard() - 0.5) * largeur,
+      z: z + (hasard() - 0.5) * profondeur,
+      y: 0.5 + hasard() * 1.1,
+      vitesse: 0.25 + hasard() * 0.25,  // des boucles lentes (20 à 25 secondes)
+      ampleur: 0.5 + hasard() * 0.8,
+      phase: hasard() * Math.PI * 2,
+    };
+    groupe.add(l);
+    lucioles.push(l);
+  }
+  groupe.userData.animer = (t) => {
+    for (const l of lucioles) {
+      const d = l.userData;
+      const a = t * d.vitesse + d.phase;
+      l.position.set(d.x + Math.sin(a) * d.ampleur, d.y + Math.sin(a * 1.7) * 0.25, d.z + Math.sin(a * 0.8 + 1) * d.ampleur * 0.6);
+      // La lueur grossit et diminue très lentement (environ 7 secondes) : pas de clignotement.
+      const s = 0.32 * (0.75 + 0.25 * Math.sin(t * 0.9 + d.phase * 3));
+      l.scale.set(s, s, 1);
+    }
+  };
+  groupe.userData.animer(0);
+  return groupe;
 }
 
 // Une lanterne sur un poteau de fonte (2,6 m de haut), avec son halo.

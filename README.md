@@ -27,7 +27,14 @@ habitants : chaque habitant a un problème à résoudre, ce sont les quêtes.
   deux nouvelles quêtes, **le jour et la nuit** (les lanternes s'allument le
   soir), de la **fumée** qui sort des cheminées et du **vent** dans les arbres.
 
+- **Version 1.3** : on **monte dans le train** jusqu'à la **mine de cuivre**
+  (avec Sidonie la mineuse et une nouvelle quête), deux nouveaux objets pour
+  les clients (la **boîte à musique** et l'**automate de cuivre**), et la nuit,
+  des **lucioles** et des **étoiles qui se reflètent dans l'eau**.
+
 ![La gare de Cuivrebourg, avec sa locomotive](captures/pc-gare.png)
+
+![La mine de cuivre, où l'on arrive en train](captures/pc-mine.png)
 
 ![L'atelier ouvert, avec des clients au comptoir](captures/pc-atelier.png)
 
@@ -137,6 +144,8 @@ trois phrases comment tout fonctionne.
 | Lanterne | 1 cuivre, 1 ressort | 6 s | 32 pièces |
 | Bouilloire à vapeur | 2 cuivres, 1 bois | 9 s | 45 pièces |
 | Horloge mécanique | 1 cuivre, 1 bois, 2 ressorts | 14 s | 75 pièces |
+| Boîte à musique (version 1.3) | 1 cuivre, 2 bois, 1 ressort | 12 s | 70 pièces |
+| Automate de cuivre (version 1.3) | 3 cuivres, 2 ressorts | 18 s | 120 pièces |
 
 | Amélioration | Prix | Effet |
 |---|---|---|
@@ -144,9 +153,14 @@ trois phrases comment tout fonctionne.
 | Soufflet de forge | 90 | Fabrication deux fois plus rapide |
 | Enseigne en cuivre | 110 | Un client toutes les 15 s au lieu de 25 s |
 | Plans d'horloger | 140 | Débloque les horloges |
+| Plans de boîte à musique | 120 | Débloque les boîtes à musique |
+| Plans d'automate | — | Ne s'achètent pas : c'est le cadeau de Sidonie, à la mine |
 
 Chaque amélioration apparaît dans le décor : étagères près de la porte,
 soufflet sur l'établi, grand engrenage au-dessus de l'enseigne, plans roulés.
+Avec la version 1.3, une petite boîte à musique et un automate (qui tourne
+doucement la tête) se posent sur le comptoir. Quand vous vendez une boîte à
+musique, elle joue sa petite ritournelle (si les sons sont activés).
 
 Le cadre « Objectif » dit toujours quoi faire (acheter, fabriquer, servir),
 et un petit losange ambre flotte au-dessus de l'établi ou du comptoir.
@@ -156,12 +170,16 @@ Odile prête 30 pièces pour repartir.
 
 ## Les lieux et les quêtes (étape 3)
 
-Cuivrebourg compte maintenant quatre lieux (la gare est arrivée avec la
-version 1.2). On passe de l'un à l'autre en marchant jusqu'à la sortie, avec
-un fondu doux.
+Cuivrebourg compte maintenant cinq lieux (la gare est arrivée avec la
+version 1.2, la mine avec la version 1.3). On passe de l'un à l'autre en
+marchant jusqu'à la sortie, avec un fondu doux ; pour la mine, on prend le train.
 
 ```
 [ La place ] ─ portail du sud ─ [ Le marché ] ─ chemin de l'est ─ [ Le moulin ] ─ route de l'est ─ [ La gare ]
+                                                                                                      │
+                                                                                                    train
+                                                                                                      │
+                                                                                            [ La mine de cuivre ]
 ```
 
 - **La place** : l'atelier, Odile, le puits. Le portail du sud s'ouvre quand
@@ -174,6 +192,9 @@ un fondu doux.
 - **La gare** (version 1.2) : la voie ferrée, le quai, la grande horloge, une
   locomotive verte et son wagon, un château d'eau, et **Augustin** le chef de
   gare.
+- **La mine de cuivre** (version 1.3) : au bout de la voie ferrée, dans les
+  collines. Un quai en bois, la cabane des mineurs, l'entrée de la mine dans
+  les rochers, un wagonnet sur ses petits rails, et **Sidonie** la mineuse.
 
 Les quêtes s'enchaînent : chacune ouvre la suivante.
 
@@ -192,7 +213,11 @@ Les quêtes s'enchaînent : chacune ouvre la suivante.
 5. **Le premier train** : fabriquer un sifflet à vapeur (2 cuivres, 1 bois),
    l'installer sur la locomotive, puis prévenir Augustin (« En voiture ! »).
    Récompense : 200 pièces. Ensuite, le train part régulièrement vers l'est,
-   puis revient de l'ouest en ralentissant doucement.
+   puis revient de l'ouest en ralentissant doucement, et on peut monter dedans.
+6. **Le wagonnet de la mine** (version 1.3) : à la mine, ramasser les 3 pépites
+   de cuivre tombées du wagonnet, fabriquer une roue de wagonnet à l'établi
+   (1 cuivre, 1 bois, 1 ressort), la poser sur le wagonnet, puis revenir voir
+   Sidonie. Récompense : 180 pièces et, en cadeau, **les plans de l'automate**.
 
 Les objets de quête n'apparaissent à l'établi que pendant leur quête, et les
 clients ne les commandent jamais. L'atelier continue de vivre pendant que
@@ -322,13 +347,35 @@ choisir « Toujours le jour ».
 - Le **vent** fait bouger un tout petit peu le feuillage des arbres et des
   buissons, chacun à son rythme.
 
+## Le voyage en train et la mine (version 1.3)
+
+Une fois le premier train réparé, approchez-vous de la locomotive quand elle
+est **à quai** et appuyez sur `E` : « Monter dans le train ». Un petit « tchou »,
+un fondu, et Ferrus descend sur le quai de la mine de cuivre. Pour rentrer,
+approchez-vous du train de la mine : « Rentrer à Cuivrebourg en train ». Si le
+train de la gare est parti, l'aide indique « Le train revient bientôt » : il
+suffit d'attendre un peu.
+
+## Les nuits de Cuivrebourg (version 1.3)
+
+- Des **lucioles** flottent lentement au bord du canal du moulin, près des
+  arbres du sud de la place, et à la mine. Elles ne clignotent pas : leur
+  lueur grossit et diminue très doucement.
+- Les **étoiles se reflètent dans l'eau** du puits, de la fontaine et du canal,
+  et ondulent avec les vagues. Pourquoi dans l'eau ? Parce que la caméra
+  regarde le village d'en haut, vers le sol : on ne voit jamais le ciel
+  lui-même. Mais l'eau, elle, le reflète.
+- Le petit casque de Sidonie et les yeux de l'automate s'allument la nuit.
+
+![Le moulin la nuit : lucioles et étoiles dans le canal](captures/pc-moulin-nuit.png)
+
 ## Confort visuel et sonore
 
 Couleurs douces et chaudes, éclairage doux, aucun clignotement, aucune
 secousse de caméra. **Aucun son tant qu'on ne l'a pas activé** dans les
 options ; et même activés, musique et sons restent doux. Si votre système
 demande « moins d'animations », les engrenages et les marqueurs ne flottent
-plus, l'eau, la fumée et le feuillage restent immobiles, et le joystick ne
+plus, l'eau, la fumée, le feuillage et les lucioles restent immobiles, et le joystick ne
 glisse plus.
 
 ## Vérifier les règles du jeu (tests automatiques)
@@ -337,8 +384,9 @@ glisse plus.
 npm test
 ```
 
-(C'est la même chose que `node --test`.) 122 tests vérifient les quêtes,
-l'argent, les collisions dans les quatre lieux, la gestion de l'atelier (dont
+(C'est la même chose que `node --test`.) 134 tests vérifient les quêtes,
+l'argent, les collisions dans les cinq lieux (avec des centaines de
+promenades au hasard : Ferrus ne se coince jamais), la gestion de l'atelier (dont
 une partie de 15 minutes jouée automatiquement), la sauvegarde (y compris
 des sauvegardes abîmées ou trafiquées), les options, la musique (toutes les
 notes dans la gamme, pas de grand saut, des silences pour respirer), les
@@ -366,10 +414,11 @@ d'installation. Tout doit être indiqué `pass`.
 | `js/decor.js` | La place en 3D : sol, haies, arbres, puits, atelier, maison d'Odile, établi, lampe, comptoir, améliorations |
 | `js/decor-zones.js` | Le marché et le moulin en 3D : étals, fontaine, canal, roue à aubes, pales, barrière de la gare |
 | `js/decor-gare.js` | La gare en 3D : voie ferrée, quai, horloge, locomotive et wagon, château d'eau |
-| `js/vie.js` | Le décor qui vit : fumée des cheminées, vent dans les feuillages, lanternes et fenêtres qui s'allument la nuit |
+| `js/decor-mine.js` | La mine de cuivre en 3D : quai en bois, cabane, entrée dans les rochers, wagonnet, pépites |
+| `js/vie.js` | Le décor qui vit : fumée des cheminées, vent dans les feuillages, lanternes et fenêtres qui s'allument la nuit, lucioles |
 | `js/formes.js` | Les formes de base aux bords arrondis : boîtes, cylindres, gélules, formes « tournées » comme un vase |
-| `js/eau.js` | L'eau qui bouge : reflets qui ondulent, ronds dans l'eau, feuilles au fil du canal |
-| `js/personnages.js` | Ferrus (avec ses lunettes d'artisan), Odile, Capucine, Barnabé, Léon, Augustin, les clients, et leurs animations |
+| `js/eau.js` | L'eau qui bouge : reflets qui ondulent, ronds dans l'eau, feuilles au fil du canal, reflet des étoiles la nuit |
+| `js/personnages.js` | Ferrus (avec ses lunettes d'artisan), Odile, Capucine, Barnabé, Léon, Augustin, Sidonie, les clients, et leurs animations |
 | `js/commandes.js` | Le clavier, le joystick tactile (qui vient sous le pouce) et le bouton « Interagir » |
 | `js/interface.js` | L'argent, l'objectif, la barre de fabrication, les petits messages, la boîte de dialogue |
 | `js/interface-atelier.js` | Le panneau de l'établi (onglets Fabriquer, Acheter, Améliorer) |
@@ -380,6 +429,7 @@ d'installation. Tout doit être indiqué `pass`.
 | `tests/etape4.test.js` | Les tests automatiques des options, de la musique et des fichiers d'installation |
 | `tests/formes.test.js` | Les tests automatiques des formes arrondies |
 | `tests/version12.test.js` | Les tests automatiques de la gare, du jour et de la nuit, et du train |
+| `tests/version13.test.js` | Les tests automatiques du voyage en train, de la mine, de la boîte à musique et de l'automate |
 | `manifest.webmanifest` | La « fiche d'identité » de l'application : nom, icône, couleurs, plein écran |
 | `sw.js` | Le « service worker » : garde une copie du jeu pour jouer sans connexion |
 | `icones/` | L'icône du jeu (un engrenage de cuivre et une flamme) : le dessin `icone.svg` et ses versions PNG |
@@ -424,7 +474,7 @@ https://ferrusdantioch.github.io/atelier-jeu/ . Dans les messageries, le
 lien s'affiche avec le titre du jeu et une image du marché.
 
 **Publier une nouvelle version** : changez le numéro de version (par exemple
-`1.2.0` → `1.2.1`) aux **trois** endroits suivants, puis envoyez sur `main` :
+`1.3.0` → `1.3.1`) aux **trois** endroits suivants, puis envoyez sur `main` :
 `package.json`, `js/logique-reglages.js` (`VERSION_JEU`) et `sw.js`
 (`VERSION`). Un test vérifie qu'ils sont identiques. Les téléphones qui ont
 installé le jeu reçoivent la nouvelle version à la prochaine ouverture avec

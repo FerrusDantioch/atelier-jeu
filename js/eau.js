@@ -20,6 +20,8 @@ import * as THREE from '../lib/three/three.module.js';
 
 // Le temps, partagé par toutes les surfaces d'eau.
 const temps = { value: 0 };
+// La nuit (version 1.3) : de 0 à 1, pour le reflet des étoiles dans l'eau.
+const nuitEau = { value: 0 };
 
 // La matière de l'eau. « courant » = la vitesse à laquelle les reflets
 // glissent (0 = eau calme d'un puits, plus = eau qui coule).
@@ -28,6 +30,7 @@ export function matiereEau(couleur = '#5d7d7c', courant = 0) {
   m.onBeforeCompile = (shader) => {
     shader.uniforms.uTemps = temps;
     shader.uniforms.uCourant = { value: courant };
+    shader.uniforms.uNuit = nuitEau;
     // 1. On retient la position de chaque point dans le monde.
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', '#include <common>\nvarying vec3 vPosEau;')
@@ -35,7 +38,7 @@ export function matiereEau(couleur = '#5d7d7c', courant = 0) {
     // 2. On éclaircit et on assombrit un peu la couleur selon des vagues lentes
     //    qui se croisent ; là où elles se rejoignent, un reflet clair et doux.
     shader.fragmentShader = shader.fragmentShader
-      .replace('#include <common>', '#include <common>\nuniform float uTemps;\nuniform float uCourant;\nvarying vec3 vPosEau;')
+      .replace('#include <common>', '#include <common>\nuniform float uTemps;\nuniform float uCourant;\nuniform float uNuit;\nvarying vec3 vPosEau;')
       .replace('#include <color_fragment>', `#include <color_fragment>
         vec2 pe = vPosEau.xz;
         pe.x -= uTemps * uCourant;
@@ -45,7 +48,15 @@ export function matiereEau(couleur = '#5d7d7c', courant = 0) {
         float onde = (o1 + o2 + 0.6 * o3) / 2.6;
         float reflet = smoothstep(0.6, 1.0, onde);
         diffuseColor.rgb *= 0.93 + 0.07 * onde;
-        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.86, 0.92, 0.87), reflet * 0.26);`);
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.86, 0.92, 0.87), reflet * 0.26);
+        // La nuit, les étoiles du ciel se reflètent dans l'eau : de petits
+        // points clairs, posés au hasard, qui ondulent avec les vagues.
+        vec2 pc = vPosEau.xz * 2.2 + vec2(o1, o2) * 0.05;
+        vec2 cellule = floor(pc);
+        float h = fract(sin(dot(cellule, vec2(127.1, 311.7))) * 43758.5453);
+        vec2 centreEtoile = vec2(fract(h * 13.7), fract(h * 71.3)) * 0.7 + 0.15;
+        float etoile = step(0.86, h) * smoothstep(0.12, 0.0, length(fract(pc) - centreEtoile));
+        totalEmissiveRadiance += vec3(0.85, 0.88, 1.0) * etoile * uNuit * 0.8;`);
   };
   return m;
 }
@@ -59,6 +70,12 @@ export const EAU_COURANTE = matiereEau('#5d7d7c', -0.45);
 // À appeler à chaque image, avec le temps écoulé depuis le début (en secondes).
 export function animerEau(tempsTotal) {
   temps.value = tempsTotal;
+}
+
+// « nuit » de 0 (jour) à 1 (pleine nuit) : les étoiles apparaissent dans l'eau
+// à la nuit tombée.
+export function eclairerEau(nuit) {
+  nuitEau.value = Math.max(0, Math.min(1, (nuit - 0.4) / 0.6));
 }
 
 // -----------------------------------------------------------------------------

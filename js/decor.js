@@ -18,7 +18,8 @@
 import * as THREE from '../lib/three/three.module.js';
 import { boite, cylindre, boule } from './formes.js';
 import { EAU_CALME, creerRonds } from './eau.js';
-import { MATIERE_FENETRE, matiereFeuillage, creerFumee, creerLampadaire } from './vie.js';
+import { MATIERE_FENETRE, MATIERE_LUEUR, matiereFeuillage, creerFumee, creerLampadaire, creerLucioles } from './vie.js';
+import { gelule } from './formes.js';
 
 // ----------------------------------------------------------------------------
 // Petits outils communs
@@ -116,7 +117,13 @@ export function panneauTexte(texte, largeur, hauteur) {
   ctx.lineWidth = 6;
   ctx.strokeRect(3, 3, 250, 58);
   ctx.fillStyle = '#f1dcb2';
-  ctx.font = 'bold 34px Georgia, serif';
+  // Un texte long (« MINE DE CUIVRE ») est écrit un peu plus petit pour tenir.
+  let taille = 34;
+  ctx.font = `bold ${taille}px Georgia, serif`;
+  while (taille > 14 && ctx.measureText(texte).width > 228) {
+    taille -= 2;
+    ctx.font = `bold ${taille}px Georgia, serif`;
+  }
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(texte, 128, 34);
@@ -209,8 +216,12 @@ export function construireDecor(scene, monde) {
   construireComptoir(scene, monde.comptoir);
   const rouageEtabli = construireRouageEtabli(scene, monde.etabli);
   const ameliorations = construireAmeliorations(scene, monde);
+  // Les lucioles, la nuit, près des arbres du sud de la place (version 1.3).
+  const lucioles = creerLucioles({ x: 0, z: 8.6, largeur: 26, profondeur: 3, nombre: 8, graine: 2 });
+  scene.add(lucioles);
   // « eau » et « vie » : ce qui s'anime dans ce lieu (main.js les fait vivre).
-  return { lampeEtabli, lanterneOdile, rouageEtabli, ameliorations, portail, eau, vie: [fumeeAtelier, fumeeOdile], fumeeAtelier };
+  const vie = [fumeeAtelier, fumeeOdile, lucioles, ameliorations['plans-automate']];
+  return { lampeEtabli, lanterneOdile, rouageEtabli, ameliorations, portail, eau, vie, fumeeAtelier };
 }
 
 // Les lanternes sur leur poteau (elles s'allument le soir : voir vie.js).
@@ -594,7 +605,41 @@ function construireAmeliorations(scene, monde) {
   plans.add(rouleau);
   plans.add(objet(boite(0.36, 0.01, 0.26), '#9fb6c9', etabli.x + 0.27, 0.99, etabli.z + 0.18));
 
-  const objets = { etageres, soufflet, enseigne, 'plans-horloge': plans };
+  // Version 1.3 : une boîte à musique et un petit automate, posés sur le comptoir.
+  const comptoir = monde.comptoir;
+  const dessusComptoir = 1.08;
+  const boiteMusique = new THREE.Group();
+  boiteMusique.position.set(comptoir.x + 0.15, dessusComptoir, comptoir.z + 0.05);
+  boiteMusique.add(objet(boite(0.3, 0.16, 0.22, 0.03), COULEURS.boisFonce, 0, 0.08, 0));
+  boiteMusique.add(objet(boite(0.32, 0.04, 0.24, 0.015), COULEURS.laiton, 0, 0.18, 0));
+  const manivelle = objet(cylindre(0.012, 0.012, 0.1), COULEURS.laiton, 0.19, 0.1, 0);
+  manivelle.rotation.z = Math.PI / 2;
+  boiteMusique.add(manivelle);
+
+  const automate = new THREE.Group();
+  automate.position.set(comptoir.x - 0.8, dessusComptoir, comptoir.z + 0.05);
+  automate.scale.setScalar(1.3);
+  for (const cote of [-1, 1]) automate.add(objet(gelule(0.035, 0.1), COULEURS.cuivre, cote * 0.05, 0.08, 0));
+  automate.add(objet(cylindre(0.09, 0.11, 0.2), COULEURS.cuivre, 0, 0.26, 0));
+  for (const cote of [-1, 1]) {
+    const bras = objet(gelule(0.025, 0.12), COULEURS.laiton, cote * 0.13, 0.27, 0);
+    bras.rotation.z = cote * 0.3;
+    automate.add(bras);
+  }
+  const tete = new THREE.Group();
+  tete.position.y = 0.42;
+  tete.add(objet(boule(0.075, 2), COULEURS.laiton, 0, 0, 0));
+  for (const cote of [-1, 1]) tete.add(objet(boule(0.018, 1), MATIERE_LUEUR, cote * 0.03, 0.01, 0.065));
+  automate.add(tete);
+  const cle = objet(boite(0.1, 0.06, 0.015, 0.006), COULEURS.laiton, 0, 0.27, -0.13);
+  automate.add(cle);
+  // L'automate tourne doucement la tête, et sa clé de remontage tourne dans son dos.
+  automate.userData.animer = (t) => {
+    tete.rotation.y = Math.sin(t * 0.45) * 0.6;
+    cle.rotation.z = t * 1.2;
+  };
+
+  const objets = { etageres, soufflet, enseigne, 'plans-horloge': plans, 'plans-boite-musique': boiteMusique, 'plans-automate': automate };
   for (const o of Object.values(objets)) {
     o.visible = false;
     scene.add(o);
