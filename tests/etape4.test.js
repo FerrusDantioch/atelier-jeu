@@ -61,7 +61,7 @@ test('des réglages abîmés ou trafiqués redonnent des valeurs sûres', () => 
 });
 
 test('les réglages enregistrés se relisent à l\'identique', () => {
-  const r = { musique: true, volumeMusique: 2, sons: false, volumeSons: 5, qualite: 'economie', jourNuit: false };
+  const r = { musique: true, volumeMusique: 2, sons: false, volumeSons: 5, qualite: 'economie', jourNuit: false, saisons: false };
   assert.deepEqual(lireReglages(ecrireReglages(r)), r);
 });
 

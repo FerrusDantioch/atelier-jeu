@@ -15,7 +15,9 @@
 // =============================================================================
 
 import { creerEtatJeu } from './logique.js';
-import { RECETTES } from './logique-atelier.js';
+import { RECETTES, DECORATIONS } from './logique-atelier.js';
+import { CLIENTS_CARNET } from './logique-commandes.js';
+import { DUREE_REPOUSSE } from './logique-galerie.js';
 import { ZONES } from './logique-zones.js';
 import { QUETES, majDisponibilites } from './logique-quetes.js';
 import { bouclerJournee } from './logique-temps.js';
@@ -108,6 +110,21 @@ export function chargerPartie(texte) {
     .map((c) => ({ id: c.id, nom: c.nom, salut: typeof c.salut === 'string' ? c.salut : 'Bonjour !', commande: c.commande }));
   // Le moment de la journée (version 1.2) : toujours entre 0 et 1.
   etat.journee = bouclerJournee(etat.journee);
+  // Version 1.4 : le numéro du jour, les décorations, le carnet et la galerie.
+  // (Une partie d'une version plus ancienne commence au jour 1, au printemps.)
+  etat.jour = Math.max(1, Math.floor(etat.jour));
+  etat.atelier.decorations = [...new Set(etat.atelier.decorations.filter((id) => DECORATIONS[id]))];
+  const carnet = etat.carnet;
+  carnet.dernierJour = Math.max(0, Math.floor(carnet.dernierJour));
+  const clients = new Set(CLIENTS_CARNET.map((c) => c.id));
+  carnet.commandes = carnet.commandes
+    .filter((c) => estObjet(c) && estNombre(c.id) && clients.has(c.client) && RECETTES[c.objet] && !RECETTES[c.objet].quete
+      && Number.isInteger(c.quantite) && c.quantite >= 1 && c.quantite <= 10 && estNombre(c.limite) && estNombre(c.recompense) && c.recompense >= 0)
+    .slice(0, 2)
+    .map((c) => ({ id: c.id, client: c.client, objet: c.objet, quantite: c.quantite, limite: Math.floor(c.limite), recompense: Math.floor(c.recompense) }));
+  for (const id of Object.keys(etat.galerie.filons)) {
+    etat.galerie.filons[id] = Math.min(DUREE_REPOUSSE, Math.max(0, etat.galerie.filons[id]));
+  }
   // Les quêtes.
   const statuts = ['verrouillee', 'disponible', 'en_cours', 'terminee'];
   for (const [id, s] of Object.entries(etat.quetes)) {

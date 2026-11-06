@@ -71,6 +71,16 @@ export const AMBIANCES = {
     progression: [0, 6, 3, 0, 4, 3, 6, 0],
     densite: 0.3,
   },
+  // Version 1.4 : la galerie souterraine, très calme (des notes rares, comme
+  // des gouttes d'eau qui résonnent sous la roche).
+  galerie: {
+    nom: 'La galerie de la mine',
+    tempo: 54,
+    tonique: 50, // ré
+    gamme: 'dorien',
+    progression: [0, 3, 0, 4, 0, 6, 3, 0],
+    densite: 0.24,
+  },
 };
 
 export const TEMPS_PAR_MESURE = 4;

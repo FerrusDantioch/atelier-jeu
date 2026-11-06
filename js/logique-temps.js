@@ -1,5 +1,6 @@
 // =============================================================================
 // logique-temps.js — LE JOUR ET LA NUIT, et l'horaire du train (version 1.2)
+// (version 1.4 : on compte aussi les jours qui passent)
 // -----------------------------------------------------------------------------
 // Une journée entière de Cuivrebourg dure 8 minutes. On la mesure par un
 // nombre « journee » qui va de 0 à 1 :
@@ -92,10 +93,16 @@ export function lumiereDuMoment(journee) {
 
 // Fait avancer la journée de « dt » secondes. Renvoie les messages à afficher
 // (seulement si le cycle jour/nuit est activé dans les options).
+// Version 1.4 : à chaque minuit, on passe au jour suivant (« etat.jour » :
+// 1 le premier jour de la partie, puis 2, 3…). Les saisons et les commandes
+// spéciales comptent les jours avec ce nombre.
 export function avancerJournee(etat, dt, cycleActif = true) {
   const avant = bouclerJournee(etat.journee);
-  const apres = bouclerJournee(avant + dt / DUREE_JOURNEE);
+  const total = avant + Math.max(0, dt) / DUREE_JOURNEE;
+  const apres = bouclerJournee(total);
   etat.journee = apres;
+  const jour = Number.isFinite(etat.jour) && etat.jour >= 1 ? Math.floor(etat.jour) : 1;
+  etat.jour = jour + Math.floor(total);
   if (!cycleActif) return [];
   const messages = [];
   for (const p of PASSAGES) {

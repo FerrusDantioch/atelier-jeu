@@ -325,7 +325,10 @@ export const QUETES = Object.freeze({
         "Voici vos 180 pièces. Et la surprise : les plans d'un automate de cuivre, dessinés par mon grand-père.",
         "Avec eux, votre atelier pourra fabriquer de vrais petits automates. Les gens vont adorer !",
       ],
-      apres: ['Le cuivre descend en ville tous les jours, grâce à vous. Revenez quand vous voulez !'],
+      apres: [
+        'Le cuivre descend en ville tous les jours, grâce à vous. Revenez quand vous voulez !',
+        "Et maintenant que le wagonnet roule, la galerie est rouverte : descendez par l'entrée de la mine. Les filons de cuivre sont à vous, servez-vous !",
+      ],
     },
   },
 });

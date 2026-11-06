@@ -37,6 +37,8 @@ import {
   utiliserObjetQuete,
 } from './logique-quetes.js';
 import { DEBUT_JOURNEE } from './logique-temps.js';
+import { creerEtatCarnet, objectifCarnet, commandePrete } from './logique-commandes.js';
+import { creerEtatGalerie } from './logique-galerie.js';
 
 // -----------------------------------------------------------------------------
 // 1. LE PLAN DE LA PLACE
@@ -122,6 +124,11 @@ export const MONDE = Object.freeze({
 
   // Les lanternes autour de la place (version 1.2) : elles s'allument le soir.
   lampadaires: [{ x: -5.8, z: -2.6 }, { x: 10.4, z: -5.4 }, { x: 6.5, z: 5.5 }],
+
+  // Les deux grands pots de fleurs, aux coins de l'atelier (une décoration de
+  // la version 1.4 : ils ne gênent le passage qu'une fois achetés).
+  pots: [{ id: 'pot-gauche', x: -11.35, z: -6.7 }, { id: 'pot-droite', x: -2.65, z: -6.7 }],
+  rayonPot: 0.3,
 
   // Les 3 engrenages perdus par Odile (invisibles tant que la quête n'est pas
   // acceptée). Ils sont décrits dans la quête elle-même (logique-quetes.js).
@@ -312,6 +319,9 @@ export function creerEtatJeu() {
     atelier: creerEtatAtelier(), // la gestion de l'atelier (étape 2)
     quetes: creerEtatQuetes(),   // toutes les quêtes, la lampe d'Odile comprise
     journee: DEBUT_JOURNEE,      // le moment de la journée (version 1.2) : 0 = minuit, 0,5 = midi
+    jour: 1,                     // le numéro du jour (version 1.4) : il compte aussi les saisons
+    carnet: creerEtatCarnet(),   // les commandes spéciales (version 1.4)
+    galerie: creerEtatGalerie(), // les filons de cuivre de la mine (version 1.4)
   };
 }
 
@@ -326,8 +336,16 @@ export function etapeLampe(etat) {
 // Le texte du cadre « Objectif » : il dit toujours quoi faire. D'abord la
 // quête en cours (ou la prochaine à aller chercher) ; quand il n'y en a plus,
 // la gestion de l'atelier.
+// Version 1.4 : quand aucun client n'attend et que l'établi est libre, le
+// carnet de commandes passe avant les conseils de l'atelier.
 export function objectifActuel(etat) {
-  return objectifQuetes(etat) || objectifAtelier(etat);
+  const quete = objectifQuetes(etat);
+  if (quete) return quete;
+  if (etat.atelier.ouvert && !clientAuComptoir(etat) && !etat.atelier.fabrication) {
+    const carnet = objectifCarnet(etat);
+    if (carnet) return carnet;
+  }
+  return objectifAtelier(etat);
 }
 
 // Une deuxième ligne d'objectif, plus petite : quand une quête est en cours et
@@ -344,7 +362,7 @@ export function marqueursActifs(etat) {
   const quetes = marqueursQuetes(etat);
   return {
     odile: quetes.has('odile'),
-    etabli: atelier.etabli || quetes.has('etabli'),
+    etabli: atelier.etabli || quetes.has('etabli') || commandePrete(etat),
     comptoir: atelier.comptoir,
   };
 }

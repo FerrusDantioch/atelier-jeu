@@ -2,9 +2,10 @@
 // main.js — le point de départ du jeu : il assemble tout et fait tourner le jeu
 // -----------------------------------------------------------------------------
 // 1. Vérifie que la 3D est disponible (sinon, message d'erreur clair).
-// 2. Prépare les cinq lieux en 3D (la place, le marché, le moulin, la gare, et
-//    la mine où l'on va en train), chacun dans sa propre « scène » avec sa
-//    lumière, son décor et ses personnages. La lumière suit le jour et la nuit.
+// 2. Prépare les six lieux en 3D (la place, le marché, le moulin, la gare, la
+//    mine où l'on va en train, et sa galerie souterraine), chacun dans sa
+//    propre « scène » avec sa lumière, son décor et ses personnages. La lumière
+//    suit le jour et la nuit ; les couleurs suivent les saisons (version 1.4).
 // 3. Branche les commandes (clavier, tactile), l'interface (textes) et la
 //    sauvegarde automatique.
 //    Étape 4 : les options (musique douce, petits sons, qualité de l'image),
@@ -45,7 +46,12 @@ import {
   clientAuComptoir,
   materiauxManquants,
   progressionFabrication,
+  acheterDecoration,
+  possedeDecoration,
 } from './logique-atelier.js';
+import { majCarnet, livrerCommande, commandePrete } from './logique-commandes.js';
+import { LUMIERE_GALERIE, galerieOuverte, estFilon, recolterFilon, avancerGalerie, progressionFilon } from './logique-galerie.js';
+import { ambianceSaison, saisonDuMoment, texteCalendrier, messageSaison } from './logique-saisons.js';
 import {
   QUETES,
   queteEnCours,
@@ -80,6 +86,8 @@ import { construireDecor, creerEngrenageQuete, creerMarqueur, allumerLampe } fro
 import { construireMarche, construireMoulin, creerPaleQuete } from './decor-zones.js';
 import { construireGare } from './decor-gare.js';
 import { construireMine, creerPepiteQuete } from './decor-mine.js';
+import { construireGalerie } from './decor-galerie.js';
+import { appliquerSaison, creerFleurs, creerChutes } from './saisons.js';
 import { animerEau, eclairerEau } from './eau.js';
 import { animerVent, eclairerNuit } from './vie.js';
 import {
@@ -246,8 +254,9 @@ function demarrer() {
   // Le jour et la nuit (version 1.2) : on change doucement les couleurs du ciel,
   // de la brume et des lumières. Le soleil ne bouge pas : les ombres restent
   // immobiles. Les fenêtres et les lanternes s'allument avec la nuit.
-  function appliquerLumiere(scene, moment) {
-    const l = lumiereDuMoment(moment);
+  // « l » : la lumière du moment (lumiereDuMoment), ou celle de la galerie
+  // souterraine, qui ne change jamais (version 1.4).
+  function appliquerLumiere(scene, l, sousTerre = false) {
     const { ciel, soleil } = scene.userData.lumieres;
     scene.background.setRGB(...l.ciel, THREE.SRGBColorSpace);
     scene.fog.color.setRGB(...l.ciel, THREE.SRGBColorSpace);
@@ -257,7 +266,7 @@ function demarrer() {
     soleil.color.setRGB(...l.soleil, THREE.SRGBColorSpace);
     soleil.intensity = l.forceSoleil;
     eclairerNuit(l.nuit);
-    eclairerEau(l.nuit); // les étoiles se reflètent dans l'eau
+    eclairerEau(sousTerre ? 0 : l.nuit); // les étoiles se reflètent dans l'eau (pas sous terre !)
   }
 
   // Ajoute un marqueur flottant (losange ambre) au-dessus d'un point d'un lieu.
@@ -277,7 +286,7 @@ function demarrer() {
     ajouterMarqueur(lieu, p.id, p.x, p.z, 2.45);
   }
 
-  // Les cinq lieux. Chacun : { scene, marqueurs, pnj, objetsQuete, … }
+  // Les six lieux. Chacun : { scene, marqueurs, pnj, objetsQuete, … }
   const lieux = {};
 
   // --- La place (étapes 1 et 2) ---
@@ -375,6 +384,27 @@ function demarrer() {
     lieux.mine = lieu;
   }
 
+  // --- La galerie souterraine (version 1.4) : sous la mine ---
+  {
+    const scene = creerSceneDeBase();
+    const lieu = { scene, marqueurs: new Map(), pnj: [], objetsQuete: new Map() };
+    lieu.decor = construireGalerie(scene, ZONES.galerie);
+    lieux.galerie = lieu;
+  }
+
+  // Les fleurs du printemps (version 1.4), dans les lieux où il y a de l'herbe
+  // (le marché est pavé, et la galerie est sous terre).
+  {
+    const partieNeuve = creerEtatJeu();
+    creerFleurs(lieux.place.scene, 'place', MONDE, obstaclesZone('place', partieNeuve), 1);
+    for (const [nom, graine] of [['moulin', 2], ['gare', 3], ['mine', 4]]) {
+      creerFleurs(lieux[nom].scene, nom, ZONES[nom], obstaclesZone(nom, partieNeuve), graine);
+    }
+  }
+  // Ce qui tombe du ciel (pétales, feuilles, flocons) : il suit Ferrus d'un lieu à l'autre.
+  const chutes = creerChutes();
+  lieux.place.scene.add(chutes);
+
   // Ferrus, qui passe d'une scène à l'autre selon le lieu.
   const ferrus = creerFerrus();
   ferrus.position.set(MONDE.joueur.x, 0, MONDE.joueur.z);
@@ -412,6 +442,8 @@ function demarrer() {
       if (type === 'fabriquer') messages = lancerFabrication(etat, id);
       else if (type === 'acheter') messages = acheterMateriau(etat, id, quantite);
       else if (type === 'ameliorer') messages = acheterAmelioration(etat, id);
+      else if (type === 'decorer') messages = acheterDecoration(etat, id);
+      else if (type === 'livrer') messages = livrerCommande(etat, id);
       afficherMessages([...messages, ...verifierQuetes(etat)]);
       majEtat();
     },
@@ -480,6 +512,10 @@ function demarrer() {
       objet3d.visible = etat.atelier.ameliorations.includes(id);
     }
     place.decor.portail.visible = !conditionRemplie(etat, 'portail');
+    // Les décorations achetées (version 1.4).
+    for (const [id, objet3d] of Object.entries(place.decor.decorations)) {
+      objet3d.visible = possedeDecoration(etat, id);
+    }
 
     // Le marché : l'arbre tombé disparaît quand le chemin est dégagé.
     lieux.marche.decor.barriere.visible = !conditionRemplie(etat, 'chemin-moulin');
@@ -576,6 +612,15 @@ function demarrer() {
         voyagerEnTrain(voyageTrain(etat, zone));
         return;
       }
+    } else if (cible === 'entree-mine' && galerieOuverte(etat)) {
+      // Version 1.4 : on descend dans la galerie souterraine.
+      changerLieu({ zone: 'galerie', ...ZONES.galerie.arrivees.mine });
+      return;
+    } else if (estFilon(cible)) {
+      // Version 1.4 : on détache du cuivre d'un filon.
+      const cuivreAvant = etat.atelier.stock.cuivre;
+      messages = recolterFilon(etat, cible);
+      if (etat.atelier.stock.cuivre > cuivreAvant) audio.jouerSon('ramasser');
     } else if (cible === 'capucine' || cible === 'barnabe' || cible === 'augustin' || cible === 'sidonie') {
       commandes.relacherTout();
       const dialogue = dialoguePnjQuete(etat, cible, nomPnj(cible)) || dialogueParDefaut(cible);
@@ -598,6 +643,8 @@ function demarrer() {
     const enCours = queteEnCours(etat);
     if (enCours && enCours.etape.type === 'fabriquer') besoins.unshift(enCours.etape.objet);
     const manque = besoins.length > 0 && Object.keys(materiauxManquants(etat, besoins[0])).length > 0;
+    // Rien de pressé, et une commande du carnet est prête : on ouvre le carnet.
+    if (besoins.length === 0 && commandePrete(etat)) return 'carnet';
     return manque ? 'acheter' : 'fabriquer';
   }
 
@@ -611,6 +658,7 @@ function demarrer() {
     zone = nouveauLieu;
     audio.changerAmbiance(zone); // chaque lieu a sa musique
     lieux[zone].scene.add(ferrus); // Ferrus quitte l'ancienne scène et entre dans la nouvelle
+    lieux[zone].scene.add(chutes); // les flocons (ou les pétales) le suivent
     obstacles = obstaclesZone(zone, etat);
     // Sécurité : si le point d'arrivée touche un obstacle, on le pousse dehors.
     position = deplacerJoueur({ x, z }, 0, 0, obstacles, ZONES[zone]);
@@ -780,6 +828,7 @@ function demarrer() {
   let debutTrain = null;     // le moment où le train a commencé à rouler
   let trainRoulait = false;  // pour le petit « tchou » au départ
   let trainAQuai = true;     // le train de la gare est-il à quai ? (pour monter dedans)
+  let saisonPrecedente = null; // pour annoncer le changement de saison (version 1.4)
 
   function boucle(maintenant) {
     // Mode « Économie » : on ne dessine qu'une image sur deux (30 par seconde).
@@ -813,6 +862,19 @@ function demarrer() {
       synchroniserClients();
       // Le temps passe : le soleil se couche, la nuit tombe, le jour revient.
       afficherMessages(avancerJournee(etat, dt, reglages.jourNuit));
+      // Version 1.4 : les filons de la galerie se reforment ; Léon apporte
+      // parfois une commande le matin ; et les saisons passent.
+      avancerGalerie(etat, dt);
+      const nouvelles = majCarnet(etat);
+      if (nouvelles.length > 0) {
+        audio.jouerSon('client');
+        afficherMessages(nouvelles);
+        majEtat();
+      }
+      const saison = saisonDuMoment(etat.jour, etat.journee, reglages.saisons).id;
+      const annonce = messageSaison(saisonPrecedente, saison);
+      if (annonce) afficherMessages([annonce]);
+      saisonPrecedente = saison;
       // Sauvegarde de sécurité toutes les 5 secondes.
       if (maintenant - derniereSauvegarde > 5000) sauvegarder();
     }
@@ -901,8 +963,23 @@ function demarrer() {
     animerGare(dt);
     // La fumée monte (immobile si le système demande moins d'animations).
     for (const v of lieu.decor.vie || []) v.userData.animer(moinsDeMouvement ? 0 : tempsTotal);
-    // La lumière du moment (toujours le jour si le cycle est coupé dans les options).
-    appliquerLumiere(lieu.scene, reglages.jourNuit ? etat.journee : MOMENT_JOUR_FIXE);
+    // La lumière du moment (toujours le jour si le cycle est coupé dans les
+    // options) ; sous terre, toujours la même lumière de lanternes.
+    const sousTerre = Boolean(ZONES[zone].souterrain);
+    appliquerLumiere(lieu.scene, sousTerre ? LUMIERE_GALERIE : lumiereDuMoment(reglages.jourNuit ? etat.journee : MOMENT_JOUR_FIXE), sousTerre);
+
+    // --- Version 1.4 : la saison, le calendrier, la galerie, l'horloge murale ---
+    const ambiance = ambianceSaison(etat.jour, etat.journee, reglages.saisons);
+    appliquerSaison(ambiance);
+    // Rien ne tombe sous terre (ni si le système demande moins d'animations).
+    const rienNeTombe = sousTerre || moinsDeMouvement;
+    chutes.userData.animer(tempsTotal, viseeLissee.x, viseeLissee.z - 2, rienNeTombe ? { petales: 0, feuilles: 0, flocons: 0 } : ambiance);
+    ui.majCalendrier(texteCalendrier(etat, reglages.saisons));
+    if (zone === 'galerie') {
+      for (const [id, filon] of lieu.decor.filons) filon.userData.regler(progressionFilon(etat, id));
+    }
+    const horlogeMurale = lieux.place.decor.decorations['horloge-murale'];
+    if (zone === 'place' && horlogeMurale.visible) horlogeMurale.userData.regler(anglesAiguilles(etat.journee));
 
     // --- La caméra suit Ferrus en douceur (sans secousse) ---
     // À chaque image, elle parcourt une petite partie du chemin qui la sépare
@@ -971,6 +1048,8 @@ function demarrer() {
     document.getElementById('interface').hidden = false;
     if (document.activeElement) document.activeElement.blur();
     argentPrecedent = etat.argent; // pas de clochette pour l'argent d'une partie reprise
+    // Pas d'annonce de saison pour la saison où l'on reprend la partie.
+    saisonPrecedente = saisonDuMoment(etat.jour, etat.journee, reglages.saisons).id;
     jeuActif = true;
     tempsPrecedent = performance.now();
     majEtat();
@@ -1031,5 +1110,7 @@ function demarrer() {
     train: () => ({ x: lieux.gare.decor.train.groupe.position.x, visible: lieux.gare.decor.train.groupe.visible, debut: debutTrain }),
     // Pour les vérifications : avance l'horaire du train de quelques secondes.
     avancerTrain: (secondes) => { if (debutTrain !== null) debutTrain -= secondes; },
+    // Version 1.4 : la saison du moment.
+    saison: () => ambianceSaison(etat.jour, etat.journee, reglages.saisons),
   };
 }

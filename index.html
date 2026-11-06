@@ -39,6 +39,8 @@
       <span class="piece" aria-hidden="true"></span>
       <span id="argent-valeur">0</span>&nbsp;pièces
     </div>
+    <!-- Le calendrier (version 1.4) : la saison et le numéro du jour. -->
+    <div id="calendrier" class="panneau" aria-label="Calendrier"></div>
     <!-- Le bouton des options (étape 4) : musique, sons, qualité, plein écran. -->
     <button id="bouton-options" class="panneau" type="button" aria-label="Options" title="Options (Échap)">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8.6a3.4 3.4 0 1 0 0 6.8 3.4 3.4 0 0 0 0-6.8Zm8.2 4.7-1.9.4a6.6 6.6 0 0 1-.7 1.7l1.1 1.6a.8.8 0 0 1-.1 1l-1 1a.8.8 0 0 1-1 .1l-1.6-1.1a6.6 6.6 0 0 1-1.7.7l-.4 1.9a.8.8 0 0 1-.8.6h-1.4a.8.8 0 0 1-.8-.6l-.4-1.9a6.6 6.6 0 0 1-1.7-.7l-1.6 1.1a.8.8 0 0 1-1-.1l-1-1a.8.8 0 0 1-.1-1l1.1-1.6a6.6 6.6 0 0 1-.7-1.7l-1.9-.4a.8.8 0 0 1-.6-.8v-1.4c0-.4.2-.7.6-.8l1.9-.4c.2-.6.4-1.2.7-1.7L4.6 6.2a.8.8 0 0 1 .1-1l1-1a.8.8 0 0 1 1-.1l1.6 1.1c.5-.3 1.1-.5 1.7-.7l.4-1.9c.1-.4.4-.6.8-.6h1.4c.4 0 .7.2.8.6l.4 1.9c.6.2 1.2.4 1.7.7l1.6-1.1a.8.8 0 0 1 1 .1l1 1c.3.3.3.7.1 1l-1.1 1.6c.3.5.5 1.1.7 1.7l1.9.4c.4.1.6.4.6.8v1.4c0 .4-.2.7-.6.8Z"/></svg>
@@ -69,7 +71,8 @@
   </div>
   <button id="bouton-interagir" type="button">Interagir</button>
 
-  <!-- Le panneau de l'établi (étape 2) : fabriquer, acheter, améliorer. -->
+  <!-- Le panneau de l'établi (étape 2) : fabriquer, acheter, améliorer,
+       décorer et le carnet de commandes (version 1.4). -->
   <div id="panneau-atelier" class="panneau" role="dialog" aria-modal="true" aria-labelledby="atelier-titre" hidden>
     <div class="atelier-entete">
       <h2 id="atelier-titre">L'établi</h2>
@@ -80,6 +83,8 @@
       <button type="button" role="tab" data-onglet="fabriquer">Fabriquer</button>
       <button type="button" role="tab" data-onglet="acheter">Acheter</button>
       <button type="button" role="tab" data-onglet="ameliorer">Améliorer</button>
+      <button type="button" role="tab" data-onglet="decorer">Décorer</button>
+      <button type="button" role="tab" data-onglet="carnet">Carnet</button>
     </div>
     <div id="atelier-stock" class="stock"></div>
     <div id="atelier-contenu" class="defilable"></div>
@@ -146,6 +151,13 @@
         <button id="option-jour-nuit" class="interrupteur" type="button" aria-pressed="true">Activé</button>
       </div>
       <p class="option-detail">Le soleil se couche tout doucement, les lanternes s'allument, puis le jour revient (une journée dure 8 minutes). Coupé : il fait toujours jour.</p>
+    </section>
+    <section class="option">
+      <div class="option-ligne">
+        <div class="option-titre">Saisons</div>
+        <button id="option-saisons" class="interrupteur" type="button" aria-pressed="true">Activées</button>
+      </div>
+      <p class="option-detail">Le printemps, l'été, l'automne et l'hiver se suivent tout doucement (chaque saison dure 2 jours du jeu). Coupées : c'est toujours l'été.</p>
     </section>
     <section class="option" id="option-section-ecran">
       <div class="option-ligne">
