@@ -14,7 +14,8 @@
 //   - 'parler'    : simplement parler à un personnage.
 //
 // Les quêtes s'enchaînent : chacune a pour prérequis la précédente
-// (la lampe → la balance → la roue → l'horloge de la gare → le premier train). La toute
+// (la lampe → la balance → la roue → l'horloge de la gare → le premier train
+// → le wagonnet de la mine). La toute
 // première (la lampe d'Odile) n'a pas de prérequis : elle est disponible dès
 // le début de la partie, et la terminer ouvre l'atelier.
 //
@@ -22,7 +23,7 @@
 // textes. Le reste (objectifs, marqueurs, dialogues) suit automatiquement.
 // =============================================================================
 
-import { RECETTES, ouvrirAtelier } from './logique-atelier.js';
+import { RECETTES, AMELIORATIONS, ouvrirAtelier } from './logique-atelier.js';
 
 // Distance (en mètres) pour ramasser un objet de quête en marchant dessus.
 export const DISTANCE_RAMASSAGE_QUETE = 1.0;
@@ -265,9 +266,66 @@ export const QUETES = Object.freeze({
       fin: [
         'Écoutez… Tchou-tchou ! Le premier train de Cuivrebourg depuis des années !',
         "Voici vos 200 pièces. Le train passera maintenant régulièrement, à l'heure de notre horloge.",
-        "Cuivrebourg revit, Ferrus. Et c'est grâce à vous.",
+        "Et vous pouvez monter dedans ! Il va jusqu'à la mine de cuivre, dans les collines. Sidonie, la mineuse, y a bien des soucis…",
       ],
-      apres: ["Le train passe à l'heure, grâce à votre horloge et à votre sifflet. Bravo !"],
+      apres: ["Le train passe à l'heure, grâce à votre horloge et à votre sifflet. Montez quand il est à quai : il va jusqu'à la mine !"],
+    },
+  },
+
+  // --- Version 1.3 : la mine de cuivre (on y va en train) -----------------------------
+  'wagonnet-mine': {
+    titre: 'Le wagonnet de la mine',
+    donneur: 'sidonie',
+    lieuDonneur: 'à la mine de cuivre, en prenant le train à la gare',
+    prerequis: 'train-cuivrebourg',
+    recettes: ['roue-wagonnet'],
+    // En cadeau, à la fin : les plans de l'automate de cuivre.
+    donneAmelioration: 'plans-automate',
+    etapes: [
+      {
+        type: 'ramasser',
+        // Les pépites tombées du wagonnet quand il a déraillé.
+        objets: [
+          { id: 'pepite-1', lieu: 'mine', x: -7, z: 3.5 },
+          { id: 'pepite-2', lieu: 'mine', x: 2, z: 5.2 },
+          { id: 'pepite-3', lieu: 'mine', x: 11, z: 4.4 },
+        ],
+        ramasse: 'Pépite ramassée',
+        messageFin: 'Toutes les pépites ! Il faut maintenant une roue neuve pour le wagonnet.',
+        objectif: 'Ramasse les pépites de cuivre tombées du wagonnet',
+      },
+      {
+        type: 'fabriquer',
+        objet: 'roue-wagonnet',
+        objectif: "Fabrique une roue de wagonnet à l'établi de l'atelier (1 cuivre, 1 bois, 1 ressort).",
+      },
+      {
+        type: 'utiliser',
+        cible: 'wagonnet',
+        objet: 'roue-wagonnet',
+        messageFait: 'La roue est posée : le wagonnet est remis sur ses rails !',
+        objectif: "Pose la roue neuve sur le wagonnet, devant l'entrée de la mine.",
+      },
+      {
+        type: 'parler',
+        pnj: 'sidonie',
+        objectif: 'Le wagonnet roule ! Retourne voir Sidonie.',
+      },
+    ],
+    recompense: 180,
+    textes: {
+      proposition: [
+        "Un visiteur ! Bonjour, je suis Sidonie, la mineuse. C'est ici qu'on trouve le cuivre de Cuivrebourg.",
+        "Hier, mon wagonnet a déraillé : il a perdu une roue, et ses pépites ont roulé partout.",
+        "Pourriez-vous ramasser les pépites et fabriquer une roue neuve ? Je vous donnerai 180 pièces… et une petite surprise.",
+      ],
+      enCours: ['Les pépites, une roue neuve, et mon wagonnet repartira. Merci !'],
+      fin: [
+        'Il roule comme au premier jour ! Le cuivre va de nouveau descendre jusqu\'à Cuivrebourg.',
+        "Voici vos 180 pièces. Et la surprise : les plans d'un automate de cuivre, dessinés par mon grand-père.",
+        "Avec eux, votre atelier pourra fabriquer de vrais petits automates. Les gens vont adorer !",
+      ],
+      apres: ['Le cuivre descend en ville tous les jours, grâce à vous. Revenez quand vous voulez !'],
     },
   },
 });
@@ -347,6 +405,11 @@ function etapeSuivante(etat, id) {
   const messages = [`+${q.recompense} pièces`, `Quête terminée : ${q.titre}`];
   // La lampe d'Odile : Odile va parler de l'atelier à tout le quartier, il ouvre ses portes.
   if (q.ouvreAtelier) messages.push(...ouvrirAtelier(etat));
+  // Une quête peut offrir une amélioration (les plans d'automate de Sidonie).
+  if (q.donneAmelioration && !etat.atelier.ameliorations.includes(q.donneAmelioration)) {
+    etat.atelier.ameliorations.push(q.donneAmelioration);
+    messages.push(`Cadeau : ${AMELIORATIONS[q.donneAmelioration].nom}`);
+  }
   return [...messages, ...majDisponibilites(etat)];
 }
 
@@ -491,7 +554,7 @@ export function objectifQuetes(etat) {
   return null;
 }
 
-const NOMS = { odile: 'Odile', capucine: 'Capucine', barnabe: 'Barnabé', augustin: 'Augustin' };
+const NOMS = { odile: 'Odile', capucine: 'Capucine', barnabe: 'Barnabé', augustin: 'Augustin', sidonie: 'Sidonie' };
 function nomDonneur(pnj) {
   return NOMS[pnj] || pnj;
 }

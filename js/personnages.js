@@ -13,6 +13,7 @@
 import * as THREE from '../lib/three/three.module.js';
 import { matiere } from './decor.js';
 import { boite, cylindre, boule, tour, gelule } from './formes.js';
+import { MATIERE_LUEUR } from './vie.js';
 
 // Une tête bien ronde, et le dessus d'une tête (cheveux, bonnet…).
 const tete = (rayon) => new THREE.SphereGeometry(rayon, 20, 14);
@@ -273,6 +274,8 @@ export const TENUES_PNJ = {
   leon: { peau: '#c99674', haut: '#6f86a6', bas: '#4a4f5c', cheveux: '#2f2723', chapeau: 'casquette', couleurChapeau: '#4f6585', sacoche: '#8a5a3a' },
   // Augustin, le chef de gare (version 1.2) : uniforme gris-bleu, casquette rouge, moustache grise.
   augustin: { peau: '#e2b48f', haut: '#56677a', bas: '#3f434a', cheveux: '#9a948a', chapeau: 'casquette', couleurChapeau: '#a05a4c', moustache: '#9a948a', boutons: '#c99a4a' },
+  // Sidonie, la mineuse (version 1.3) : veste de cuir, casque de laiton avec sa lampe.
+  sidonie: { peau: '#d9a882', haut: '#8a6a50', bas: '#4a4038', cheveux: '#5b3e2c', chapeau: 'casque', couleurChapeau: '#c9a35a', tablier: '#6f5a48' },
 };
 
 // Crée un personnage à partir d'une tenue (voir TENUES et TENUES_PNJ).
@@ -324,6 +327,14 @@ export function creerPersonnage(t, numero = 0) {
     const foulard = piece(corps, calotte(0.265), t.couleurChapeau, 0, 1.6, -0.02);
     foulard.scale.set(1, 0.9, 1);
     piece(corps, boule(0.07, 2), t.couleurChapeau, 0, 1.55, -0.26);
+  } else if (t.chapeau === 'casque') {
+    // Un casque de mineur en laiton, avec une petite lampe qui s'allume la nuit.
+    const casque = piece(corps, calotte(0.27), t.couleurChapeau, 0, 1.64, 0);
+    casque.scale.set(1, 0.95, 1.05);
+    const bord = piece(corps, new THREE.TorusGeometry(0.27, 0.025, 6, 24), t.couleurChapeau, 0, 1.64, 0);
+    bord.rotation.x = Math.PI / 2;
+    piece(corps, cylindre(0.05, 0.05, 0.06, 12, 0.015).rotateX(Math.PI / 2), '#6b6660', 0, 1.76, 0.24);
+    piece(corps, boule(0.04, 1), MATIERE_LUEUR, 0, 1.76, 0.27);
   } else if (t.chapeau === 'bonnet') {
     const bonnet = piece(corps, new THREE.ConeGeometry(0.22, 0.4, 18), t.couleurChapeau, 0, 1.92, -0.04);
     bonnet.rotation.x = -0.35;

@@ -186,11 +186,11 @@ test('quête du premier train : sifflet, locomotive, Augustin → le train roule
   assert.equal(fin.choix[0].texte, 'En voiture !');
   appliquerActionQuete(etat, fin.choix[0].action);
   assert.equal(etat.argent, argentAvant + QUETES['train-cuivrebourg'].recompense);
-  // Toutes les quêtes sont finies : l'objectif revient à l'atelier.
+  // Version 1.3 : la quête suivante attend à la mine, chez Sidonie (on y va en train).
   assert.equal(queteEnCours(etat), null);
-  assert.equal(queteDisponible(etat), null);
-  assert.equal(objectifQuetes(etat), null);
-  assert.match(dialogueLeon(etat).repliques[0], /Cuivrebourg revit/);
+  assert.equal(queteDisponible(etat).id, 'wagonnet-mine');
+  assert.match(objectifQuetes(etat), /Sidonie/);
+  assert.match(dialogueLeon(etat).repliques[0], /mine/);
   assert.match(messageObjet(etat, 'locomotive')[0], /roule/);
 });
 

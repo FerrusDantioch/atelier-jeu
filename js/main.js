@@ -2,9 +2,9 @@
 // main.js — le point de départ du jeu : il assemble tout et fait tourner le jeu
 // -----------------------------------------------------------------------------
 // 1. Vérifie que la 3D est disponible (sinon, message d'erreur clair).
-// 2. Prépare les quatre lieux en 3D (la place, le marché, le moulin, la gare),
-//    chacun dans sa propre « scène » avec sa lumière, son décor et ses
-//    personnages. Version 1.2 : la lumière suit le jour et la nuit.
+// 2. Prépare les cinq lieux en 3D (la place, le marché, le moulin, la gare, et
+//    la mine où l'on va en train), chacun dans sa propre « scène » avec sa
+//    lumière, son décor et ses personnages. La lumière suit le jour et la nuit.
 // 3. Branche les commandes (clavier, tactile), l'interface (textes) et la
 //    sauvegarde automatique.
 //    Étape 4 : les options (musique douce, petits sons, qualité de l'image),
@@ -71,13 +71,16 @@ import {
   messageObjet,
   horlogeReparee,
   locomotiveEnMarche,
+  voyageTrain,
+  wagonnetRepare,
 } from './logique-zones.js';
 import { MOMENT_JOUR_FIXE, lumiereDuMoment, avancerJournee, anglesAiguilles, etatTrain } from './logique-temps.js';
 import { CLE_SAUVEGARDE, serialiserPartie, chargerPartie } from './logique-sauvegarde.js';
 import { construireDecor, creerEngrenageQuete, creerMarqueur, allumerLampe } from './decor.js';
 import { construireMarche, construireMoulin, creerPaleQuete } from './decor-zones.js';
 import { construireGare } from './decor-gare.js';
-import { animerEau } from './eau.js';
+import { construireMine, creerPepiteQuete } from './decor-mine.js';
+import { animerEau, eclairerEau } from './eau.js';
 import { animerVent, eclairerNuit } from './vie.js';
 import {
   creerFerrus,
@@ -254,6 +257,7 @@ function demarrer() {
     soleil.color.setRGB(...l.soleil, THREE.SRGBColorSpace);
     soleil.intensity = l.forceSoleil;
     eclairerNuit(l.nuit);
+    eclairerEau(l.nuit); // les étoiles se reflètent dans l'eau
   }
 
   // Ajoute un marqueur flottant (losange ambre) au-dessus d'un point d'un lieu.
@@ -273,7 +277,7 @@ function demarrer() {
     ajouterMarqueur(lieu, p.id, p.x, p.z, 2.45);
   }
 
-  // Les quatre lieux. Chacun : { scene, marqueurs, pnj, objetsQuete, … }
+  // Les cinq lieux. Chacun : { scene, marqueurs, pnj, objetsQuete, … }
   const lieux = {};
 
   // --- La place (étapes 1 et 2) ---
@@ -349,6 +353,26 @@ function demarrer() {
       lieu.objetsQuete.set(o.id, rouage);
     });
     lieux.gare = lieu;
+  }
+
+  // --- La mine de cuivre (version 1.3) : on y va en train ---
+  {
+    const scene = creerSceneDeBase();
+    const lieu = { scene, marqueurs: new Map(), pnj: [], objetsQuete: new Map() };
+    lieu.decor = construireMine(scene, ZONES.mine);
+    for (const p of ZONES.mine.pnj) ajouterPnj(lieu, p);
+    const w = ZONES.mine.wagonnet;
+    ajouterMarqueur(lieu, 'wagonnet', w.x, w.z, 1.95);
+    // Les pépites de cuivre à ramasser (cachées tant que la quête ne les demande pas).
+    QUETES['wagonnet-mine'].etapes[0].objets.forEach((o, i) => {
+      const pepite = creerPepiteQuete();
+      pepite.position.set(o.x, 0, o.z);
+      pepite.visible = false;
+      pepite.userData.decalage = i * 2.1;
+      scene.add(pepite);
+      lieu.objetsQuete.set(o.id, pepite);
+    });
+    lieux.mine = lieu;
   }
 
   // Ferrus, qui passe d'une scène à l'autre selon le lieu.
@@ -467,8 +491,10 @@ function demarrer() {
     lieux.moulin.decor.barriereGare.visible = !conditionRemplie(etat, 'chemin-gare');
     // La gare : le sifflet neuf apparaît sur la locomotive une fois installé.
     lieux.gare.decor.train.sifflet.visible = locomotiveEnMarche(etat);
-    // Les objets de quête à ramasser (engrenages, pales, rouages).
-    for (const nom of ['place', 'moulin', 'gare']) {
+    // La mine : le wagonnet est remis sur ses rails une fois la roue posée.
+    lieux.mine.decor.wagonnet.userData.reparer(wagonnetRepare(etat));
+    // Les objets de quête à ramasser (engrenages, pales, rouages, pépites).
+    for (const nom of ['place', 'moulin', 'gare', 'mine']) {
       const aRamasser = new Set(objetsQueteZone(etat, nom).map((o) => o.id));
       for (const [id, objet3d] of lieux[nom].objetsQuete) objet3d.visible = aRamasser.has(id);
     }
@@ -477,7 +503,7 @@ function demarrer() {
     const marqueursPlace = marqueursActifs(etat);
     const marqueursQ = marqueursQuetes(etat);
     for (const [id, m] of lieux.place.marqueurs) m.objet.visible = Boolean(marqueursPlace[id]);
-    for (const nom of ['marche', 'moulin', 'gare']) {
+    for (const nom of ['marche', 'moulin', 'gare', 'mine']) {
       for (const [id, m] of lieux[nom].marqueurs) m.objet.visible = marqueursQ.has(id);
     }
 
@@ -533,12 +559,24 @@ function demarrer() {
         messages = messageComptoirVide(etat);
       } else {
         commandes.relacherTout();
+        const commande = clientAuComptoir(etat) && clientAuComptoir(etat).commande;
+        const argentAvant = etat.argent;
         messages = appliquerAction(etat, await ui.ouvrirDialogue(dialogue));
+        // Une boîte à musique vendue : le client la remonte, elle joue sa ritournelle.
+        if (commande === 'boite-musique' && etat.argent > argentAvant) setTimeout(() => audio.jouerSon('boiteMusique'), 450);
       }
     } else if (cible === 'leon') {
       commandes.relacherTout();
       await ui.ouvrirDialogue(dialogueLeon(etat));
-    } else if (cible === 'capucine' || cible === 'barnabe' || cible === 'augustin') {
+    } else if ((cible === 'locomotive' || cible === 'train-retour') && voyageTrain(etat, zone)) {
+      // Version 1.3 : on monte dans le train (à la gare, seulement s'il est à quai).
+      if (zone === 'gare' && !trainAQuai) {
+        messages = ['Le train est parti. Il revient à quai dans un instant.'];
+      } else {
+        voyagerEnTrain(voyageTrain(etat, zone));
+        return;
+      }
+    } else if (cible === 'capucine' || cible === 'barnabe' || cible === 'augustin' || cible === 'sidonie') {
       commandes.relacherTout();
       const dialogue = dialoguePnjQuete(etat, cible, nomPnj(cible)) || dialogueParDefaut(cible);
       const action = await ui.ouvrirDialogue(dialogue);
@@ -583,6 +621,27 @@ function demarrer() {
     calculerCamera(camera.position);
     viseeLissee.copy(viseeCamera);
     camera.lookAt(viseeLissee);
+  }
+
+  // Le voyage en train (version 1.3) : un petit « tchou », un fondu plus long
+  // (le temps du trajet), et Ferrus descend sur le quai de l'autre gare.
+  const DUREE_VOYAGE = 1400; // millisecondes
+  function voyagerEnTrain(sortie) {
+    enTransition = true;
+    commandes.relacherTout();
+    ui.majIndice(null);
+    audio.jouerSon('sifflet');
+    afficherMessages([sortie.zone === 'mine' ? 'Tchou ! Le train file vers la mine de cuivre…' : 'Tchou ! Le train redescend vers Cuivrebourg…']);
+    fondu.classList.add('visible');
+    setTimeout(() => {
+      placerDansLieu(sortie.zone, sortie.x, sortie.z, sortie.orientation);
+      // De retour à la gare, le train vient d'arriver à quai avec Ferrus.
+      if (sortie.zone === 'gare') debutTrain = tempsTotal;
+      majEtat();
+      afficherMessages([ZONES[zone].nom]);
+      fondu.classList.remove('visible');
+      setTimeout(() => { enTransition = false; }, DUREE_FONDU / 2);
+    }, DUREE_VOYAGE);
   }
 
   function changerLieu(sortie) {
@@ -720,6 +779,7 @@ function demarrer() {
   let dernierDessin = 0;
   let debutTrain = null;     // le moment où le train a commencé à rouler
   let trainRoulait = false;  // pour le petit « tchou » au départ
+  let trainAQuai = true;     // le train de la gare est-il à quai ? (pour monter dedans)
 
   function boucle(maintenant) {
     // Mode « Économie » : on ne dessine qu'une image sur deux (30 par seconde).
@@ -787,7 +847,9 @@ function demarrer() {
       } else {
         // Afficher l'aide si on est près de quelqu'un ou de quelque chose.
         const cible = cibleProcheZone(zone, position.x, position.z, etat);
-        ui.majIndice(cible ? libelleZone(etat, cible) : null);
+        // Le train n'est pas à quai : on le dit, plutôt que « Monter dans le train ».
+        const trainParti = cible === 'locomotive' && voyageTrain(etat, zone) && !trainAQuai;
+        ui.majIndice(cible ? (trainParti ? 'Le train revient bientôt' : libelleZone(etat, cible)) : null);
       }
     } else if (!jeuActif) {
       ui.majIndice(null);
@@ -873,6 +935,7 @@ function demarrer() {
     }
     train.groupe.position.x = train.depart + e.decalage;
     train.groupe.visible = e.visible;
+    trainAQuai = e.visible && e.decalage === 0;
     for (const r of train.roues) r.rotation.z -= (e.vitesse * dt) / r.userData.rayon;
     const enMarche = locomotiveEnMarche(etat);
     train.fumee.userData.force = !enMarche ? 0 : e.vitesse > 0.1 ? 1 : 0.5;

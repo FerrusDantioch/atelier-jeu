@@ -19,7 +19,7 @@ import {
 } from './decor.js';
 import { boite, cylindre, boule, tour } from './formes.js';
 import { EAU_CALME, EAU_COURANTE, creerRonds, creerFeuilles } from './eau.js';
-import { creerFumee } from './vie.js';
+import { creerFumee, creerLucioles } from './vie.js';
 import { ajouterLampadaires } from './decor.js';
 
 // Une cheminée de briques sur un toit, avec sa fumée. Renvoie la fumée.
@@ -268,7 +268,11 @@ export function construireMoulin(scene, zone) {
   meca.add(levier);
   scene.add(meca);
 
-  return { roue, barriereGare, eau: [feuilles], vie: [fumeeMoulin] };
+  // La nuit, des lucioles flottent au bord du canal (version 1.3).
+  const lucioles = creerLucioles({ x: 0, z: -4.3, largeur: 26, profondeur: 1.6, nombre: 12, graine: 3 });
+  scene.add(lucioles);
+
+  return { roue, barriereGare, eau: [feuilles], vie: [fumeeMoulin, lucioles] };
 }
 
 // La roue : deux cercles, des rayons et des pales. Trois pales manquent tant

@@ -237,16 +237,26 @@ export function deplacerJoueur(position, dx, dz, obstacles, monde = MONDE) {
   const morceaux = Math.max(1, Math.ceil(longueur / (rayon * 0.5)));
   let x = position.x;
   let z = position.z;
+  const libre = (p) => !toucheUnObstacle(p.x, p.z, rayon, obstacles);
   for (let i = 0; i < morceaux; i++) {
-    x += dx / morceaux;
-    z += dz / morceaux;
-    ({ x, z } = resoudreCollisions(x, z, rayon, obstacles));
+    const pasX = dx / morceaux;
+    const pasZ = dz / morceaux;
+    let essai = resoudreCollisions(x + pasX, z + pasZ, rayon, obstacles);
+    // Dans un coin très serré (entre deux obstacles), repousser Ferrus hors de
+    // l'un peut le faire entrer dans l'autre. Dans ce cas, il glisse le long
+    // d'un seul axe… ou, si ce n'est pas possible, il reste où il est.
+    // (S'il était déjà dans un obstacle, on le laisse simplement en sortir.)
+    if (!libre(essai) && libre({ x, z })) {
+      const seulX = resoudreCollisions(x + pasX, z, rayon, obstacles);
+      const seulZ = resoudreCollisions(x, z + pasZ, rayon, obstacles);
+      essai = libre(seulX) ? seulX : libre(seulZ) ? seulZ : { x, z };
+    }
+    ({ x, z } = essai);
   }
   // Sécurité : on ne sort jamais du terrain, quoi qu'il arrive.
   const l = monde.limites;
-  x = borner(x, l.minX + rayon, l.maxX - rayon);
-  z = borner(z, l.minZ + rayon, l.maxZ - rayon);
-  return { x, z };
+  const borne = { x: borner(x, l.minX + rayon, l.maxX - rayon), z: borner(z, l.minZ + rayon, l.maxZ - rayon) };
+  return libre(borne) || !libre({ x, z }) ? borne : { x: position.x, z: position.z };
 }
 
 // Vrai si un cercle (x, z, rayon) touche au moins un obstacle.

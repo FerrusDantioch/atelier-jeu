@@ -176,7 +176,7 @@ function construireHorloge(scene, h) {
 
 // --- Le train : une locomotive à vapeur et un wagon de voyageurs ----------------------
 // La locomotive regarde vers l'est (+x). Renvoie { groupe, roues, fumee, sifflet }.
-function construireTrain(scene, position) {
+export function construireTrain(scene, position) {
   const groupe = new THREE.Group();
   groupe.position.set(position.x, 0, position.z);
   const roues = [];

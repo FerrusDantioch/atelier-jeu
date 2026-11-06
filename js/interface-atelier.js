@@ -169,7 +169,10 @@ export function creerPanneauAtelier({ etat, surAction, surFermeture }) {
         // Les objets de quête n'apparaissent que pendant leur quête.
         if (r.quete) continue;
         carte.classList.add('verrouillee');
-        carte.append(el('div', 'carte-detail', `Verrouillé : il faut les ${AMELIORATIONS[r.plans].nom.toLowerCase()} (onglet Améliorer).`));
+        const plans = AMELIORATIONS[r.plans];
+        carte.append(el('div', 'carte-detail', plans.cadeau
+          ? `Verrouillé : il faut les ${plans.nom.toLowerCase()} (un cadeau de Sidonie, à la mine de cuivre).`
+          : `Verrouillé : il faut les ${plans.nom.toLowerCase()} (onglet Améliorer).`));
         contenu.append(carte);
         continue;
       }
@@ -222,6 +225,10 @@ export function creerPanneauAtelier({ etat, surAction, surFermeture }) {
       if (possedeAmelioration(etat, id)) {
         carte.classList.add('installee');
         carte.append(el('div', 'etiquette-installee', 'Installé ✓'));
+      } else if (am.cadeau) {
+        // Les plans d'automate ne s'achètent pas : Sidonie les offre.
+        carte.classList.add('verrouillee');
+        carte.append(el('div', 'carte-raison', 'Ne s\'achète pas : un cadeau de Sidonie, à la mine de cuivre.'));
       } else {
         carte.append(bouton(`Acheter (${am.prix} pièces)`, `ameliorer-${id}`, etat.argent >= am.prix, () => surAction('ameliorer', id)));
         if (etat.argent < am.prix) carte.append(el('div', 'carte-raison', `Encore ${am.prix - etat.argent} pièces à gagner.`));
