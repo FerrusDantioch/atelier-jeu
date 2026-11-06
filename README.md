@@ -31,6 +31,14 @@ habitants : chaque habitant a un problème à résoudre, ce sont les quêtes.
   (avec Sidonie la mineuse et une nouvelle quête), deux nouveaux objets pour
   les clients (la **boîte à musique** et l'**automate de cuivre**), et la nuit,
   des **lucioles** et des **étoiles qui se reflètent dans l'eau**.
+- **Version 1.4** : on **descend dans la galerie** de la mine pour récolter
+  soi-même du cuivre, **les saisons** se succèdent (fleurs, feuilles rousses,
+  neige), un **carnet de commandes** spéciales apportées par Léon, et des
+  **décorations** pour embellir l'atelier.
+
+![L'atelier décoré, au printemps](captures/pc-decorations.png)
+
+![La galerie souterraine de la mine](captures/pc-galerie.png)
 
 ![La gare de Cuivrebourg, avec sa locomotive](captures/pc-gare.png)
 
@@ -130,12 +138,15 @@ trois phrases comment tout fonctionne.
   par le portail du sud, font la queue (3 au maximum) et commandent un
   objet. Approchez-vous et appuyez sur `E` (ou **Interagir**) : si l'objet
   est prêt, donnez-le-lui pour être payé.
-- **L'établi** (à droite de la porte) ouvre un panneau à trois onglets :
+- **L'établi** (à droite de la porte) ouvre un panneau à cinq onglets :
   - **Fabriquer** : choisissez un objet. Il utilise des matériaux et prend
     quelques secondes. Une barre de progression s'affiche en haut de l'écran.
     Un seul objet à la fois.
   - **Acheter** : cuivre (8 pièces), bois (4) et ressorts (6).
   - **Améliorer** : des achats définitifs pour l'atelier.
+  - **Décorer** (version 1.4) : des décorations pour la façade, juste pour
+    le plaisir des yeux.
+  - **Carnet** (version 1.4) : les commandes spéciales des habitants.
 - **Le stock** : 5 de chaque matériau et de chaque objet au maximum (10 avec
   les étagères).
 
@@ -170,9 +181,10 @@ Odile prête 30 pièces pour repartir.
 
 ## Les lieux et les quêtes (étape 3)
 
-Cuivrebourg compte maintenant cinq lieux (la gare est arrivée avec la
-version 1.2, la mine avec la version 1.3). On passe de l'un à l'autre en
-marchant jusqu'à la sortie, avec un fondu doux ; pour la mine, on prend le train.
+Cuivrebourg compte maintenant six lieux (la gare est arrivée avec la
+version 1.2, la mine avec la version 1.3, sa galerie souterraine avec la
+version 1.4). On passe de l'un à l'autre en marchant jusqu'à la sortie, avec
+un fondu doux ; pour la mine, on prend le train.
 
 ```
 [ La place ] ─ portail du sud ─ [ Le marché ] ─ chemin de l'est ─ [ Le moulin ] ─ route de l'est ─ [ La gare ]
@@ -180,6 +192,10 @@ marchant jusqu'à la sortie, avec un fondu doux ; pour la mine, on prend le trai
                                                                                                     train
                                                                                                       │
                                                                                             [ La mine de cuivre ]
+                                                                                                      │
+                                                                                              entrée de la mine
+                                                                                                      │
+                                                                                            [ La galerie souterraine ]
 ```
 
 - **La place** : l'atelier, Odile, le puits. Le portail du sud s'ouvre quand
@@ -195,6 +211,8 @@ marchant jusqu'à la sortie, avec un fondu doux ; pour la mine, on prend le trai
 - **La mine de cuivre** (version 1.3) : au bout de la voie ferrée, dans les
   collines. Un quai en bois, la cabane des mineurs, l'entrée de la mine dans
   les rochers, un wagonnet sur ses petits rails, et **Sidonie** la mineuse.
+- **La galerie souterraine** (version 1.4) : sous la colline, des parois de
+  roche, des lanternes, une petite source, et les **filons de cuivre**.
 
 Les quêtes s'enchaînent : chacune ouvre la suivante.
 
@@ -239,6 +257,9 @@ toucher deux fois pour confirmer, pour ne pas tout effacer par erreur).
 - effacer les données du site dans le navigateur efface aussi la partie ;
 - en navigation privée, le navigateur peut refuser de sauvegarder (le jeu
   marche quand même, sans sauvegarde).
+- une partie commencée avec une version plus ancienne continue sans souci :
+  avec la version 1.4, elle reprend au jour 1, au printemps, avec un carnet
+  de commandes vide.
 
 ## Les options (étape 4)
 
@@ -252,6 +273,7 @@ sur l'appareil, à part de la partie : « Nouvelle partie » ne les efface pas.
 | Musique douce | **Coupée** | Une musique lente et calme, différente dans chaque lieu (fa majeur sur la place, sol majeur plus enjoué au marché, ré plus rêveur au moulin). Volume en 5 crans. |
 | Petits sons | **Coupés** | De douces notes de clochette : objet ramassé, pièces gagnées, fabrication terminée, client qui arrive. Volume en 5 crans. |
 | Jour et nuit | Activé | Le soir tombe, les lanternes s'allument, puis le jour revient (une journée dure 8 minutes). « Toujours le jour » : la lumière ne change plus. |
+| Saisons | Activées | Printemps, été, automne, hiver : chaque saison dure 2 jours du jeu (environ 16 minutes). « Toujours l'été » : le décor ne change plus. |
 | Qualité de l'image | Normale | « Économie » : image moins fine, sans ombres, 30 images par seconde. Pour un téléphone qui chauffe ou se décharge vite. |
 | Écran | — | Passer en plein écran (si le navigateur le permet). |
 | Application | — | Installer le jeu (quand Chrome le propose). |
@@ -369,14 +391,88 @@ suffit d'attendre un peu.
 
 ![Le moulin la nuit : lucioles et étoiles dans le canal](captures/pc-moulin-nuit.png)
 
+## La galerie de la mine (version 1.4)
+
+Une fois le wagonnet de Sidonie réparé, approchez-vous de l'entrée de la mine
+(dans les rochers, à droite) et appuyez sur `E` : « Descendre dans la mine ».
+Sous terre, la lumière ne suit pas le jour et la nuit : ce sont les lanternes
+qui éclairent, toujours de la même lumière chaude.
+
+Quatre **filons de cuivre** brillent dans la roche (trois au fond, un à
+droite). Devant un filon, `E` : « Détacher du cuivre ». Chaque filon donne
+**1 plaque de cuivre**, rangée directement dans le stock de l'atelier
+(gratuitement !). Le filon est ensuite vide : ses cristaux deviennent tout
+petits, puis regrandissent. Il est de nouveau prêt au bout de **90 secondes**.
+Pour ressortir, marchez vers le tunnel « SORTIE », à gauche.
+
+## Les saisons (version 1.4)
+
+Une nouvelle partie commence au printemps. Chaque saison dure **2 jours** du
+jeu (environ 16 minutes), et le passage d'une saison à l'autre prend environ
+4 minutes : tout change très lentement. Le petit calendrier, à côté de
+l'argent, indique la saison et le jour (« Printemps · jour 3 »).
+
+| Saison | Ce qui change |
+|---|---|
+| Printemps | Une herbe plus tendre, des **petites fleurs** le long des haies et autour des arbres, et quelques **pétales** qui volent |
+| Été | Les couleurs d'avant (rien ne tombe du ciel) |
+| Automne | Des arbres **roux et dorés**, et des **feuilles mortes** qui tombent en tournoyant |
+| Hiver | De la **neige** sur l'herbe, les haies et le haut des arbres, et quelques **flocons** qui tombent lentement |
+
+![L'automne au moulin](captures/pc-automne.png)
+
+![L'hiver à la gare](captures/pc-hiver.png)
+
+Dans la galerie, sous terre, il n'y a ni fleurs ni neige. Si le système
+demande « moins d'animations », rien ne tombe du ciel (les couleurs changent
+quand même).
+
+## Le carnet de commandes (version 1.4)
+
+Après votre premier client servi au comptoir, **Léon le facteur** apporte
+parfois une **commande spéciale** le matin : un habitant que vous avez aidé
+(Odile, Capucine, Barnabé, Augustin ou Sidonie) voudrait plusieurs objets
+d'un coup, par exemple « 3 lanternes ».
+
+- Au plus **une nouvelle commande par jour**, et **deux** en même temps.
+- On a **2 jours de plus** pour la livrer (« avant la fin du jour 5 »).
+- Quand les objets sont prêts, ouvrez l'onglet **Carnet** à l'établi et
+  appuyez sur **Livrer** : Léon s'en charge. Une commande rapporte **1,5 fois**
+  le prix du comptoir.
+- Pas de stress : une commande qui n'est pas prête à temps est simplement
+  annulée, gentiment, **sans aucune pénalité**. Une autre viendra.
+
+Quand aucun client n'attend, le cadre « Objectif » rappelle la commande en
+cours, et un losange ambre flotte au-dessus de l'établi quand elle est prête.
+
+![Le carnet de commandes sur téléphone](captures/telephone-carnet.png)
+
+## Les décorations de l'atelier (version 1.4)
+
+Dans l'onglet **Décorer** de l'établi. Elles ne changent rien aux règles :
+c'est seulement pour le plaisir des yeux. Chacune apparaît aussitôt sur la
+façade de l'atelier.
+
+| Décoration | Prix | Où |
+|---|---|---|
+| Tapis d'accueil | 25 | Un tapis rayé devant la porte |
+| Lanterne de porte | 30 | À gauche de l'entrée ; elle s'allume le soir |
+| Guirlande de fanions | 35 | Le long des deux pentes du toit ; les fanions se balancent un peu au vent |
+| Plantes en pots | 40 | Deux grands pots fleuris, aux coins de l'atelier |
+| Jardinières fleuries | 45 | Sous les deux fenêtres |
+| Girouette en cuivre | 55 | Un petit coq sur le toit, qui tourne lentement au gré du vent |
+| Horloge murale | 70 | Sur la façade ; elle donne l'heure de Cuivrebourg |
+
+![L'atelier décoré, le soir](captures/pc-decorations-soir.png)
+
 ## Confort visuel et sonore
 
 Couleurs douces et chaudes, éclairage doux, aucun clignotement, aucune
 secousse de caméra. **Aucun son tant qu'on ne l'a pas activé** dans les
 options ; et même activés, musique et sons restent doux. Si votre système
 demande « moins d'animations », les engrenages et les marqueurs ne flottent
-plus, l'eau, la fumée, le feuillage et les lucioles restent immobiles, et le joystick ne
-glisse plus.
+plus, l'eau, la fumée, le feuillage et les lucioles restent immobiles, rien
+ne tombe du ciel (pétales, feuilles, flocons), et le joystick ne glisse plus.
 
 ## Vérifier les règles du jeu (tests automatiques)
 
@@ -384,15 +480,16 @@ glisse plus.
 npm test
 ```
 
-(C'est la même chose que `node --test`.) 134 tests vérifient les quêtes,
-l'argent, les collisions dans les cinq lieux (avec des centaines de
+(C'est la même chose que `node --test`.) 158 tests vérifient les quêtes,
+l'argent, les collisions dans les six lieux (avec des centaines de
 promenades au hasard : Ferrus ne se coince jamais), la gestion de l'atelier (dont
 une partie de 15 minutes jouée automatiquement), la sauvegarde (y compris
 des sauvegardes abîmées ou trafiquées), les options, la musique (toutes les
 notes dans la gamme, pas de grand saut, des silences pour respirer), les
 formes arrondies (bonne taille, aucune surface à l'envers), le jour et la
-nuit (aucun changement brusque), l'horaire du train et les fichiers
-d'installation. Tout doit être indiqué `pass`.
+nuit et les saisons (aucun changement brusque), l'horaire du train, la
+galerie et ses filons, le carnet de commandes, les décorations et les
+fichiers d'installation. Tout doit être indiqué `pass`.
 
 ## L'organisation des fichiers
 
@@ -405,23 +502,28 @@ d'installation. Tout doit être indiqué `pass`.
 | `js/logique-quetes.js` | **Le moteur de quêtes**, sans aucune 3D : toutes les quêtes (la lampe d'Odile, la balance, la roue) décrites comme des données, leurs étapes et leurs textes |
 | `js/logique-zones.js` | **Les lieux**, sans aucune 3D : plan du marché et du moulin, sorties, portes fermées ou ouvertes, répliques de Léon |
 | `js/logique-sauvegarde.js` | Transforme la partie en texte et la relit en vérifiant tout |
-| `js/logique-temps.js` | **Le jour et la nuit**, sans aucune 3D : l'heure, les couleurs de chaque moment, l'horaire du train |
+| `js/logique-temps.js` | **Le jour et la nuit**, sans aucune 3D : l'heure, le numéro du jour, les couleurs de chaque moment, l'horaire du train |
+| `js/logique-saisons.js` | **Les saisons**, sans aucune 3D : les couleurs de chaque saison, ce qui tombe du ciel, le calendrier |
+| `js/logique-commandes.js` | **Le carnet de commandes**, sans aucune 3D : qui commande quoi, pour quand, et combien ça rapporte |
+| `js/logique-galerie.js` | **La galerie de la mine**, sans aucune 3D : les filons de cuivre et leur temps pour se reformer |
 | `js/logique-reglages.js` | **Les options**, sans navigateur : valeurs de départ, volumes, qualité, numéro de version |
 | `js/logique-musique.js` | **La composition de la musique**, sans son : gammes, accords, mélodie, petits sons |
 | `js/musique.js` | Fait sonner la musique et les petits sons (Web Audio, le synthétiseur du navigateur) |
 | `js/interface-options.js` | Le panneau des options (musique, sons, qualité, plein écran, installer) |
 | `js/main.js` | Le chef d'orchestre : crée la scène 3D, la caméra, la lumière, et fait tourner le jeu |
-| `js/decor.js` | La place en 3D : sol, haies, arbres, puits, atelier, maison d'Odile, établi, lampe, comptoir, améliorations |
+| `js/decor.js` | La place en 3D : sol, haies, arbres, puits, atelier, maison d'Odile, établi, lampe, comptoir, améliorations, décorations |
 | `js/decor-zones.js` | Le marché et le moulin en 3D : étals, fontaine, canal, roue à aubes, pales, barrière de la gare |
 | `js/decor-gare.js` | La gare en 3D : voie ferrée, quai, horloge, locomotive et wagon, château d'eau |
 | `js/decor-mine.js` | La mine de cuivre en 3D : quai en bois, cabane, entrée dans les rochers, wagonnet, pépites |
+| `js/decor-galerie.js` | La galerie souterraine en 3D : parois de roche, étais, lanternes, source, chariot, filons de cuivre |
+| `js/saisons.js` | Les saisons en 3D : couleurs de l'herbe et des arbres, fleurs du printemps, pétales, feuilles mortes et flocons |
 | `js/vie.js` | Le décor qui vit : fumée des cheminées, vent dans les feuillages, lanternes et fenêtres qui s'allument la nuit, lucioles |
 | `js/formes.js` | Les formes de base aux bords arrondis : boîtes, cylindres, gélules, formes « tournées » comme un vase |
 | `js/eau.js` | L'eau qui bouge : reflets qui ondulent, ronds dans l'eau, feuilles au fil du canal, reflet des étoiles la nuit |
 | `js/personnages.js` | Ferrus (avec ses lunettes d'artisan), Odile, Capucine, Barnabé, Léon, Augustin, Sidonie, les clients, et leurs animations |
 | `js/commandes.js` | Le clavier, le joystick tactile (qui vient sous le pouce) et le bouton « Interagir » |
-| `js/interface.js` | L'argent, l'objectif, la barre de fabrication, les petits messages, la boîte de dialogue |
-| `js/interface-atelier.js` | Le panneau de l'établi (onglets Fabriquer, Acheter, Améliorer) |
+| `js/interface.js` | L'argent, le calendrier, l'objectif, la barre de fabrication, les petits messages, la boîte de dialogue |
+| `js/interface-atelier.js` | Le panneau de l'établi (onglets Fabriquer, Acheter, Améliorer, Décorer, Carnet) |
 | `lib/three/` | Three.js 0.186.1 (le moteur 3D), copié ici pour ne dépendre d'aucun site extérieur |
 | `tests/logique.test.js` | Les tests automatiques des règles de l'étape 1 |
 | `tests/atelier.test.js` | Les tests automatiques de la gestion de l'atelier |
@@ -430,6 +532,7 @@ d'installation. Tout doit être indiqué `pass`.
 | `tests/formes.test.js` | Les tests automatiques des formes arrondies |
 | `tests/version12.test.js` | Les tests automatiques de la gare, du jour et de la nuit, et du train |
 | `tests/version13.test.js` | Les tests automatiques du voyage en train, de la mine, de la boîte à musique et de l'automate |
+| `tests/version14.test.js` | Les tests automatiques de la galerie, des saisons, du carnet de commandes et des décorations |
 | `manifest.webmanifest` | La « fiche d'identité » de l'application : nom, icône, couleurs, plein écran |
 | `sw.js` | Le « service worker » : garde une copie du jeu pour jouer sans connexion |
 | `icones/` | L'icône du jeu (un engrenage de cuivre et une flamme) : le dessin `icone.svg` et ses versions PNG |
@@ -474,7 +577,7 @@ https://ferrusdantioch.github.io/atelier-jeu/ . Dans les messageries, le
 lien s'affiche avec le titre du jeu et une image du marché.
 
 **Publier une nouvelle version** : changez le numéro de version (par exemple
-`1.3.0` → `1.3.1`) aux **trois** endroits suivants, puis envoyez sur `main` :
+`1.4.0` → `1.4.1`) aux **trois** endroits suivants, puis envoyez sur `main` :
 `package.json`, `js/logique-reglages.js` (`VERSION_JEU`) et `sw.js`
 (`VERSION`). Un test vérifie qu'ils sont identiques. Les téléphones qui ont
 installé le jeu reçoivent la nouvelle version à la prochaine ouverture avec

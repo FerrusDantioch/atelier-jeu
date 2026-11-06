@@ -9,7 +9,8 @@
 //   - on FABRIQUE des objets à l'établi (cela prend quelques secondes) ;
 //   - des CLIENTS arrivent au comptoir et commandent un objet : on les sert
 //     pour être payé ;
-//   - avec l'argent gagné, on achète des AMÉLIORATIONS pour l'atelier.
+//   - avec l'argent gagné, on achète des AMÉLIORATIONS pour l'atelier ;
+//   - (version 1.4) et des DÉCORATIONS, juste pour le plaisir des yeux.
 //
 // Le temps qui passe est donné par main.js (« dt », en secondes) à la fonction
 // avancerTemps. Les tests peuvent donc « faire passer le temps » instantanément.
@@ -35,6 +36,7 @@ export const RECETTES = Object.freeze({
   lanterne: {
     nom: 'Lanterne',
     article: 'une lanterne',
+    pluriel: 'lanternes',
     ingredients: { cuivre: 1, ressort: 1 },
     duree: 6,
     prixVente: 32,
@@ -42,6 +44,7 @@ export const RECETTES = Object.freeze({
   bouilloire: {
     nom: 'Bouilloire à vapeur',
     article: 'une bouilloire à vapeur',
+    pluriel: 'bouilloires à vapeur',
     ingredients: { cuivre: 2, bois: 1 },
     duree: 9,
     prixVente: 45,
@@ -49,6 +52,7 @@ export const RECETTES = Object.freeze({
   horloge: {
     nom: 'Horloge mécanique',
     article: 'une horloge mécanique',
+    pluriel: 'horloges mécaniques',
     ingredients: { cuivre: 1, bois: 1, ressort: 2 },
     duree: 14,
     prixVente: 75,
@@ -58,6 +62,7 @@ export const RECETTES = Object.freeze({
   'boite-musique': {
     nom: 'Boîte à musique',
     article: 'une boîte à musique',
+    pluriel: 'boîtes à musique',
     ingredients: { cuivre: 1, bois: 2, ressort: 1 },
     duree: 12,
     prixVente: 70,
@@ -66,6 +71,7 @@ export const RECETTES = Object.freeze({
   automate: {
     nom: 'Automate de cuivre',
     article: 'un automate de cuivre',
+    pluriel: 'automates de cuivre',
     ingredients: { cuivre: 3, ressort: 2 },
     duree: 18,
     prixVente: 120,
@@ -128,6 +134,19 @@ export const AMELIORATIONS = Object.freeze({
   'plans-automate': { nom: "Plans d'automate", description: 'Débloque la fabrication des automates de cuivre.', prix: 0, cadeau: 'wagonnet-mine' },
 });
 
+// Les décorations de l'atelier (version 1.4). Elles ne changent rien aux
+// règles : c'est seulement pour le plaisir des yeux. Chacune s'achète une fois,
+// et apparaît aussitôt sur la façade de l'atelier, sur la place.
+export const DECORATIONS = Object.freeze({
+  tapis: { nom: "Tapis d'accueil", description: 'Un tapis rayé devant la porte, pour bien accueillir les clients.', prix: 25 },
+  'lanterne-porte': { nom: 'Lanterne de porte', description: "Une petite lanterne près de l'entrée, qui s'allume le soir.", prix: 30 },
+  fanions: { nom: 'Guirlande de fanions', description: 'Des fanions colorés tout le long du toit.', prix: 35 },
+  'pots-fleurs': { nom: 'Plantes en pots', description: "Deux grands pots fleuris, aux coins de l'atelier.", prix: 40 },
+  jardinieres: { nom: 'Jardinières fleuries', description: 'Des fleurs sous les deux fenêtres.', prix: 45 },
+  girouette: { nom: 'Girouette en cuivre', description: 'Un petit coq de cuivre sur le toit, qui tourne au gré du vent.', prix: 55 },
+  'horloge-murale': { nom: 'Horloge murale', description: "Une horloge sur la façade, qui donne l'heure de Cuivrebourg.", prix: 70 },
+});
+
 // Les habitants qui viennent acheter (ils arrivent chacun leur tour).
 export const HABITANTS = Object.freeze([
   { nom: 'Berthe', salut: "Bonjour, monsieur l'artisan !" },
@@ -174,6 +193,7 @@ export function creerEtatAtelier() {
     clientsServis: 0,
     graine: 20261104,        // pour le « hasard » des commandes (toujours le même)
     recettesQuete: [],       // les objets de quête qu'on a le droit de fabriquer en ce moment
+    decorations: [],         // les décorations achetées (version 1.4)
   };
 }
 
@@ -316,6 +336,21 @@ export function acheterAmelioration(etat, id) {
   etat.argent -= amelioration.prix;
   a.ameliorations.push(id);
   return [`Nouvelle amélioration : ${amelioration.nom}`];
+}
+
+// Acheter une décoration (version 1.4).
+export function possedeDecoration(etat, id) {
+  return etat.atelier.decorations.includes(id);
+}
+export function acheterDecoration(etat, id) {
+  const deco = DECORATIONS[id];
+  if (!deco) return [];
+  if (!etat.atelier.ouvert) return ["L'atelier n'est pas encore ouvert."];
+  if (possedeDecoration(etat, id)) return ['Déjà installée.'];
+  if (etat.argent < deco.prix) return [`Pas assez d'argent (${deco.prix} pièces).`];
+  etat.argent -= deco.prix;
+  etat.atelier.decorations.push(id);
+  return [`Nouvelle décoration : ${deco.nom}`];
 }
 
 // Servir le client du comptoir (s'il y a l'objet en stock).

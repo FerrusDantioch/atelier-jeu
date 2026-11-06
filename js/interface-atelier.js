@@ -1,10 +1,12 @@
 // =============================================================================
 // interface-atelier.js — le panneau de l'établi (étape 2)
 // -----------------------------------------------------------------------------
-// Un grand panneau avec trois onglets :
+// Un grand panneau avec cinq onglets :
 //   - Fabriquer : les recettes, ce qu'il faut, le bouton « Fabriquer » ;
 //   - Acheter : les matériaux ;
-//   - Améliorer : les améliorations de l'atelier.
+//   - Améliorer : les améliorations de l'atelier ;
+//   - Décorer (version 1.4) : les décorations de la façade, pour le plaisir ;
+//   - Carnet (version 1.4) : les commandes spéciales des habitants.
 // En haut, un résumé du stock reste toujours visible.
 //
 // Ce fichier ne décide de rien : quand on appuie sur un bouton, il prévient
@@ -23,7 +25,17 @@ import {
   possedeAmelioration,
   clientAuComptoir,
   progressionFabrication,
+  DECORATIONS,
+  possedeDecoration,
 } from './logique-atelier.js';
+import {
+  carnetOuvert,
+  commandeLivrable,
+  decrireObjets,
+  nomClient,
+  raisonClient,
+  texteDelai,
+} from './logique-commandes.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -106,11 +118,17 @@ export function creerPanneauAtelier({ etat, surAction, surFermeture }) {
       o.classList.toggle('actif', actif);
       o.setAttribute('aria-selected', String(actif));
     }
+    // L'onglet du carnet affiche le nombre de commandes en attente.
+    const nombre = etat.carnet.commandes.length;
+    const ongletCarnet = onglets.find((o) => o.dataset.onglet === 'carnet');
+    if (ongletCarnet) ongletCarnet.textContent = nombre > 0 ? `Carnet (${nombre})` : 'Carnet';
     dessinerStock();
     contenu.innerHTML = '';
     barreProgression = null;
     if (ongletActif === 'fabriquer') dessinerFabriquer();
     else if (ongletActif === 'acheter') dessinerAcheter();
+    else if (ongletActif === 'decorer') dessinerDecorer();
+    else if (ongletActif === 'carnet') dessinerCarnet();
     else dessinerAmeliorer();
 
     contenu.scrollTop = defilement;
@@ -162,6 +180,11 @@ export function creerPanneauAtelier({ etat, surAction, surFermeture }) {
       if (client && client.commande === id) {
         carte.classList.add('commandee');
         titre.append(el('span', 'etiquette', `Commandé par ${client.nom}`));
+      }
+      // Une commande spéciale du carnet demande cet objet ?
+      for (const c of etat.carnet.commandes.filter((x) => x.objet === id)) {
+        carte.classList.add('commandee');
+        titre.append(el('span', 'etiquette', `Carnet : ${c.quantite} pour ${nomClient(c.client)}`));
       }
       carte.append(titre);
 
@@ -235,6 +258,51 @@ export function creerPanneauAtelier({ etat, surAction, surFermeture }) {
       }
       contenu.append(carte);
     }
+  }
+
+  // Les décorations (version 1.4) : elles ne servent qu'à embellir l'atelier.
+  function dessinerDecorer() {
+    contenu.append(el('p', 'carte-intro', "Pour le plaisir des yeux : chaque décoration apparaît aussitôt sur la façade de l'atelier."));
+    for (const [id, deco] of Object.entries(DECORATIONS)) {
+      const carte = el('div', 'carte-atelier');
+      carte.append(el('div', 'carte-titre', deco.nom));
+      carte.append(el('div', 'carte-detail', deco.description));
+      if (possedeDecoration(etat, id)) {
+        carte.classList.add('installee');
+        carte.append(el('div', 'etiquette-installee', 'Installée ✓'));
+      } else {
+        carte.append(bouton(`Acheter (${deco.prix} pièces)`, `decorer-${id}`, etat.argent >= deco.prix, () => surAction('decorer', id)));
+        if (etat.argent < deco.prix) carte.append(el('div', 'carte-raison', `Encore ${deco.prix - etat.argent} pièces à gagner.`));
+      }
+      contenu.append(carte);
+    }
+  }
+
+  // Le carnet de commandes (version 1.4).
+  function dessinerCarnet() {
+    if (!carnetOuvert(etat)) {
+      contenu.append(el('p', 'carte-intro', 'Le carnet de commandes s\'ouvrira après votre premier client servi au comptoir.'));
+      return;
+    }
+    contenu.append(el('p', 'carte-intro', "Léon, le facteur, apporte les commandes spéciales le matin, et se charge de les livrer. Elles rapportent plus que le comptoir. Pas de souci si l'une n'est pas prête à temps : elle est simplement annulée."));
+    const commandes = etat.carnet.commandes;
+    if (commandes.length === 0) {
+      contenu.append(el('div', 'carte-atelier verrouillee', 'Aucune commande pour l\'instant. Léon passe le matin (une commande par jour au plus).'));
+    }
+    for (const c of commandes) {
+      const carte = el('div', 'carte-atelier');
+      const livrable = commandeLivrable(etat, c);
+      if (livrable) carte.classList.add('commandee');
+      carte.append(el('div', 'carte-titre', `${nomClient(c.client)} : ${decrireObjets(c.objet, c.quantite)}`));
+      carte.append(el('div', 'carte-detail', `${raisonClient(c.client).replace(/^./, (l) => l.toUpperCase())}.`));
+      carte.append(el('div', 'carte-detail', `${texteDelai(etat, c)} · Récompense : ${c.recompense} pièces`));
+      const enStock = etat.atelier.stock[c.objet];
+      carte.append(el('div', 'carte-detail', `En stock : ${Math.min(enStock, c.quantite)}/${c.quantite}`));
+      carte.append(bouton(`Livrer (+${c.recompense})`, `livrer-${c.id}`, livrable, () => surAction('livrer', c.id)));
+      if (!livrable) carte.append(el('div', 'carte-raison', `Il manque encore ${decrireObjets(c.objet, c.quantite - enStock)} : fabrique-les (onglet Fabriquer).`));
+      contenu.append(carte);
+    }
+    if (etat.carnet.livrees > 0) contenu.append(el('p', 'petit', `Commandes livrées depuis le début : ${etat.carnet.livrees}.`));
   }
 
   // Met à jour la barre de la fabrication en cours (appelé à chaque image).

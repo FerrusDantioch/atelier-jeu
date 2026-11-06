@@ -1,7 +1,7 @@
 // =============================================================================
 // interface.js — tout ce qui s'affiche PAR-DESSUS la 3D
 // -----------------------------------------------------------------------------
-// Le compteur d'argent, le cadre « Objectif », les petits messages temporaires,
+// Le compteur d'argent, le calendrier (version 1.4), le cadre « Objectif », les petits messages temporaires,
 // l'aide d'interaction et la boîte de dialogue. Ce sont des éléments HTML
 // classiques (décrits dans index.html, mis en forme par css/style.css).
 // =============================================================================
@@ -12,6 +12,7 @@ export function creerInterface() {
   const elements = {
     haut: $('haut'),
     argent: $('argent-valeur'),
+    calendrier: $('calendrier'),
     fabrication: $('fabrication'),
     fabricationNom: $('fabrication-nom'),
     fabricationBarre: $('fabrication-barre'),
@@ -41,6 +42,11 @@ export function creerInterface() {
     const ligne = secondaire || '';
     if (elements.objectifSecondaire.textContent !== ligne) elements.objectifSecondaire.textContent = ligne;
     elements.objectifSecondaire.hidden = !secondaire;
+  }
+
+  // --- Le calendrier (version 1.4) : « Printemps · jour 3 » ----------------------------
+  function majCalendrier(texte) {
+    if (elements.calendrier.textContent !== texte) elements.calendrier.textContent = texte;
   }
 
   // --- Fabrication en cours (étape 2) ------------------------------------------------------
@@ -183,6 +189,7 @@ export function creerInterface() {
 
   return {
     majArgent,
+    majCalendrier,
     majObjectif,
     majFabrication,
     afficherMessage,

@@ -780,3 +780,31 @@ body.panneau-ouvert #zone-joystick { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
   body.tactile #joystick { transition: none; }
 }
+
+/* ==========================================================================
+   VERSION 1.4 : le calendrier, les onglets Décorer et Carnet
+   ========================================================================== */
+
+/* Le petit calendrier (« Printemps · jour 3 »), à côté de l'argent. */
+#calendrier {
+  flex: none;
+  padding: 8px 12px;
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--encre-douce);
+  white-space: nowrap;
+}
+
+/* Une phrase d'explication en haut d'un onglet. */
+.carte-intro {
+  margin: 2px 0 10px;
+  font-size: 16px;
+  color: var(--encre-douce);
+}
+
+/* Cinq onglets : sur un écran étroit, ils passent sur deux lignes. */
+@media (max-width: 600px) {
+  .onglets { flex-wrap: wrap; }
+  .onglets button { flex: 1 1 28%; font-size: 16px; min-height: 42px; }
+  #calendrier { font-size: 15px; padding: 7px 10px; }
+}

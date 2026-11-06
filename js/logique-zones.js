@@ -12,6 +12,8 @@
 //   fin de la quête de Barnabé.
 // - La mine de cuivre (version 1.3) n'a pas de chemin : on y va EN TRAIN,
 //   depuis la gare, une fois la quête du premier train terminée.
+// - La galerie souterraine (version 1.4) : on y descend par l'entrée de la
+//   mine, une fois le wagonnet de Sidonie réparé.
 //
 // Pour chaque lieu : ses limites, ses obstacles, ses personnages, les choses
 // avec lesquelles on peut interagir, ses sorties et ses points d'arrivée.
@@ -22,6 +24,8 @@
 import { MONDE, obstaclesDuMonde, libelleInteraction } from './logique.js';
 import { queteTerminee, queteEnCours, objetsARamasser } from './logique-quetes.js';
 import { heureAffichee } from './logique-temps.js';
+import { possedeDecoration } from './logique-atelier.js';
+import { FILONS, estFilon, galerieOuverte, libelleFilon } from './logique-galerie.js';
 
 // Raccourci : un rectangle d'obstacle.
 const rect = (id, x, z, largeur, profondeur) => ({ type: 'rectangle', id, x, z, largeur, profondeur });
@@ -245,10 +249,55 @@ export const ZONES = Object.freeze({
       { id: 'sidonie', x: 3.4, z: -1.3, distanceInteraction: 2.2 },
       { id: 'wagonnet', x: 9.6, z: 0.4, distanceInteraction: 2.0 },
       { id: 'train-retour', x: 1.5, z: -5.3, distanceInteraction: 2.1 },
+      // Version 1.4 : l'entrée de la galerie souterraine.
+      { id: 'entree-mine', x: 10, z: -1.75, distanceInteraction: 1.5 },
     ],
     sorties: [],
     arrivees: {
       gare: { x: 1, z: -4.3, orientation: 0 }, // en descendant du train
+      galerie: { x: 10, z: -1.6, orientation: 0 }, // en remontant de la galerie
+    },
+  },
+
+  // --- La galerie souterraine (version 1.4) : sous la colline de la mine. Des
+  // parois de roche, des lanternes, une petite source, et les filons de cuivre.
+  // On en ressort par le tunnel de l'ouest.
+  galerie: {
+    id: 'galerie',
+    nom: 'La galerie de la mine',
+    souterrain: true, // la lumière ne suit pas le jour et la nuit
+    limites: { minX: -12, maxX: 12, minZ: -8, maxZ: 7 },
+    joueur: MONDE.joueur,
+    camera: { minX: -5.5, maxX: 5.5, minZ: -3.5, maxZ: 3.5 },
+    // Les parois de roche (le nord est haut : c'est là que sont les filons).
+    parois: [
+      { id: 'paroi-nord', x: 0, z: -8.6, largeur: 26, profondeur: 1.2 },
+      { id: 'paroi-sud', x: 0, z: 7.6, largeur: 26, profondeur: 1.2 },
+      { id: 'paroi-ouest-haut', x: -12.6, z: -5.3, largeur: 1.2, profondeur: 7.8 },
+      { id: 'paroi-ouest-bas', x: -12.6, z: 4.8, largeur: 1.2, profondeur: 6.8 },
+      { id: 'paroi-est', x: 12.6, z: 0, largeur: 1.2, profondeur: 18 },
+    ],
+    // La petite source souterraine, et quelques gros rochers.
+    bassin: { id: 'bassin', x: 1.5, z: 2.8, rayon: 1.5 },
+    rochers: [
+      { x: -4.5, z: 3.8, rayon: 1.0 },
+      { x: 7.5, z: 4.2, rayon: 1.2 },
+      { x: 9.6, z: -4.8, rayon: 0.9 },
+    ],
+    // Un vieux chariot sur ses rails, et une pile de caisses.
+    caisses: [
+      { id: 'chariot', x: -8, z: 4.6, largeur: 1.6, profondeur: 1.0 },
+      { id: 'caisses', x: 9.8, z: 5.6, largeur: 1.6, profondeur: 1.0 },
+    ],
+    lampadaires: [{ x: -4, z: -6.3 }, { x: 2.2, z: -6.3 }, { x: 7.6, z: -6.3 }, { x: -9.5, z: 2.8 }, { x: 4.6, z: 5.6 }],
+    filons: FILONS,
+    pnj: [],
+    interactifs: FILONS.map((f) => ({ id: f.id, x: f.x, z: f.z, distanceInteraction: 1.6 })),
+    sorties: [
+      { vers: 'mine', minX: -99, maxX: -11.4, minZ: -1.4, maxZ: 1.4 },
+    ],
+    arrivees: {
+      mine: { x: -10.4, z: 0, orientation: Math.PI / 2 },
     },
   },
 });
@@ -288,6 +337,10 @@ export function conditionRemplie(etat, condition) {
 export function obstaclesZone(zoneId, etat) {
   if (zoneId === 'place') {
     const liste = obstaclesDuMonde(MONDE);
+    // Les pots de fleurs (une décoration de la version 1.4), une fois achetés.
+    if (possedeDecoration(etat, 'pots-fleurs')) {
+      for (const p of MONDE.pots) liste.push({ type: 'cercle', id: p.id, x: p.x, z: p.z, rayon: MONDE.rayonPot });
+    }
     // Portail ouvert : on peut passer entre les poteaux.
     return conditionRemplie(etat, 'portail') ? liste.filter((o) => o.id !== 'portail') : liste;
   }
@@ -295,6 +348,8 @@ export function obstaclesZone(zoneId, etat) {
   const liste = [];
   const ajouterRect = (o) => liste.push(rect(o.id, o.x, o.z, o.largeur, o.profondeur));
   (z.haies || []).forEach(ajouterRect);
+  (z.parois || []).forEach(ajouterRect);
+  (z.caisses || []).forEach(ajouterRect);
   (z.batiments || []).forEach(ajouterRect);
   (z.etals || []).forEach(ajouterRect);
   (z.bancs || []).forEach(ajouterRect);
@@ -305,7 +360,7 @@ export function obstaclesZone(zoneId, etat) {
   (z.rochers || []).forEach((r, i) => liste.push({ type: 'cercle', id: `rocher-${i + 1}`, x: r.x, z: r.z, rayon: r.rayon }));
   // Une barrière (arbre tombé, barrière de la gare) bloque tant qu'elle n'est pas ouverte.
   if (z.barriere && !conditionRemplie(etat, z.barriere.ouverteSi)) ajouterRect(z.barriere);
-  for (const c of [z.fontaine, z.mecanisme, z.horloge, z.chateauEau].filter(Boolean)) liste.push({ type: 'cercle', id: c.id, x: c.x, z: c.z, rayon: c.rayon });
+  for (const c of [z.fontaine, z.mecanisme, z.horloge, z.chateauEau, z.bassin].filter(Boolean)) liste.push({ type: 'cercle', id: c.id, x: c.x, z: c.z, rayon: c.rayon });
   (z.lampadaires || []).forEach((l, i) => liste.push({ type: 'cercle', id: `lampadaire-${i + 1}`, x: l.x, z: l.z, rayon: RAYON_LAMPADAIRE }));
   for (const p of z.pnj || []) liste.push({ type: 'cercle', id: p.id, x: p.x, z: p.z, rayon: p.rayon });
   (z.arbres || []).forEach((a, i) => liste.push({ type: 'cercle', id: `arbre-${i + 1}`, x: a.x, z: a.z, rayon: z.rayonArbre }));
@@ -353,6 +408,8 @@ export function libelleZone(etat, cible) {
     return voyageTrain(etat, 'gare') ? 'Monter dans le train (vers la mine)' : 'La locomotive';
   }
   if (cible === 'train-retour') return 'Rentrer à Cuivrebourg en train';
+  if (cible === 'entree-mine') return galerieOuverte(etat) ? 'Descendre dans la mine' : "L'entrée de la mine";
+  if (estFilon(cible)) return libelleFilon(etat, cible);
   if (cible === 'wagonnet') return aUtiliser ? 'Poser la roue neuve' : 'Le wagonnet';
   return libelleInteraction(etat, cible);
 }
@@ -409,8 +466,13 @@ export function dialogueLeon(etat) {
   } else {
     repliques = [
       'Le train m\'apporte des lettres de partout ! Elles disent toutes : « Cuivrebourg revit ! »',
+      "Sidonie dit qu'on peut descendre dans la galerie de la mine, maintenant. Il paraît qu'on y trouve du cuivre à foison !",
       "Et c'est grâce à vous, Ferrus. Bravo !",
     ];
+  }
+  // Version 1.4 : Léon livre aussi les commandes spéciales.
+  if (etat.carnet && etat.carnet.commandes.length > 0) {
+    repliques.push("Au fait : c'est moi qui livre vos commandes spéciales. Quand elles sont prêtes, ouvrez le carnet, à l'établi.");
   }
   return { orateur: 'Léon', repliques, choix: [{ texte: 'Merci, Léon', action: 'fermer' }] };
 }
@@ -441,6 +503,7 @@ export function messageObjet(etat, cible) {
     return ['Le wagonnet a déraillé : il lui manque une roue.'];
   }
   if (cible === 'train-retour') return ['Le train attend à quai.'];
+  if (cible === 'entree-mine') return ["L'entrée de la mine est fermée : Sidonie n'y laisse descendre personne tant que son wagonnet est en panne."];
   if (cible === 'locomotive') {
     if (queteTerminee(etat, 'train-cuivrebourg')) return ['Le train de Cuivrebourg roule de nouveau !'];
     return ['Une belle locomotive, froide et silencieuse. Son vieux sifflet est tout rouillé.'];

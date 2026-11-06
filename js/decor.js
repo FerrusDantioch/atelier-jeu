@@ -18,7 +18,7 @@
 import * as THREE from '../lib/three/three.module.js';
 import { boite, cylindre, boule } from './formes.js';
 import { EAU_CALME, creerRonds } from './eau.js';
-import { MATIERE_FENETRE, MATIERE_LUEUR, matiereFeuillage, creerFumee, creerLampadaire, creerLucioles } from './vie.js';
+import { MATIERE_FENETRE, MATIERE_LUEUR, matiereFeuillage, creerFumee, creerLampadaire, creerLucioles, creerHalo } from './vie.js';
 import { gelule } from './formes.js';
 
 // ----------------------------------------------------------------------------
@@ -216,12 +216,13 @@ export function construireDecor(scene, monde) {
   construireComptoir(scene, monde.comptoir);
   const rouageEtabli = construireRouageEtabli(scene, monde.etabli);
   const ameliorations = construireAmeliorations(scene, monde);
+  const decorations = construireDecorations(scene, monde);
   // Les lucioles, la nuit, près des arbres du sud de la place (version 1.3).
   const lucioles = creerLucioles({ x: 0, z: 8.6, largeur: 26, profondeur: 3, nombre: 8, graine: 2 });
   scene.add(lucioles);
   // « eau » et « vie » : ce qui s'anime dans ce lieu (main.js les fait vivre).
-  const vie = [fumeeAtelier, fumeeOdile, lucioles, ameliorations['plans-automate']];
-  return { lampeEtabli, lanterneOdile, rouageEtabli, ameliorations, portail, eau, vie, fumeeAtelier };
+  const vie = [fumeeAtelier, fumeeOdile, lucioles, ameliorations['plans-automate'], decorations.fanions, decorations.girouette];
+  return { lampeEtabli, lanterneOdile, rouageEtabli, ameliorations, decorations, portail, eau, vie, fumeeAtelier };
 }
 
 // Les lanternes sur leur poteau (elles s'allument le soir : voir vie.js).
@@ -646,6 +647,163 @@ function construireAmeliorations(scene, monde) {
   }
   return objets;
 }
+
+// --- Les décorations de l'atelier (version 1.4), visibles une fois achetées ---------------
+// Elles sont toutes sur la façade (ou devant) : elles ne gênent pas le passage,
+// sauf les deux pots de fleurs, aux coins (ce sont alors des obstacles : voir
+// MONDE.pots dans logique.js).
+function construireDecorations(scene, monde) {
+  const atelier = monde.atelier;
+  const avant = atelier.z + atelier.profondeur / 2; // la façade (z = -7)
+  const gauche = atelier.x - atelier.largeur / 2;
+  const droite = atelier.x + atelier.largeur / 2;
+  const fleurs = ['#e8b4c0', '#f0d68a', '#f4efe4', '#d9a08f', '#c7b4dc'];
+
+  // Le tapis d'accueil, rayé, devant la porte.
+  const tapis = new THREE.Group();
+  tapis.position.set(atelier.x, 0.03, avant + 0.65);
+  tapis.add(objet(boite(1.7, 0.025, 0.95, 0.01), '#a3574c', 0, 0, 0, { recoit: true }));
+  for (const z of [-0.28, 0, 0.28]) tapis.add(objet(boite(1.5, 0.03, 0.08, 0.01), '#e2c27e', 0, 0.002, z, { recoit: true }));
+
+  // La lanterne de porte, à gauche de l'entrée (elle s'allume le soir, comme
+  // les autres lanternes du village).
+  const lanterne = new THREE.Group();
+  lanterne.position.set(atelier.x - 0.95, 2.35, avant + 0.1);
+  lanterne.add(objet(boite(0.06, 0.06, 0.32, 0.02), FONTE_DECO, 0, 0.18, 0.12));
+  lanterne.add(objet(cylindre(0.1, 0.08, 0.26, 12, 0.02), MATIERE_LUEUR, 0, 0, 0.26));
+  lanterne.add(objet(new THREE.ConeGeometry(0.14, 0.12, 12), FONTE_DECO, 0, 0.18, 0.26));
+  const halo = creerHalo(1.2);
+  halo.position.set(0, 0, 0.32);
+  lanterne.add(halo);
+
+  // La guirlande de fanions, le long des deux pentes du pignon.
+  const fanions = new THREE.Group();
+  const triangle = new THREE.Shape();
+  triangle.moveTo(-0.11, 0);
+  triangle.lineTo(0.11, 0);
+  triangle.lineTo(0, -0.26);
+  triangle.closePath();
+  const formeFanion = new THREE.ShapeGeometry(triangle);
+  const couleursFanions = ['#c98b7a', '#e2c27e', '#8fa77a', '#8f8fb0', '#d9a08f'];
+  const zFanions = avant + 0.32;
+  const sommet = { x: atelier.x, y: 5.45 };
+  const coins = [{ x: gauche + 0.35, y: 3.62 }, { x: droite - 0.35, y: 3.62 }];
+  const lesFanions = [];
+  let n = 0;
+  for (const coin of coins) {
+    const longueur = Math.hypot(sommet.x - coin.x, sommet.y - coin.y);
+    const nombre = Math.floor(longueur / 0.42);
+    // Le fil.
+    const fil = objet(cylindre(0.012, 0.012, longueur, 6), '#5e4330', (coin.x + sommet.x) / 2, (coin.y + sommet.y) / 2, zFanions);
+    fil.rotation.z = Math.atan2(-(sommet.x - coin.x), sommet.y - coin.y); // le fil suit la pente du toit
+    fanions.add(fil);
+    for (let i = 1; i < nombre; i++) {
+      const a = i / nombre;
+      const f = new THREE.Mesh(formeFanion, new THREE.MeshLambertMaterial({ color: couleursFanions[n % couleursFanions.length], side: THREE.DoubleSide }));
+      f.position.set(coin.x + (sommet.x - coin.x) * a, coin.y + (sommet.y - coin.y) * a, zFanions);
+      f.userData.phase = n * 0.9;
+      fanions.add(f);
+      lesFanions.push(f);
+      n++;
+    }
+  }
+  // Les fanions se balancent un tout petit peu dans le vent.
+  fanions.userData.animer = (t) => {
+    for (const f of lesFanions) f.rotation.x = Math.sin(t * 1.1 + f.userData.phase) * 0.18;
+  };
+
+  // Les plantes en pots, aux deux coins de l'atelier (positions : MONDE.pots).
+  const pots = new THREE.Group();
+  monde.pots.forEach((p, k) => {
+    const g = new THREE.Group();
+    g.position.set(p.x, 0, p.z);
+    g.add(objet(cylindre(0.3, 0.22, 0.5, 16, 0.04), '#b5694a', 0, 0.25, 0, { ombre: true }));
+    g.add(objet(cylindre(0.27, 0.27, 0.04, 16), '#5e4330', 0, 0.49, 0));
+    g.add(objet(boule(0.34, 2), '#7d9e5c', 0, 0.78, 0, { ombre: true }));
+    g.add(objet(boule(0.24, 2), '#90ae69', 0.08, 1.02, -0.04));
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2 + k;
+      g.add(objet(boule(0.07, 1), fleurs[(i + k) % fleurs.length], Math.cos(a) * 0.3, 0.86 + (i % 2) * 0.12, Math.sin(a) * 0.3 + 0.05));
+    }
+    pots.add(g);
+  });
+
+  // Les jardinières sous les deux fenêtres.
+  const jardinieres = new THREE.Group();
+  for (const fx of [-2.6, 2.4]) {
+    const x = atelier.x + fx;
+    jardinieres.add(objet(boite(1.2, 0.2, 0.3, 0.05), COULEURS.boisClair, x, 1.55, avant + 0.15));
+    for (let i = 0; i < 4; i++) {
+      jardinieres.add(objet(boule(0.12, 1), '#7d9e5c', x - 0.42 + i * 0.28, 1.68, avant + 0.17));
+      jardinieres.add(objet(boule(0.08, 1), fleurs[(i + (fx > 0 ? 2 : 0)) % fleurs.length], x - 0.42 + i * 0.28, 1.78, avant + 0.24));
+    }
+  }
+
+  // La girouette en cuivre, sur le faîte du toit : un petit coq sur une flèche.
+  const girouette = new THREE.Group();
+  girouette.position.set(atelier.x, 5.82, atelier.z + 1.2);
+  girouette.add(objet(cylindre(0.025, 0.03, 0.8), COULEURS.cuivre, 0, 0.4, 0));
+  for (const angle of [0, Math.PI / 2]) {
+    const barre = objet(boite(0.6, 0.025, 0.025, 0.008), COULEURS.laiton, 0, 0.55, 0);
+    barre.rotation.y = angle;
+    girouette.add(barre);
+  }
+  const tourne = new THREE.Group();
+  tourne.position.y = 0.85;
+  const fleche = objet(boite(0.7, 0.03, 0.03, 0.01), COULEURS.cuivre, 0, 0, 0);
+  tourne.add(fleche);
+  const pointe = objet(new THREE.ConeGeometry(0.05, 0.12, 8), COULEURS.cuivre, 0.38, 0, 0);
+  pointe.rotation.z = -Math.PI / 2;
+  tourne.add(pointe);
+  // Le coq : un corps rond, une tête, une queue en éventail.
+  tourne.add(objet(boule(0.1, 1), COULEURS.cuivre, 0, 0.13, 0));
+  tourne.add(objet(boule(0.06, 1), COULEURS.cuivre, 0.09, 0.24, 0));
+  const queue = objet(new THREE.CircleGeometry(0.12, 10, 0, Math.PI), COULEURS.cuivre, -0.12, 0.16, 0);
+  queue.material = matiere(COULEURS.cuivre, { side: THREE.DoubleSide });
+  queue.rotation.z = 0.6;
+  tourne.add(queue);
+  girouette.add(tourne);
+  // Elle tourne lentement, au gré du vent (jamais brusquement).
+  girouette.userData.animer = (t) => {
+    tourne.rotation.y = 0.5 + Math.sin(t * 0.13) * 1.1 + Math.sin(t * 0.31) * 0.3;
+  };
+
+  // L'horloge murale, entre la porte et la fenêtre de droite. Ses aiguilles
+  // donnent l'heure du jeu (main.js les règle avec « userData.regler »).
+  const horloge = new THREE.Group();
+  horloge.position.set(atelier.x + 1.25, 2.25, avant + 0.06);
+  const cadran = objet(cylindre(0.3, 0.3, 0.06, 28), '#f1e3c4', 0, 0, 0.03);
+  cadran.rotation.x = Math.PI / 2;
+  horloge.add(cadran);
+  const bord = objet(new THREE.TorusGeometry(0.3, 0.035, 8, 28), COULEURS.laiton, 0, 0, 0.06);
+  horloge.add(bord);
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2;
+    horloge.add(objet(boite(0.025, i % 3 === 0 ? 0.07 : 0.04, 0.01), '#5e4330', Math.sin(a) * 0.23, Math.cos(a) * 0.23, 0.065).rotateZ(-a));
+  }
+  const aiguille = (longueur, epaisseur) => {
+    const pivot = new THREE.Group();
+    pivot.position.z = 0.075;
+    pivot.add(objet(boite(epaisseur, longueur, 0.012, 0.004), '#3a2a1f', 0, longueur / 2 - 0.02, 0));
+    horloge.add(pivot);
+    return pivot;
+  };
+  const heures = aiguille(0.15, 0.035);
+  const minutes = aiguille(0.22, 0.022);
+  horloge.add(objet(boule(0.025, 1), COULEURS.laiton, 0, 0, 0.085));
+  horloge.userData.regler = (angles) => {
+    heures.rotation.z = -angles.heures;
+    minutes.rotation.z = -angles.minutes;
+  };
+
+  const objets = { tapis, 'lanterne-porte': lanterne, fanions, 'pots-fleurs': pots, jardinieres, girouette, 'horloge-murale': horloge };
+  for (const o of Object.values(objets)) {
+    o.visible = false;
+    scene.add(o);
+  }
+  return objets;
+}
+const FONTE_DECO = '#3f4a46';
 
 // --- Les engrenages de la quête et les marqueurs --------------------------------------
 // Un engrenage à ramasser : il tourne doucement au-dessus d'un cercle clair posé
