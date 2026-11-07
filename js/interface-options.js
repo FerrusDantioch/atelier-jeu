@@ -12,6 +12,8 @@
 //   - le cycle du jour et de la nuit (version 1.2) ;
 //   - les saisons (version 1.4) ;
 //   - la météo douce (version 1.5) ;
+//   - la taille du texte, le petit jeu d'assemblage, et la partie dans un
+//     fichier (version 1.6) ;
 //   - le plein écran (sur les navigateurs qui le permettent) ;
 //   - l'installation du jeu comme une application (quand Chrome le propose).
 //
@@ -19,17 +21,20 @@
 // (« surChangement »), qui enregistre les réglages et les applique.
 // =============================================================================
 
-import { NIVEAUX_VOLUME, QUALITES, VERSION_JEU, changerVolume } from './logique-reglages.js';
+import { NIVEAUX_VOLUME, QUALITES, VERSION_JEU, changerVolume, TAILLES_TEXTE } from './logique-reglages.js';
 
 const $ = (id) => document.getElementById(id);
 
-export function creerPanneauOptions({ reglages, surChangement, surFermeture, estDisponible, afficherMessage }) {
+// « partie » (version 1.6) : { exporter(), lire(texte), confirmer() } — voir main.js.
+export function creerPanneauOptions({ reglages, surChangement, surFermeture, estDisponible, afficherMessage, partie }) {
   const panneau = $('panneau-options');
   const boutonMusique = $('option-musique');
   const boutonSons = $('option-sons');
   const boutonJourNuit = $('option-jour-nuit');
   const boutonSaisons = $('option-saisons');
   const boutonMeteo = $('option-meteo');
+  const boutonAssemblage = $('option-assemblage');
+  const boutonsTexte = [...panneau.querySelectorAll('[data-texte]')];
   const boutonsQualite = [...panneau.querySelectorAll('[data-qualite]')];
   const sectionEcran = $('option-section-ecran');
   const boutonEcran = $('option-plein-ecran');
@@ -102,6 +107,56 @@ export function creerPanneauOptions({ reglages, surChangement, surFermeture, est
     majAffichage();
     surChangement('saisons');
   });
+  boutonAssemblage.addEventListener('click', () => {
+    reglages.assemblage = !reglages.assemblage;
+    majAffichage();
+    surChangement('assemblage');
+  });
+  for (const b of boutonsTexte) {
+    b.addEventListener('click', () => {
+      if (reglages.texte === b.dataset.texte || !TAILLES_TEXTE[b.dataset.texte]) return;
+      reglages.texte = b.dataset.texte;
+      majAffichage();
+      surChangement('texte');
+    });
+  }
+
+  // --- La partie dans un fichier (version 1.6) ------------------------------------------
+  const etatPartie = $('option-partie-etat');
+  const boutonConfirmer = $('option-confirmer-import');
+  const champFichier = $('option-fichier');
+  $('option-exporter').addEventListener('click', () => {
+    boutonConfirmer.hidden = true;
+    etatPartie.textContent = partie.exporter();
+  });
+  $('option-importer').addEventListener('click', () => {
+    boutonConfirmer.hidden = true;
+    etatPartie.textContent = '';
+    champFichier.value = '';
+    champFichier.click();
+  });
+  champFichier.addEventListener('change', () => {
+    const fichier = champFichier.files && champFichier.files[0];
+    if (!fichier) return;
+    if (fichier.size > partie.tailleMax) {
+      etatPartie.textContent = "Ce fichier est bien trop gros pour être une partie de Cuivrebourg.";
+      return;
+    }
+    const lecteur = new FileReader();
+    lecteur.onload = () => {
+      const reponse = partie.lire(String(lecteur.result));
+      etatPartie.textContent = reponse.message;
+      boutonConfirmer.hidden = !reponse.ok;
+      if (reponse.ok) boutonConfirmer.focus({ preventScroll: true });
+    };
+    lecteur.onerror = () => { etatPartie.textContent = "Le fichier n'a pas pu être lu."; };
+    lecteur.readAsText(fichier);
+  });
+  boutonConfirmer.addEventListener('click', () => {
+    boutonConfirmer.hidden = true;
+    etatPartie.textContent = partie.confirmer();
+  });
+
   for (const volume of panneau.querySelectorAll('[data-volume]')) {
     const cle = volume.dataset.volume;
     // Les petits crans du volume (dessinés une seule fois).
@@ -179,6 +234,12 @@ export function creerPanneauOptions({ reglages, surChangement, surFermeture, est
     majInterrupteur(boutonJourNuit, reglages.jourNuit, 'Activé', 'Toujours le jour');
     majInterrupteur(boutonSaisons, reglages.saisons, 'Activées', "Toujours l'été");
     majInterrupteur(boutonMeteo, reglages.meteo, 'Activée', 'Toujours beau');
+    majInterrupteur(boutonAssemblage, reglages.assemblage, 'Proposé', 'Jamais');
+    for (const b of boutonsTexte) {
+      const actif = b.dataset.texte === reglages.texte;
+      b.classList.toggle('actif', actif);
+      b.setAttribute('aria-pressed', String(actif));
+    }
     for (const volume of panneau.querySelectorAll('[data-volume]')) {
       const niveau = reglages[volume.dataset.volume];
       [...volume.querySelectorAll('.crans span')].forEach((c, i) => c.classList.toggle('plein', i < niveau));

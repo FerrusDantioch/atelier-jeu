@@ -15,7 +15,7 @@
 // alors effacées.
 // =============================================================================
 
-const VERSION = '1.5.0';
+const VERSION = '1.6.0';
 const NOM_CACHE = `cuivrebourg-${VERSION}`;
 
 // Tous les fichiers nécessaires pour jouer, gardés dès l'installation.
@@ -44,6 +44,21 @@ const FICHIERS = [
   'js/meteo.js',
   'js/compagnons.js',
   'js/interface-album.js',
+  'js/interface-fenetre.js',
+  'js/interface-v16.js',
+  'js/interface-photo.js',
+  'js/decor-foret.js',
+  'js/dirigeable3d.js',
+  'js/vitrine.js',
+  'js/vol.js',
+  'js/logique-amitie.js',
+  'js/logique-assemblage.js',
+  'js/logique-dirigeable.js',
+  'js/logique-foret.js',
+  'js/logique-garderobe.js',
+  'js/logique-journal.js',
+  'js/logique-photo.js',
+  'js/logique-vitrine.js',
   'js/vie.js',
   'js/formes.js',
   'js/interface-atelier.js',

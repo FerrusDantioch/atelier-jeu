@@ -225,14 +225,19 @@ export function peutOffrir(etat, id) {
 }
 
 // Ajoute le choix « Offrir un cadeau… » à un dialogue ordinaire (seulement si
-// ce dialogue n'attend rien d'important : tous ses choix ferment simplement).
+// ce dialogue n'attend rien d'important : tous ses choix ferment simplement ;
+// « toujours » : même s'il a d'autres choix, comme celui de Lucie).
 // Le jour de son anniversaire, l'habitant le dit.
-export function ajouterChoixAmitie(etat, id, dialogue) {
+export function ajouterChoixAmitie(etat, id, dialogue, toujours = false) {
   if (!dialogue || !ami(id)) return dialogue;
-  if (!dialogue.choix.every((c) => c.action === 'fermer')) return dialogue;
+  if (!toujours && !dialogue.choix.every((c) => c.action === 'fermer')) return dialogue;
   const d = { ...dialogue, repliques: [...dialogue.repliques], choix: [...dialogue.choix] };
   if (estAnniversaire(etat, id)) d.repliques.push("Au fait… c'est mon anniversaire, aujourd'hui !");
-  if (peutOffrir(etat, id)) d.choix.unshift({ texte: 'Offrir un cadeau…', action: `amitie:cadeau:${id}` });
+  if (peutOffrir(etat, id)) {
+    const choix = { texte: 'Offrir un cadeau…', action: `amitie:cadeau:${id}` };
+    if (toujours) d.choix.push(choix);
+    else d.choix.unshift(choix);
+  }
   return d;
 }
 

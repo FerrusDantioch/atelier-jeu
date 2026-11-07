@@ -23,7 +23,12 @@
   --marge-bas: max(14px, env(safe-area-inset-bottom));
   --marge-gauche: max(12px, env(safe-area-inset-left));
   --marge-droite: max(12px, env(safe-area-inset-right));
+  /* Version 1.6 : la taille du texte (option « Taille du texte »). Toutes les
+     tailles de texte sont multipliées par ce nombre. */
+  --texte: 1;
 }
+html.texte-grand { --texte: 1.15; }
+html.texte-tres-grand { --texte: 1.3; }
 
 /* La page occupe exactement l'écran, sans jamais défiler ni zoomer. */
 html, body {
@@ -36,7 +41,7 @@ html, body {
   background: var(--ciel);
   color: var(--encre);
   font-family: "Trebuchet MS", "Segoe UI", Roboto, system-ui, sans-serif;
-  font-size: 18px;
+  font-size: calc(18px * var(--texte));
   line-height: 1.35;
   -webkit-text-size-adjust: 100%;
   -webkit-user-select: none;
@@ -91,7 +96,7 @@ button {
 #argent {
   flex: none;
   padding: 8px 14px;
-  font-size: 20px;
+  font-size: calc(20px * var(--texte));
   font-weight: bold;
   display: flex;
   align-items: center;
@@ -112,10 +117,10 @@ button {
   margin-left: auto;
   max-width: 460px;
   padding: 8px 14px 10px;
-  font-size: 18px;
+  font-size: calc(18px * var(--texte));
 }
 .objectif-titre {
-  font-size: 14px;
+  font-size: calc(14px * var(--texte));
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--cuivre-fonce);
@@ -139,7 +144,7 @@ button {
   border: 2px solid var(--cuivre);
   border-radius: 999px;
   padding: 8px 20px;
-  font-size: 20px;
+  font-size: calc(20px * var(--texte));
   font-weight: bold;
   text-align: center;
   box-shadow: var(--ombre);
@@ -156,11 +161,11 @@ button {
   bottom: calc(var(--marge-bas) + 12px);
   transform: translateX(-50%);
   padding: 8px 18px;
-  font-size: 19px;
+  font-size: calc(19px * var(--texte));
   font-weight: bold;
   white-space: nowrap;
 }
-#indice kbd { font-size: 16px; }
+#indice kbd { font-size: calc(16px * var(--texte)); }
 
 kbd {
   display: inline-block;
@@ -217,7 +222,7 @@ body.tactile #bouton-interagir {
   border: 3px solid var(--cuivre-fonce);
   background: radial-gradient(circle at 40% 35%, #f8efdc, var(--parchemin-fonce));
   box-shadow: var(--ombre);
-  font-size: 19px;
+  font-size: calc(19px * var(--texte));
   font-weight: bold;
   touch-action: none;
 }
@@ -251,12 +256,12 @@ body.dialogue-ouvert #indice { display: none !important; }
 #dialogue-orateur {
   font-family: Georgia, serif;
   font-weight: bold;
-  font-size: 20px;
+  font-size: calc(20px * var(--texte));
   color: var(--cuivre-fonce);
 }
 #dialogue-texte {
   margin: 6px 0 10px;
-  font-size: 21px;
+  font-size: calc(21px * var(--texte));
   line-height: 1.4;
 }
 #dialogue-choix {
@@ -272,7 +277,7 @@ body.dialogue-ouvert #indice { display: none !important; }
   border-radius: 12px;
   border: 2px solid var(--cuivre);
   background: var(--parchemin);
-  font-size: 20px;
+  font-size: calc(20px * var(--texte));
   font-weight: bold;
   cursor: pointer;
 }
@@ -283,7 +288,7 @@ body.dialogue-ouvert #indice { display: none !important; }
 }
 #dialogue-suite {
   text-align: right;
-  font-size: 15px;
+  font-size: calc(15px * var(--texte));
   color: var(--encre-douce);
 }
 .aide-tactile { display: none; }
@@ -319,7 +324,7 @@ body.tactile .aide-pc { display: none; }
   font-size: clamp(26px, 6vw, 36px);
   color: var(--cuivre-fonce);
 }
-.carte .intro { margin: 0 0 16px; font-size: 18px; }
+.carte .intro { margin: 0 0 16px; font-size: calc(18px * var(--texte)); }
 .commandes {
   display: flex;
   flex-wrap: wrap;
@@ -334,7 +339,7 @@ body.tactile .aide-pc { display: none; }
   border-radius: 12px;
   border: 1px solid var(--parchemin-fonce);
 }
-.bloc-commandes h2 { margin: 0 0 6px; font-size: 19px; }
+.bloc-commandes h2 { margin: 0 0 6px; font-size: calc(19px * var(--texte)); }
 .bloc-commandes ul { margin: 0; padding-left: 0; list-style: none; }
 .bloc-commandes li { margin: 6px 0; }
 
@@ -346,24 +351,24 @@ body.tactile .aide-pc { display: none; }
   border: 3px solid var(--cuivre-fonce);
   background: var(--cuivre);
   color: #fff8ec;
-  font-size: 22px;
+  font-size: calc(22px * var(--texte));
   font-weight: bold;
   cursor: pointer;
 }
 #bouton-commencer:disabled { opacity: 0.6; cursor: wait; }
 #bouton-commencer:focus-visible, .choix:focus-visible { outline: 3px solid var(--encre); outline-offset: 2px; }
 
-.petit { font-size: 15px; color: var(--encre-douce); word-break: break-word; }
+.petit { font-size: calc(15px * var(--texte)); color: var(--encre-douce); word-break: break-word; }
 
 /* ----------------------- Petits écrans (téléphones) --------------------- */
 @media (max-width: 600px) {
-  html, body { font-size: 17px; }
+  html, body { font-size: calc(17px * var(--texte)); }
   #haut { flex-wrap: wrap; }
-  #objectif { margin-left: 0; flex: 1 1 200px; font-size: 17px; }
-  #argent { font-size: 18px; }
-  .message { font-size: 18px; }
-  #dialogue-texte { font-size: 19px; }
-  .choix { font-size: 18px; }
+  #objectif { margin-left: 0; flex: 1 1 200px; font-size: calc(17px * var(--texte)); }
+  #argent { font-size: calc(18px * var(--texte)); }
+  .message { font-size: calc(18px * var(--texte)); }
+  #dialogue-texte { font-size: calc(19px * var(--texte)); }
+  .choix { font-size: calc(18px * var(--texte)); }
 }
 
 /* Téléphone tenu à l'horizontale : peu de hauteur, on resserre. */
@@ -390,7 +395,7 @@ body.tactile .aide-pc { display: none; }
   flex: none;
   padding: 8px 14px;
   min-width: 150px;
-  font-size: 16px;
+  font-size: calc(16px * var(--texte));
   font-weight: bold;
 }
 .barre {
@@ -432,7 +437,7 @@ body.tactile .aide-pc { display: none; }
   align-items: center;
   gap: 12px;
 }
-.atelier-entete h2 { margin: 0; font-size: 24px; color: var(--cuivre-fonce); }
+.atelier-entete h2 { margin: 0; font-size: calc(24px * var(--texte)); color: var(--cuivre-fonce); }
 .atelier-argent {
   display: flex;
   align-items: center;
@@ -463,7 +468,7 @@ body.tactile .aide-pc { display: none; }
   border-radius: 12px;
   border: 2px solid var(--cuivre);
   background: var(--parchemin);
-  font-size: 18px;
+  font-size: calc(18px * var(--texte));
   font-weight: bold;
   cursor: pointer;
 }
@@ -484,7 +489,7 @@ body.tactile .aide-pc { display: none; }
   border-radius: 999px;
   background: var(--parchemin);
   border: 1px solid var(--parchemin-fonce);
-  font-size: 15px;
+  font-size: calc(15px * var(--texte));
   white-space: nowrap;
 }
 .pastille.objet { border-color: var(--cuivre); }
@@ -516,7 +521,7 @@ body.tactile .aide-pc { display: none; }
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  font-size: 19px;
+  font-size: calc(19px * var(--texte));
   font-weight: bold;
 }
 .etiquette, .etiquette-installee {
@@ -524,7 +529,7 @@ body.tactile .aide-pc { display: none; }
   border-radius: 999px;
   background: var(--cuivre);
   color: #fff8ec;
-  font-size: 14px;
+  font-size: calc(14px * var(--texte));
 }
 .etiquette-installee {
   display: inline-block;
@@ -532,9 +537,9 @@ body.tactile .aide-pc { display: none; }
   background: #7f9c7a;
   font-weight: bold;
 }
-.carte-detail { margin-top: 4px; font-size: 16px; }
+.carte-detail { margin-top: 4px; font-size: calc(16px * var(--texte)); }
 .carte-detail .manque { color: #9a4a2a; font-weight: bold; }
-.carte-raison { margin-top: 6px; font-size: 15px; color: var(--encre-douce); }
+.carte-raison { margin-top: 6px; font-size: calc(15px * var(--texte)); color: var(--encre-douce); }
 
 .ligne-boutons { display: flex; flex-wrap: wrap; gap: 8px; }
 .bouton-action {
@@ -545,7 +550,7 @@ body.tactile .aide-pc { display: none; }
   border: 2px solid var(--cuivre-fonce);
   background: var(--cuivre);
   color: #fff8ec;
-  font-size: 17px;
+  font-size: calc(17px * var(--texte));
   font-weight: bold;
   cursor: pointer;
 }
@@ -570,7 +575,7 @@ body.panneau-ouvert #indice { display: none !important; }
   #panneau-atelier { padding: 8px 12px; }
   .onglets { margin: 6px 0 4px; }
   .onglets button { min-height: 40px; }
-  .atelier-entete h2 { font-size: 20px; }
+  .atelier-entete h2 { font-size: calc(20px * var(--texte)); }
 }
 
 /* Panneau de l'établi ouvert : les petits messages s'affichent en bas de
@@ -590,7 +595,7 @@ body.panneau-ouvert #messages {
   margin-top: 4px;
   padding-top: 4px;
   border-top: 1px solid var(--parchemin-fonce);
-  font-size: 15px;
+  font-size: calc(15px * var(--texte));
   color: var(--encre-douce);
 }
 
@@ -620,7 +625,7 @@ body.panneau-ouvert #messages {
   border-radius: 14px;
   border: 2px solid var(--cuivre);
   background: var(--parchemin);
-  font-size: 18px;
+  font-size: calc(18px * var(--texte));
   font-weight: bold;
   cursor: pointer;
 }
@@ -665,7 +670,7 @@ body.tactile #bouton-options { width: 52px; height: 52px; }
 }
 .options-pause {
   margin-left: auto;
-  font-size: 15px;
+  font-size: calc(15px * var(--texte));
   color: var(--encre-douce);
 }
 .options-contenu { margin-top: 10px; }
@@ -675,7 +680,7 @@ body.tactile #bouton-options { width: 52px; height: 52px; }
   background: var(--parchemin);
   border: 2px solid var(--parchemin-fonce);
 }
-.option-titre { font-size: 19px; font-weight: bold; }
+.option-titre { font-size: calc(19px * var(--texte)); font-weight: bold; }
 .option-ligne {
   display: flex;
   flex-wrap: wrap;
@@ -684,7 +689,7 @@ body.tactile #bouton-options { width: 52px; height: 52px; }
   gap: 8px 12px;
 }
 .option-ligne + .option-ligne { margin-top: 8px; }
-.option-detail { margin: 6px 0 0; font-size: 15px; color: var(--encre-douce); }
+.option-detail { margin: 6px 0 0; font-size: calc(15px * var(--texte)); color: var(--encre-douce); }
 .option-ligne .option-detail { margin: 0; }
 
 .bouton-fermer,
@@ -697,7 +702,7 @@ body.tactile #bouton-options { width: 52px; height: 52px; }
   border-radius: 12px;
   border: 2px solid var(--cuivre);
   background: var(--parchemin-clair);
-  font-size: 17px;
+  font-size: calc(17px * var(--texte));
   font-weight: bold;
   cursor: pointer;
 }
@@ -714,7 +719,7 @@ body.tactile #bouton-options { width: 52px; height: 52px; }
 
 /* Le volume : un bouton −, cinq crans, un bouton +. */
 .volume { display: flex; align-items: center; gap: 10px; }
-.volume button { width: 52px; padding: 0; font-size: 24px; line-height: 1; }
+.volume button { width: 52px; padding: 0; font-size: calc(24px * var(--texte)); line-height: 1; }
 .volume button:disabled { opacity: 0.45; cursor: default; }
 .crans { display: flex; align-items: flex-end; gap: 5px; height: 30px; }
 .crans span {
@@ -739,7 +744,7 @@ body.tactile #bouton-options { width: 52px; height: 52px; }
 
 /* L'écran d'accueil : les boutons « Options » et « Installer ». */
 .boutons-accueil.secondaires { margin-top: 10px; }
-.boutons-accueil.secondaires button { font-size: 16px; }
+.boutons-accueil.secondaires button { font-size: calc(16px * var(--texte)); }
 
 /* Options ouvertes : on cache les commandes de déplacement et l'aide. */
 body.options-ouvert #joystick,
@@ -772,7 +777,7 @@ body.panneau-ouvert #zone-joystick { display: none !important; }
 @media (max-height: 480px) {
   #panneau-options { padding: 8px 12px; }
   .option { padding: 6px 12px 8px; }
-  .option-detail { font-size: 14px; }
+  .option-detail { font-size: calc(14px * var(--texte)); }
   #bouton-options { width: 44px; height: 44px; }
   body.tactile #bouton-options { width: 46px; height: 46px; }
 }
@@ -789,7 +794,7 @@ body.panneau-ouvert #zone-joystick { display: none !important; }
 #calendrier {
   flex: none;
   padding: 8px 12px;
-  font-size: 16px;
+  font-size: calc(16px * var(--texte));
   font-weight: bold;
   color: var(--encre-douce);
   white-space: nowrap;
@@ -798,15 +803,15 @@ body.panneau-ouvert #zone-joystick { display: none !important; }
 /* Une phrase d'explication en haut d'un onglet. */
 .carte-intro {
   margin: 2px 0 10px;
-  font-size: 16px;
+  font-size: calc(16px * var(--texte));
   color: var(--encre-douce);
 }
 
 /* Cinq onglets : sur un écran étroit, ils passent sur deux lignes. */
 @media (max-width: 600px) {
   .onglets { flex-wrap: wrap; }
-  .onglets button { flex: 1 1 28%; font-size: 16px; min-height: 42px; }
-  #calendrier { font-size: 15px; padding: 7px 10px; }
+  .onglets button { flex: 1 1 28%; font-size: calc(16px * var(--texte)); min-height: 42px; }
+  #calendrier { font-size: calc(15px * var(--texte)); padding: 7px 10px; }
 }
 
 /* ==========================================================================
@@ -873,14 +878,14 @@ body.tactile #bouton-album { width: 52px; height: 52px; }
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 30px;
+  font-size: calc(30px * var(--texte));
   font-weight: bold;
   color: var(--encre-douce);
 }
 .fiche.inconnue { opacity: 0.6; }
-.fiche-nom { font-weight: bold; font-size: 17px; }
-.fiche-role { font-size: 14px; color: var(--cuivre-fonce); }
-.fiche-mot { margin-top: 4px; font-size: 14px; color: var(--encre-douce); }
+.fiche-nom { font-weight: bold; font-size: calc(17px * var(--texte)); }
+.fiche-role { font-size: calc(14px * var(--texte)); color: var(--cuivre-fonce); }
+.fiche-mot { margin-top: 4px; font-size: calc(14px * var(--texte)); color: var(--encre-douce); }
 
 .souvenir {
   padding: 8px 12px;
@@ -890,11 +895,11 @@ body.tactile #bouton-album { width: 52px; height: 52px; }
   border-radius: 0 10px 10px 0;
 }
 .souvenir-titre { font-weight: bold; }
-.souvenir-texte { font-size: 15px; color: var(--encre-douce); }
-.album-chiffres { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 15px; }
+.souvenir-texte { font-size: calc(15px * var(--texte)); color: var(--encre-douce); }
+.album-chiffres { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: calc(15px * var(--texte)); }
 .album-chiffres td { padding: 5px 4px; border-bottom: 1px solid var(--parchemin-fonce); }
 .album-chiffres td:last-child { text-align: right; font-weight: bold; }
-.album-section { margin: 12px 0 6px; font-size: 17px; color: var(--cuivre-fonce); }
+.album-section { margin: 12px 0 6px; font-size: calc(17px * var(--texte)); color: var(--cuivre-fonce); }
 
 .poisson {
   display: flex;
@@ -917,7 +922,7 @@ body.tactile #bouton-album { width: 52px; height: 52px; }
 }
 .poisson.inconnu .poisson-forme { background: #c9bba0 !important; color: #c9bba0 !important; }
 .poisson-nom { font-weight: bold; }
-.poisson-detail { font-size: 14px; color: var(--encre-douce); }
+.poisson-detail { font-size: calc(14px * var(--texte)); color: var(--encre-douce); }
 
 @media (max-width: 600px) {
   .album-grille { grid-template-columns: 1fr; }
@@ -927,3 +932,181 @@ body.tactile #bouton-album { width: 52px; height: 52px; }
   #bouton-album { width: 44px; height: 44px; }
   body.tactile #bouton-album { width: 46px; height: 46px; }
 }
+
+/* ==========================================================================
+   VERSION 1.6 : le journal, la garde-robe, la vitrine, l'assemblage, le
+   télescope, le mode photo et la colonne de boutons
+   ========================================================================== */
+
+/* La petite colonne de boutons, à droite de l'écran. */
+#outils {
+  position: absolute;
+  right: var(--marge-droite);
+  top: 50%;
+  transform: translateY(-60%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bouton-outil {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--cuivre-fonce);
+}
+.bouton-outil svg { width: 28px; height: 28px; fill: currentColor; }
+.bouton-outil:focus-visible { outline: 3px solid var(--encre); outline-offset: 2px; }
+body.tactile .bouton-outil { width: 52px; height: 52px; }
+/* Un journal pas encore lu : une petite pastille cuivrée (elle ne clignote pas). */
+#bouton-journal.non-lu::after {
+  content: "";
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--cuivre);
+  box-shadow: 0 0 0 2px var(--parchemin);
+}
+body.dialogue-ouvert #outils, body.panneau-ouvert #outils, body.options-ouvert #outils { display: none; }
+@media (max-height: 480px) {
+  #outils { gap: 6px; transform: translateY(-55%); }
+  body.tactile .bouton-outil { width: 44px; height: 44px; }
+}
+
+/* Les fenêtres (comme l'album). */
+.fenetre {
+  position: fixed;
+  z-index: 50;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  max-height: calc(100% - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px;
+  background: var(--parchemin-clair);
+}
+.fenetre-contenu { overflow-y: auto; }
+@media (max-height: 480px) { .fenetre { padding: 8px 12px; } }
+
+/* Le journal : une feuille de papier, avec des titres à l'ancienne. */
+.journal { font-family: Georgia, "Times New Roman", serif; }
+.journal-date {
+  text-align: center;
+  font-style: italic;
+  color: var(--encre-douce);
+  border-top: 2px solid var(--encre);
+  border-bottom: 1px solid var(--encre);
+  padding: 4px 0;
+  margin-bottom: 10px;
+}
+.journal-article { padding: 6px 0 8px; border-bottom: 1px dashed var(--parchemin-fonce); }
+.journal-article h3 { margin: 0 0 4px; font-size: calc(18px * var(--texte)); color: var(--cuivre-fonce); }
+.journal-article p { margin: 0; font-size: calc(17px * var(--texte)); }
+@media (min-width: 700px) { .journal { column-count: 2; column-gap: 24px; } .journal-date { column-span: all; } .journal-article { break-inside: avoid; } }
+
+/* La garde-robe : Ferrus en haut, puis les tenues. */
+.garderobe-haut { display: flex; gap: 12px; align-items: center; margin-bottom: 8px; }
+.garderobe-haut img { flex: none; width: 110px; height: 110px; border-radius: 12px; border: 2px solid var(--cuivre); background: #e6d3b0; }
+
+/* La vitrine : six places. */
+.vitrine-chiffres { margin: 0 0 10px; font-weight: bold; color: var(--cuivre-fonce); font-size: calc(16px * var(--texte)); }
+.vitrine-grille { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.vitrine-grille .carte-atelier { margin: 0; }
+@media (max-width: 600px) { .vitrine-grille { grid-template-columns: 1fr 1fr; } }
+
+/* Le petit jeu d'assemblage : une planche à trous. */
+.assemblage-grille {
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 12px;
+  background: #b08a62;
+  box-shadow: inset 0 0 0 3px #8a6444;
+  margin: 6px 0 10px;
+}
+.case-assemblage {
+  aspect-ratio: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: #c9a77c;
+  cursor: pointer;
+}
+.case-assemblage:disabled { cursor: default; opacity: 1; }
+.case-assemblage:focus-visible { outline: 3px solid var(--encre); outline-offset: 1px; }
+.case-assemblage svg { width: 100%; height: 100%; display: block; }
+.case-assemblage .tourne { animation: tourner-engrenage 9s linear infinite; }
+.case-assemblage .tourne.inverse { animation-direction: reverse; }
+@keyframes tourner-engrenage { to { transform: rotate(360deg); } }
+.assemblage-etat { margin: 0 0 8px; font-weight: bold; color: var(--cuivre-fonce); }
+.bouton-action.secondaire { background: var(--parchemin); color: var(--encre-douce); }
+.bouton-action.attention { border-color: #a0522d; color: #a0522d; }
+@media (prefers-reduced-motion: reduce) { .case-assemblage .tourne { animation: none; } }
+
+/* Les constellations (le télescope et l'album). */
+.constellation { width: 100%; height: auto; display: block; border-radius: 8px; }
+.fiche.etoile { flex-direction: column; align-items: stretch; }
+.fiche.etoile .constellation { flex: none; width: 100%; }
+.fiche.etoile.inconnue .constellation { opacity: 0.7; }
+.fiche-coeurs { color: #b0524a; letter-spacing: 0.08em; font-size: calc(16px * var(--texte)); }
+
+/* Les photos de l'album. */
+.album-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.album-photos .photo { padding: 8px; border-radius: 10px; background: var(--parchemin); border: 1px solid var(--parchemin-fonce); }
+.album-photos img { width: 100%; height: auto; display: block; border-radius: 6px; }
+.album-photos .ligne-boutons { margin-top: 6px; }
+
+/* Le mode photo : l'interface du jeu disparaît, il reste une petite barre. */
+body.mode-photo #interface { display: none !important; }
+.barre-photo {
+  position: fixed;
+  z-index: 40;
+  left: 50%;
+  bottom: var(--marge-bas);
+  transform: translateX(-50%);
+  width: min(calc(100% - 24px), 560px);
+  box-sizing: border-box;
+  padding: 8px 12px 10px;
+  text-align: center;
+}
+.photo-aide { font-size: calc(15px * var(--texte)); color: var(--encre-douce); margin-bottom: 6px; }
+.photo-boutons { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.photo-bouton {
+  min-width: 48px;
+  min-height: 48px;
+  padding: 6px 14px;
+  border: 2px solid var(--cuivre);
+  border-radius: 12px;
+  background: var(--parchemin-clair);
+  font-size: calc(18px * var(--texte));
+  font-weight: bold;
+  cursor: pointer;
+}
+.photo-bouton.principal { background: var(--cuivre); color: #fff7e6; }
+.photo-bouton:focus-visible { outline: 3px solid var(--encre); outline-offset: 2px; }
+.photo-vignette {
+  position: fixed;
+  z-index: 41;
+  top: var(--marge-haut);
+  right: var(--marge-droite);
+  width: min(260px, calc(100% - 24px));
+  padding: 8px;
+  text-align: center;
+}
+.photo-vignette img { width: 100%; display: block; border-radius: 8px; }
+.photo-vignette-texte { margin: 6px 0; font-weight: bold; }
+
+/* La partie dans un fichier (options). */
+.boutons-partie { flex-wrap: wrap; gap: 8px; justify-content: flex-start; }
+#option-confirmer-import { margin-top: 8px; }
+#option-confirmer-import.attention { border-color: #9a4a2a; color: #9a4a2a; }
