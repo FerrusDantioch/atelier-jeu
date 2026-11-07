@@ -112,6 +112,7 @@ export function construireMarche(scene, zone) {
   poteauxPassage(scene, 0, -9.5, 1.5);
   poteauIndicateur(scene, 'PLACE', -2.4, -9.5);
   poteauIndicateur(scene, 'MOULIN', 14.5, -2.3);
+  poteauIndicateur(scene, 'LAC', -14.5, -2.3); // version 1.5
 
   // Les étals.
   for (const e of zone.etals) construireEtal(scene, e);

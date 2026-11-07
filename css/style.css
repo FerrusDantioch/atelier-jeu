@@ -808,3 +808,122 @@ body.panneau-ouvert #zone-joystick { display: none !important; }
   .onglets button { flex: 1 1 28%; font-size: 16px; min-height: 42px; }
   #calendrier { font-size: 15px; padding: 7px 10px; }
 }
+
+/* ==========================================================================
+   VERSION 1.5 : l'album de souvenirs
+   ========================================================================== */
+
+/* Le bouton de l'album, comme celui des options. */
+#bouton-album {
+  flex: none;
+  pointer-events: auto;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--cuivre-fonce);
+}
+#bouton-album svg { width: 28px; height: 28px; fill: currentColor; }
+#bouton-album:focus-visible { outline: 3px solid var(--encre); outline-offset: 2px; }
+body.tactile #bouton-album { width: 52px; height: 52px; }
+
+#panneau-album {
+  position: fixed;
+  z-index: 50;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(calc(100% - 24px), 720px);
+  max-height: calc(100% - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px;
+  background: var(--parchemin-clair);
+}
+#album-contenu { overflow-y: auto; }
+
+/* Les fiches des habitants : un portrait et quelques mots. */
+.album-grille {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+.fiche {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: var(--parchemin);
+  border: 2px solid var(--parchemin-fonce);
+}
+.fiche img, .fiche .portrait-vide {
+  flex: none;
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  background: #e6d3b0;
+  border: 2px solid var(--cuivre);
+}
+.portrait-vide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  font-weight: bold;
+  color: var(--encre-douce);
+}
+.fiche.inconnue { opacity: 0.6; }
+.fiche-nom { font-weight: bold; font-size: 17px; }
+.fiche-role { font-size: 14px; color: var(--cuivre-fonce); }
+.fiche-mot { margin-top: 4px; font-size: 14px; color: var(--encre-douce); }
+
+.souvenir {
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  border-left: 4px solid var(--cuivre);
+  background: var(--parchemin);
+  border-radius: 0 10px 10px 0;
+}
+.souvenir-titre { font-weight: bold; }
+.souvenir-texte { font-size: 15px; color: var(--encre-douce); }
+.album-chiffres { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 15px; }
+.album-chiffres td { padding: 5px 4px; border-bottom: 1px solid var(--parchemin-fonce); }
+.album-chiffres td:last-child { text-align: right; font-weight: bold; }
+.album-section { margin: 12px 0 6px; font-size: 17px; color: var(--cuivre-fonce); }
+
+.poisson {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--parchemin);
+  border: 2px solid var(--parchemin-fonce);
+}
+.poisson-forme { flex: none; width: 46px; height: 22px; border-radius: 50% 40% 40% 50%; position: relative; }
+.poisson-forme::after {
+  content: '';
+  position: absolute;
+  right: -10px;
+  top: 3px;
+  border-left: 12px solid currentColor;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+}
+.poisson.inconnu .poisson-forme { background: #c9bba0 !important; color: #c9bba0 !important; }
+.poisson-nom { font-weight: bold; }
+.poisson-detail { font-size: 14px; color: var(--encre-douce); }
+
+@media (max-width: 600px) {
+  .album-grille { grid-template-columns: 1fr; }
+}
+@media (max-height: 480px) {
+  #panneau-album { padding: 8px 12px; }
+  #bouton-album { width: 44px; height: 44px; }
+  body.tactile #bouton-album { width: 46px; height: 46px; }
+}
