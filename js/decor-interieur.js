@@ -9,7 +9,8 @@
 //   - l'établi de LUCIE, l'apprentie, contre le mur de droite ;
 //   - des étagères pleines de caisses et de bocaux, et le panier de Rouille ;
 //   - le COIN SALON, à décorer : grand tapis, fauteuil, gramophone, tableau,
-//     plante verte (visibles une fois achetés).
+//     plante verte (visibles une fois achetés) ;
+//   - (version 1.6) la grande ARMOIRE de la garde-robe, contre le mur de droite.
 // Rien ne clignote : les braises « respirent » très lentement.
 // =============================================================================
 
@@ -31,6 +32,7 @@ export function construireInterieur(scene, zone) {
   construireEtageres(scene);
   construireEtabliLucie(scene);
   construireLampes(scene);
+  construireArmoire(scene, zone.meubles.find((m) => m.id === 'armoire'));
   const decorations = construireDecorationsInterieur(scene);
   // Ce qui bouge : main.js règle l'activité (0 = calme, 1 = on travaille).
   let activite = 0;
@@ -206,6 +208,31 @@ function construireEtabliLucie(scene) {
   g.add(objet(cylindre(0.035, 0.035, 0.32), COULEURS.cuivre, 0.1, 0.9, 0.5).rotateX(Math.PI / 2));
   g.add(objet(cylindre(0.012, 0.012, 0.45), '#3f4a46', 0.25, 1.1, 0.8));
   g.add(objet(cylindre(0.08, 0.06, 0.12, 12, 0.02), MATIERE_LUEUR, 0.25, 1.36, 0.8));
+  scene.add(g);
+}
+
+// --- La grande armoire de la garde-robe (version 1.6) ----------------------------------------
+// Elle est contre le mur de droite : ses portes regardent vers la pièce (vers l'ouest).
+function construireArmoire(scene, a) {
+  const g = new THREE.Group();
+  g.position.set(a.x, 0, a.z);
+  const bois = '#7a5236';
+  g.add(objet(boite(a.largeur, 2.2, a.profondeur, 0.05), bois, 0, 1.1, 0, { ombre: true, recoit: true }));
+  g.add(objet(boite(a.largeur + 0.1, 0.12, a.profondeur + 0.12, 0.04), COULEURS.boisFonce, 0, 2.24, 0));
+  g.add(objet(boite(a.largeur + 0.06, 0.12, a.profondeur + 0.08, 0.04), COULEURS.boisFonce, 0, 0.06, 0));
+  // Les deux portes, avec leurs moulures et leurs poignées de laiton.
+  const face = -a.largeur / 2 - 0.01;
+  for (const s of [-1, 1]) {
+    g.add(objet(boite(0.03, 1.75, a.profondeur / 2 - 0.1, 0.02), '#8a6444', face, 1.12, s * a.profondeur / 4));
+    g.add(objet(boite(0.035, 1.3, a.profondeur / 2 - 0.3, 0.02), '#6a4630', face - 0.005, 1.15, s * a.profondeur / 4));
+    g.add(objet(boule(0.035, 1), COULEURS.laiton, face - 0.04, 1.15, s * 0.08));
+  }
+  // Un petit engrenage sculpté au fronton, et un carton à chapeau sur le dessus.
+  const deco = objet(formeEngrenage(0.13, 8, 0.03), COULEURS.laiton, face - 0.01, 2.05, 0);
+  deco.rotation.y = -Math.PI / 2;
+  g.add(deco);
+  g.add(objet(cylindre(0.24, 0.24, 0.26, 18, 0.03), '#c98b7a', 0, 2.43, 0.2));
+  g.add(objet(cylindre(0.25, 0.25, 0.05, 18, 0.02), '#efe2c4', 0, 2.57, 0.2));
   scene.add(g);
 }
 

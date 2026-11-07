@@ -2,11 +2,13 @@
 // main.js — le point de départ du jeu : il assemble tout et fait tourner le jeu
 // -----------------------------------------------------------------------------
 // 1. Vérifie que la 3D est disponible (sinon, message d'erreur clair).
-// 2. Prépare les huit lieux en 3D (la place, le marché, le moulin, la gare, la
+// 2. Prépare les neuf lieux en 3D (la place, le marché, le moulin, la gare, la
 //    mine où l'on va en train, sa galerie souterraine, l'intérieur de
-//    l'atelier et le lac), chacun dans sa propre « scène » avec sa lumière, son
-//    décor et ses personnages. La lumière suit le jour et la nuit ; les
-//    couleurs suivent les saisons (version 1.4) ; la météo (version 1.5).
+//    l'atelier, le lac et la forêt de l'inventeur), chacun dans sa propre
+//    « scène » avec sa lumière, son décor et ses personnages. La lumière suit
+//    le jour et la nuit ; les couleurs suivent les saisons (version 1.4) ; la
+//    météo (version 1.5). Version 1.6 : aussi la petite carte du village vue
+//    du ciel, pour les voyages en dirigeable.
 // 3. Branche les commandes (clavier, tactile), l'interface (textes) et la
 //    sauvegarde automatique.
 //    Étape 4 : les options (musique douce, petits sons, qualité de l'image),
@@ -51,6 +53,7 @@ import {
   possedeDecoration,
   possedeAmelioration,
   dialogueApprentie,
+  peutFabriquer,
 } from './logique-atelier.js';
 import { majFetes, feteDuJour } from './logique-fetes.js';
 import { meteoDuMoment, messageMeteo } from './logique-meteo.js';
@@ -68,6 +71,7 @@ import {
   verifierQuetes,
   dialoguePnjQuete,
   appliquerActionQuete,
+  dialogueEtapeQuete,
   ramasserObjetsQuete,
   utiliserObjetQuete,
   marqueursQuetes,
@@ -91,7 +95,7 @@ import {
   LUMIERE_INTERIEUR,
 } from './logique-zones.js';
 import { MOMENT_JOUR_FIXE, lumiereDuMoment, avancerJournee, anglesAiguilles, etatTrain } from './logique-temps.js';
-import { CLE_SAUVEGARDE, serialiserPartie, chargerPartie } from './logique-sauvegarde.js';
+import { CLE_SAUVEGARDE, serialiserPartie, chargerPartie, nomFichierSauvegarde, resumePartie, TAILLE_MAX_FICHIER } from './logique-sauvegarde.js';
 import { construireDecor, creerEngrenageQuete, creerMarqueur, allumerLampe } from './decor.js';
 import { construireMarche, construireMoulin, creerPaleQuete } from './decor-zones.js';
 import { construireGare } from './decor-gare.js';
@@ -105,6 +109,20 @@ import { construireFetes, eclairerFetes } from './fetes.js';
 import { creerPluie, creerFlaques, mouillerFlaques, appliquerMeteo, FLAQUES } from './meteo.js';
 import { creerCompagnons, placerCompagnons, animerCompagnons, creerChat, creerOiseau, animerChat } from './compagnons.js';
 import { creerPanneauAlbum } from './interface-album.js';
+// Version 1.6.
+import { parlerAmi, ajouterChoixAmitie, dialogueCadeau, offrirCadeau, dialogueRecompense, ami, anniversairesDuJour } from './logique-amitie.js';
+import { tenuePortee, porterTenue, acheterTenue } from './logique-garderobe.js';
+import { exposer, retirer, avancerVitrine } from './logique-vitrine.js';
+import { avancerForet, cueillir, estCueillette, observerCiel, dialogueAnatole, progressionCueillette, CUEILLETTES, telescopeRepare } from './logique-foret.js';
+import { majJournal, journalNonLu, lireJournal, editionDuJour } from './logique-journal.js';
+import { OBJETS_ASSEMBLAGE } from './logique-assemblage.js';
+import { dirigeablePret, etapesDirigeable, dialogueVoyage, destinationDuChoix, dureeVol } from './logique-dirigeable.js';
+import { creerCameraPhoto, bougerCameraPhoto, positionCameraPhoto, CLE_PHOTOS, lirePhotos, ajouterPhoto, nomFichierPhoto } from './logique-photo.js';
+import { construireForet, construireCheminForet } from './decor-foret.js';
+import { construireVitrine, creerVisiteurs } from './vitrine.js';
+import { construireVol } from './vol.js';
+import { creerJournal, creerGarderobe, creerPanneauVitrine, creerPanneauAssemblage, creerPanneauCiel } from './interface-v16.js';
+import { creerModePhoto } from './interface-photo.js';
 import { animerEau, eclairerEau } from './eau.js';
 import { animerVent, eclairerNuit } from './vie.js';
 import {
@@ -114,6 +132,7 @@ import {
   animerOdile,
   creerHabitant,
   creerPersonnage,
+  habillerFerrus,
   TENUES_PNJ,
   animerMarche,
   supprimerPersonnage,
@@ -428,6 +447,37 @@ function demarrer() {
     lieux.lac = lieu;
   }
 
+  // --- La forêt de l'inventeur (version 1.6) : à l'est de la place ---
+  {
+    const scene = creerSceneDeBase();
+    const lieu = { scene, marqueurs: new Map(), pnj: [], objetsQuete: new Map() };
+    lieu.decor = construireForet(scene, ZONES.foret);
+    for (const p of ZONES.foret.pnj) ajouterPnj(lieu, p); // Anatole, l'inventeur
+    const t = ZONES.foret.telescope;
+    ajouterMarqueur(lieu, 'telescope', t.x, t.z, 3.4);
+    // Les vis dorées du télescope (cachées tant que la quête ne les demande pas).
+    QUETES['telescope-anatole'].etapes[0].objets.forEach((o, i) => {
+      const vis = creerEngrenageQuete();
+      vis.position.set(o.x, 0, o.z);
+      vis.visible = false;
+      vis.userData.decalage = i * 2.1;
+      scene.add(vis);
+      lieu.objetsQuete.set(o.id, vis);
+    });
+    lieux.foret = lieu;
+  }
+
+  // --- Le ciel (version 1.6) : la carte du village, pour les voyages en dirigeable ---
+  const sceneVol = creerSceneDeBase();
+  sceneVol.fog.near = 40;
+  sceneVol.fog.far = 95;
+  const vol = construireVol(sceneVol);
+
+  // --- Sur la place (version 1.6) : la vitrine et ses visiteurs, et le chemin de la forêt ---
+  const vitrine3d = construireVitrine(lieux.place.scene, MONDE.vitrine);
+  const visiteurs = creerVisiteurs(lieux.place.scene);
+  const barriereForet = construireCheminForet(lieux.place.scene, MONDE);
+
   // --- Sur la place (version 1.5) : le potager, les décors des fêtes, et le
   // petit chat qui attend d'être adopté ---
   const potager3d = construirePotager(lieux.place.scene, MONDE.potager);
@@ -446,7 +496,7 @@ function demarrer() {
   {
     const partieNeuve = creerEtatJeu();
     creerFleurs(lieux.place.scene, 'place', MONDE, obstaclesZone('place', partieNeuve), 1);
-    for (const [nom, graine] of [['moulin', 2], ['gare', 3], ['mine', 4], ['lac', 6]]) {
+    for (const [nom, graine] of [['moulin', 2], ['gare', 3], ['mine', 4], ['lac', 6], ['foret', 7]]) {
       creerFleurs(lieux[nom].scene, nom, ZONES[nom], obstaclesZone(nom, partieNeuve), graine);
     }
   }
@@ -490,6 +540,11 @@ function demarrer() {
   let enTransition = false;  // pendant le fondu entre deux lieux
   let orientationVoulue = 0; // la direction vers laquelle Ferrus doit se tourner
 
+  let photo = null;          // le mode photo (version 1.6) : { cam } pendant qu'il est actif
+  let voyage = null;         // le voyage en dirigeable en cours (version 1.6)
+  let importEnCours = false; // une partie ouverte depuis un fichier va remplacer celle-ci
+  let importEnAttente = null;
+
   const ui = creerInterface();
   // Le panneau de l'établi : quand on appuie sur un de ses boutons, on applique
   // la règle correspondante, puis on met tout à jour.
@@ -497,6 +552,12 @@ function demarrer() {
     etat,
     surAction: (type, id, quantite) => {
       let messages = [];
+      // Version 1.6 : pour un objet rare, le petit jeu d'assemblage (s'il est proposé).
+      if (type === 'fabriquer' && reglages.assemblage && OBJETS_ASSEMBLAGE.includes(id) && peutFabriquer(etat, id).possible) {
+        panneau.fermer();
+        assemblage.ouvrirPour(id, etat.atelier.assemblages);
+        return;
+      }
       if (type === 'fabriquer') messages = lancerFabrication(etat, id);
       else if (type === 'acheter') messages = acheterMateriau(etat, id, quantite);
       else if (type === 'ameliorer') messages = acheterAmelioration(etat, id);
@@ -516,6 +577,7 @@ function demarrer() {
       audio.regler(reglages);
       audio.preparer(); // on est dans un geste du joueur : le son a le droit de démarrer
       if (cle === 'qualite') appliquerQualite();
+      if (cle === 'texte') appliquerTexte();
       // Un petit son d'essai quand on active les sons ou qu'on change leur volume.
       if ((cle === 'sons' || cle === 'volumeSons') && reglages.sons) setTimeout(() => audio.jouerSon('ramasser'), 150);
     },
@@ -523,8 +585,41 @@ function demarrer() {
       commandes.relacherTout();
       tempsPrecedent = performance.now();
     },
-    estDisponible: () => !ui.dialogueOuvert() && !panneau.estOuvert() && !enTransition && !album.estOuvert(),
+    estDisponible: () => !ui.dialogueOuvert() && !panneau.estOuvert() && !enTransition && !album.estOuvert() && !fenetreOuverte() && !photo,
     afficherMessage: (texte) => ui.afficherMessage(texte),
+    // Version 1.6 : enregistrer la partie dans un fichier, ou en ouvrir une.
+    partie: {
+      tailleMax: TAILLE_MAX_FICHIER,
+      exporter() {
+        let texte = null;
+        if (jeuActif) texte = serialiserPartie({ etat, zone, position, orientation: orientationVoulue });
+        else {
+          try { texte = window.localStorage.getItem(CLE_SAUVEGARDE); } catch { texte = null; }
+        }
+        if (!texte) return "Il n'y a pas encore de partie à enregistrer : commencez d'abord à jouer !";
+        telechargerFichier(URL.createObjectURL(new Blob([texte], { type: 'application/json' })), nomFichierSauvegarde(new Date()), true);
+        return 'Fichier enregistré : regardez dans vos téléchargements.';
+      },
+      lire(texte) {
+        const partie = chargerPartie(texte);
+        if (!partie) return { ok: false, message: "Ce fichier n'est pas une partie de Cuivrebourg (ou il est abîmé)." };
+        // On garde une version « propre » (vérifiée) de la partie.
+        importEnAttente = serialiserPartie({ etat: partie.etat, zone: partie.zone, position: partie.position || { x: MONDE.joueur.x, z: MONDE.joueur.z }, orientation: partie.orientation });
+        return { ok: true, message: `Partie trouvée : ${resumePartie(partie)}. Elle remplacera la partie de cet appareil.` };
+      },
+      confirmer() {
+        if (!importEnAttente) return '';
+        importEnCours = true; // plus de sauvegarde automatique : on n'écrase pas la partie ouverte
+        try {
+          window.localStorage.setItem(CLE_SAUVEGARDE, importEnAttente);
+        } catch {
+          importEnCours = false;
+          return "Le navigateur refuse d'enregistrer la partie (en navigation privée, par exemple).";
+        }
+        setTimeout(() => window.location.reload(), 700);
+        return 'Partie ouverte ! Le jeu redémarre…';
+      },
+    },
   });
   // L'album de souvenirs (version 1.5) : le jeu est en pause pendant qu'il est ouvert.
   const album = creerPanneauAlbum({
@@ -535,9 +630,70 @@ function demarrer() {
       commandes.relacherTout();
       tempsPrecedent = performance.now();
     },
-    estDisponible: () => jeuActif && !ui.dialogueOuvert() && !panneau.estOuvert() && !enTransition && !options.estOuvert(),
+    estDisponible: () => jeuActif && !ui.dialogueOuvert() && !panneau.estOuvert() && !enTransition && !options.estOuvert() && !fenetreOuverte() && !photo,
+    // Version 1.6 : les photos de l'album.
+    photos: {
+      lister: () => photos,
+      telecharger: (i) => { if (photos[i]) telechargerFichier(photos[i].image, nomFichierPhoto(photos[i].date)); },
+      supprimer: (i) => { photos.splice(i, 1); ecrirePhotos(); },
+    },
   });
-  const enPause = () => options.estOuvert() || album.estOuvert();
+
+  // --- Version 1.6 : les nouvelles fenêtres ------------------------------------------------
+  // Ce qu'elles ont en commun : le jeu est en pause tant qu'elles sont ouvertes.
+  const enFenetre = {
+    surOuverture: () => commandes.relacherTout(),
+    surFermeture: () => {
+      commandes.relacherTout();
+      tempsPrecedent = performance.now();
+    },
+  };
+  const libre = () => jeuActif && !ui.dialogueOuvert() && !panneau.estOuvert() && !enTransition && !options.estOuvert() && !album.estOuvert() && !fenetreOuverte() && !photo;
+  const journal = creerJournal({
+    ...enFenetre,
+    estDisponible: () => libre() && etat.journal.dernierJour > 0,
+    obtenirEdition: () => editionDuJour(etat, { saisonId: saisonDuJeu(), meteo: reglages.meteo, saisons: reglages.saisons }),
+    surOuverture: () => {
+      commandes.relacherTout();
+      lireJournal(etat);
+      majEtat();
+    },
+  });
+  const garderobe = creerGarderobe({
+    ...enFenetre,
+    etat,
+    obtenirApercu: () => obtenirApercuFerrus(),
+    surAction: (type, id) => {
+      afficherMessages(type === 'acheter' ? acheterTenue(etat, id) : porterTenue(etat, id));
+      majEtat();
+      garderobe.rafraichir();
+    },
+  });
+  const panneauVitrine = creerPanneauVitrine({
+    ...enFenetre,
+    etat,
+    surAction: (type, place, code) => {
+      afficherMessages(type === 'exposer' ? exposer(etat, place, code) : retirer(etat, place));
+      majEtat();
+      panneauVitrine.rafraichir();
+    },
+  });
+  const assemblage = creerPanneauAssemblage({
+    ...enFenetre,
+    // « assemble » : vrai (réussi), faux (on laisse faire la machine), ou null (annulé).
+    surTerminer: (objet, assemble) => {
+      if (assemble === null) afficherMessages(["Assemblage annulé : rien n'est perdu."]);
+      else afficherMessages([...lancerFabrication(etat, objet, { assemble }), ...verifierQuetes(etat)]);
+      majEtat();
+      if (jeuActif) panneau.ouvrir('fabriquer');
+    },
+  });
+  const ciel = creerPanneauCiel(enFenetre);
+  const fenetres = [journal, garderobe, panneauVitrine, assemblage, ciel];
+  function fenetreOuverte() {
+    return fenetres.some((f) => f.estOuvert());
+  }
+  const enPause = () => options.estOuvert() || album.estOuvert() || fenetreOuverte() || Boolean(photo);
 
   const commandes = creerCommandes({
     // Les commandes du jeu sont en pause pendant que le panneau ou les options sont ouverts.
@@ -551,7 +707,7 @@ function demarrer() {
   // --- La sauvegarde automatique ---
   let derniereSauvegarde = 0;
   function sauvegarder() {
-    if (!jeuActif) return; // jamais sur l'écran d'accueil (on écraserait la partie)
+    if (!jeuActif || importEnCours) return; // jamais sur l'écran d'accueil (on écraserait la partie)
     ecrireSauvegarde(serialiserPartie({ etat, zone, position, orientation: orientationVoulue }));
     derniereSauvegarde = performance.now();
   }
@@ -591,6 +747,14 @@ function demarrer() {
     // Version 1.5 : Lucie est là une fois engagée ; le chat attend d'être adopté.
     for (const p of lieux.interieur.pnj) p.objet.visible = possedeAmelioration(etat, 'apprentie');
     chatErrant.visible = chatAAdopter(etat);
+    // Version 1.6 : la tenue de Ferrus, la vitrine, le chemin de la forêt, le
+    // télescope et le dirigeable, et les boutons de droite.
+    habillerFerrus(ferrus, tenuePortee(etat));
+    vitrine3d.regler(etat.vitrine.objets);
+    barriereForet.visible = !conditionRemplie(etat, 'portail');
+    lieux.foret.decor.telescope.regler(telescopeRepare(etat));
+    lieux.foret.decor.chantier.regler(etapesDirigeable(etat));
+    majBoutons();
 
     // Le marché : l'arbre tombé disparaît quand le chemin est dégagé.
     lieux.marche.decor.barriere.visible = !conditionRemplie(etat, 'chemin-moulin');
@@ -605,7 +769,7 @@ function demarrer() {
     // La mine : le wagonnet est remis sur ses rails une fois la roue posée.
     lieux.mine.decor.wagonnet.userData.reparer(wagonnetRepare(etat));
     // Les objets de quête à ramasser (engrenages, pales, rouages, pépites).
-    for (const nom of ['place', 'moulin', 'gare', 'mine']) {
+    for (const nom of ['place', 'moulin', 'gare', 'mine', 'foret']) {
       const aRamasser = new Set(objetsQueteZone(etat, nom).map((o) => o.id));
       for (const [id, objet3d] of lieux[nom].objetsQuete) objet3d.visible = aRamasser.has(id);
     }
@@ -614,7 +778,7 @@ function demarrer() {
     const marqueursPlace = marqueursActifs(etat);
     const marqueursQ = marqueursQuetes(etat);
     for (const [id, m] of lieux.place.marqueurs) m.objet.visible = Boolean(marqueursPlace[id]);
-    for (const nom of ['marche', 'moulin', 'gare', 'mine']) {
+    for (const nom of ['marche', 'moulin', 'gare', 'mine', 'lac', 'interieur', 'foret']) {
       for (const [id, m] of lieux[nom].marqueurs) m.objet.visible = marqueursQ.has(id);
     }
 
@@ -653,9 +817,8 @@ function demarrer() {
     const nouveauVenu = noterRencontre(etat, cible) ? HABITANTS_ALBUM.find((h) => h.id === cible) : null;
     if (cible === 'odile') {
       commandes.relacherTout();
-      const action = await ui.ouvrirDialogue(dialogueOdile(etat));
       const atelierAvant = etat.atelier.ouvert;
-      afficherMessages(appliquerAction(etat, action));
+      afficherMessages(await parlerAvec(cible, dialogueOdile(etat)));
       majEtat();
       // L'atelier vient d'ouvrir : Ferrus explique en quelques mots comment il marche.
       if (!atelierAvant && etat.atelier.ouvert) await ui.ouvrirDialogue(DIALOGUE_OUVERTURE);
@@ -682,7 +845,7 @@ function demarrer() {
       }
     } else if (cible === 'leon') {
       commandes.relacherTout();
-      await ui.ouvrirDialogue(dialogueLeon(etat));
+      messages = await parlerAvec(cible, dialogueEtapeQuete(etat, 'leon', 'Léon') || dialogueLeon(etat));
     } else if ((cible === 'locomotive' || cible === 'train-retour') && voyageTrain(etat, zone)) {
       // Version 1.3 : on monte dans le train (à la gare, seulement s'il est à quai).
       if (zone === 'gare' && !trainAQuai) {
@@ -710,10 +873,37 @@ function demarrer() {
       if (dialogue) messages = appliquerAction(etat, await ui.ouvrirDialogue(dialogue));
     } else if (cible === 'lucie') {
       commandes.relacherTout();
-      messages = appliquerAction(etat, await ui.ouvrirDialogue(dialogueApprentie(etat)));
+      messages = await parlerAvec(cible, dialogueApprentie(etat), true);
     } else if (cible === 'gaston') {
       commandes.relacherTout();
-      messages = appliquerAction(etat, await ui.ouvrirDialogue(dialogueGaston(etat)));
+      messages = await parlerAvec(cible, dialogueEtapeQuete(etat, 'gaston', 'Gaston') || dialogueGaston(etat));
+    } else if (cible === 'anatole') {
+      // Version 1.6 : Anatole, l'inventeur de la forêt.
+      commandes.relacherTout();
+      messages = await parlerAvec(cible, dialogueAnatole(etat));
+    } else if (cible === 'vitrine') {
+      commandes.relacherTout();
+      panneauVitrine.ouvrir();
+      return;
+    } else if (cible === 'armoire') {
+      commandes.relacherTout();
+      garderobe.ouvrir();
+      return;
+    } else if (cible === 'telescope' && telescopeRepare(etat)) {
+      // La nuit, on découvre une constellation (une par nuit).
+      const r = observerCiel(etat, saisonDuJeu(), { nuit: estNuit() });
+      messages = r.messages;
+      if (r.constellation) {
+        if (r.nouvelle) audio.jouerSon('ramasser');
+        ciel.montrer(r.constellation, r.nouvelle);
+      }
+    } else if (cible === 'chantier' && dirigeablePret(etat)) {
+      ouvrirVoyage();
+      return;
+    } else if (estCueillette(cible)) {
+      const avant = etat.foret.recoltes;
+      messages = cueillir(etat, cible, saisonDuJeu());
+      if (etat.foret.recoltes > avant) audio.jouerSon('ramasser');
     } else if (cible === 'potager') {
       const bouquetsAvant = etat.atelier.stock.bouquet;
       messages = utiliserPotager(etat, saisonDuJeu());
@@ -726,8 +916,7 @@ function demarrer() {
     } else if (cible === 'capucine' || cible === 'barnabe' || cible === 'augustin' || cible === 'sidonie') {
       commandes.relacherTout();
       const dialogue = dialoguePnjQuete(etat, cible, nomPnj(cible)) || dialogueParDefaut(cible);
-      const action = await ui.ouvrirDialogue(dialogue);
-      messages = appliquerActionQuete(etat, action);
+      messages = await parlerAvec(cible, dialogue);
     } else {
       // Un objet du décor (mécanisme, horloge, locomotive, barrière…) : la quête
       // en cours le demande-t-elle ? Sinon, un petit message sur cet objet.
@@ -736,6 +925,35 @@ function demarrer() {
     if (nouveauVenu) messages.push(`${nouveauVenu.nom} entre dans votre album de souvenirs.`);
     afficherMessages([...messages, ...verifierQuetes(etat)]);
     majEtat();
+  }
+
+  // Version 1.6 : parler à un habitant. On ajoute le choix « Offrir un
+  // cadeau… » (si c'est possible), on compte l'amitié du jour, et si un cadeau
+  // d'amitié attend, l'habitant le donne à la fin. Renvoie les messages.
+  async function parlerAvec(cible, dialogue, toujours = false) {
+    const messages = [];
+    let action = await ui.ouvrirDialogue(ami(cible) ? ajouterChoixAmitie(etat, cible, dialogue, toujours) : dialogue);
+    if (String(action).startsWith('amitie:cadeau:')) {
+      action = await ui.ouvrirDialogue(dialogueCadeau(etat, cible));
+      if (String(action).startsWith('amitie:offrir:')) {
+        const r = offrirCadeau(etat, cible, String(action).split(':')[3]);
+        if (r.reaction) await ui.ouvrirDialogue({ orateur: ami(cible).nom, repliques: [r.reaction], choix: [{ texte: 'Avec plaisir !', action: 'fermer' }] });
+        messages.push(...r.messages);
+        action = 'fermer';
+      }
+    }
+    messages.push(...appliquerAction(etat, action));
+    if (ami(cible)) {
+      messages.push(...parlerAmi(etat, cible));
+      const cadeau = dialogueRecompense(etat, cible);
+      if (cadeau) messages.push(...appliquerAction(etat, await ui.ouvrirDialogue(cadeau)));
+    }
+    return messages;
+  }
+
+  // Fait-il assez nuit pour voir les étoiles ? (Toujours, si le cycle du jour est coupé.)
+  function estNuit() {
+    return !reglages.jourNuit || lumiereDuMoment(etat.journee).nuit >= 0.5;
   }
 
   // La saison qui compte pour les règles (le potager, la pêche) : toujours
@@ -805,6 +1023,42 @@ function demarrer() {
     }, DUREE_VOYAGE);
   }
 
+  // Le voyage en dirigeable (version 1.6) : on choisit où aller, un fondu doux,
+  // puis le vol au-dessus de la carte du village, et un autre fondu à l'arrivée.
+  async function ouvrirVoyage() {
+    if (!jeuActif || enTransition || ui.dialogueOuvert() || panneau.estOuvert() || enPause() || !dirigeablePret(etat)) return;
+    commandes.relacherTout();
+    const action = await ui.ouvrirDialogue(dialogueVoyage(etat, zone));
+    const destination = destinationDuChoix(etat, zone, action);
+    if (destination) voyagerEnDirigeable(destination);
+  }
+  function voyagerEnDirigeable(destination) {
+    enTransition = true;
+    commandes.relacherTout();
+    ui.majIndice(null);
+    afficherMessages(['Le dirigeable « Le Cuivrebourg » prend son envol…']);
+    fondu.classList.add('visible');
+    setTimeout(() => {
+      voyage = { depuis: zone, vers: destination.zone, temps: 0, duree: dureeVol(zone, destination.zone), destination, fini: false };
+      document.body.classList.add('mode-photo'); // pendant le vol, l'interface se fait discrète
+      fondu.classList.remove('visible');
+    }, DUREE_FONDU);
+  }
+  function finirVoyage() {
+    voyage.fini = true;
+    fondu.classList.add('visible');
+    setTimeout(() => {
+      const d = voyage.destination;
+      voyage = null;
+      document.body.classList.remove('mode-photo');
+      placerDansLieu(d.zone, d.x, d.z, d.orientation);
+      majEtat();
+      afficherMessages([`${ZONES[zone].nom} : Ferrus descend par l'échelle de corde.`]);
+      fondu.classList.remove('visible');
+      setTimeout(() => { enTransition = false; }, DUREE_FONDU / 2);
+    }, DUREE_FONDU);
+  }
+
   function changerLieu(sortie) {
     enTransition = true;
     commandes.relacherTout();
@@ -818,6 +1072,120 @@ function demarrer() {
       setTimeout(() => { enTransition = false; }, DUREE_FONDU / 2);
     }, DUREE_FONDU);
   }
+
+  // ---------------------------------------------------------------------------
+  // Le mode photo (version 1.6) : on fige le temps, on tourne la caméra autour
+  // de Ferrus, et on prend une photo (rangée dans l'album).
+  // ---------------------------------------------------------------------------
+  let photos = lirePhotosNavigateur();
+  function lirePhotosNavigateur() {
+    try { return lirePhotos(window.localStorage.getItem(CLE_PHOTOS)); } catch { return []; }
+  }
+  function ecrirePhotos() {
+    // Si le navigateur manque de place, on retire les plus anciennes photos.
+    while (photos.length > 0) {
+      try {
+        window.localStorage.setItem(CLE_PHOTOS, JSON.stringify(photos));
+        return true;
+      } catch {
+        photos.pop();
+      }
+    }
+    try { window.localStorage.removeItem(CLE_PHOTOS); } catch { /* rien à faire */ }
+    return false;
+  }
+  // Télécharge un fichier (une photo, ou la partie). « liberer » : l'adresse a
+  // été créée pour l'occasion, on la libère ensuite.
+  function telechargerFichier(adresse, nom, liberer = false) {
+    const lien = document.createElement('a');
+    lien.href = adresse;
+    lien.download = nom;
+    document.body.append(lien);
+    lien.click();
+    lien.remove();
+    if (liberer) setTimeout(() => URL.revokeObjectURL(adresse), 3000);
+  }
+  const photoUI = creerModePhoto({
+    surTourner: (dAngle, dHauteur) => { if (photo) bougerCameraPhoto(photo.cam, dAngle, dHauteur, 0); },
+    surZoom: (d) => { if (photo) bougerCameraPhoto(photo.cam, 0, 0, d); },
+    surPhoto: () => prendrePhoto(),
+    surQuitter: () => sortirPhoto(),
+    surTelecharger: () => { if (photos[0]) telechargerFichier(photos[0].image, nomFichierPhoto(photos[0].date)); },
+  });
+  function entrerPhoto() {
+    if (!libre()) return;
+    commandes.relacherTout();
+    ui.majIndice(null);
+    photo = { cam: creerCameraPhoto() };
+    photoUI.activer();
+  }
+  function sortirPhoto() {
+    if (!photo) return;
+    photo = null;
+    photoUI.desactiver();
+    calculerCamera(camera.position);
+    viseeLissee.copy(viseeCamera);
+    camera.lookAt(viseeLissee);
+    tempsPrecedent = performance.now();
+  }
+  function prendrePhoto() {
+    if (!photo) return;
+    try {
+      renderer.render(lieux[zone].scene, camera);
+      const source = renderer.domElement;
+      const largeur = Math.min(720, source.width);
+      const hauteur = Math.round(largeur * (source.height / source.width));
+      const toile = document.createElement('canvas');
+      toile.width = largeur;
+      toile.height = hauteur;
+      toile.getContext('2d').drawImage(source, 0, 0, largeur, hauteur);
+      const image = toile.toDataURL('image/jpeg', 0.82);
+      photos = ajouterPhoto(photos, { image, date: new Date().toISOString(), lieu: ZONES[zone].nom });
+      const gardee = ecrirePhotos();
+      audio.jouerSon('ramasser');
+      photoUI.montrerVignette(image);
+      if (!gardee) ui.afficherMessage("Le navigateur n'a pas de place pour garder la photo : téléchargez-la tout de suite !");
+    } catch {
+      ui.afficherMessage("La photo n'a pas pu être prise sur cet appareil.");
+    }
+  }
+
+  // Les boutons de droite (journal, photo, dirigeable) et leurs touches.
+  const boutonJournal = document.getElementById('bouton-journal');
+  const boutonPhoto = document.getElementById('bouton-photo');
+  const boutonDirigeable = document.getElementById('bouton-dirigeable');
+  function majBoutons() {
+    boutonJournal.hidden = etat.journal.dernierJour === 0;
+    boutonJournal.classList.toggle('non-lu', journalNonLu(etat));
+    boutonJournal.setAttribute('aria-label', journalNonLu(etat) ? 'Le journal du matin (pas encore lu)' : 'Le journal du matin');
+    boutonDirigeable.hidden = !dirigeablePret(etat);
+  }
+  boutonJournal.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (libre()) journal.ouvrir();
+  });
+  boutonPhoto.addEventListener('click', (e) => {
+    e.stopPropagation();
+    entrerPhoto();
+  });
+  boutonDirigeable.addEventListener('click', (e) => {
+    e.stopPropagation();
+    ouvrirVoyage();
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.defaultPrevented || e.repeat) return;
+    const t = e.key.toLowerCase();
+    if (t === 'p' && !photo) entrerPhoto();
+    else if (t === 'v') ouvrirVoyage();
+  });
+
+  // La taille du texte (version 1.6) : une classe sur toute la page.
+  function appliquerTexte() {
+    const racine = document.documentElement;
+    racine.classList.toggle('texte-grand', reglages.texte === 'grand');
+    racine.classList.toggle('texte-tres-grand', reglages.texte === 'tres-grand');
+  }
+  appliquerTexte();
 
   // ---------------------------------------------------------------------------
   // Les clients en 3D (étape 2) — ils vivent sur la place
@@ -954,8 +1322,10 @@ function demarrer() {
     dernierDessin = maintenant;
     // dt = le temps écoulé depuis l'image précédente (limité, pour éviter les
     // grands sauts quand on revient sur l'onglet après une pause).
-    const dt = Math.min(0.05, Math.max(0, (maintenant - tempsPrecedent) / 1000));
+    const dtReel = Math.min(0.05, Math.max(0, (maintenant - tempsPrecedent) / 1000));
     tempsPrecedent = maintenant;
+    // Version 1.6 : en mode photo, le temps est figé (plus rien ne bouge).
+    const dt = photo ? 0 : dtReel;
     tempsTotal += dt;
     const lieu = lieux[zone];
 
@@ -1001,6 +1371,22 @@ function demarrer() {
       if (annonceMeteo) afficherMessages([annonceMeteo]);
       pluiePrecedente = temps.pluie;
       avancerPotager(etat, dt, saison, temps.pluie);
+      // Version 1.6 : les buissons de la forêt repoussent, les visiteurs de la
+      // vitrine passent, et Léon apporte le journal le matin.
+      avancerForet(etat, dt);
+      const visite = avancerVitrine(etat, dt);
+      if (visite.messages.length > 0) {
+        afficherMessages(visite.messages);
+        majEtat();
+      }
+      if (visite.visite) visiteurs.lancer(etat.vitrine.visiteurs);
+      const nouvelles16 = majJournal(etat);
+      if (nouvelles16.length > 0) {
+        // Le jour d'un anniversaire, le journal le rappelle.
+        const fetes = anniversairesDuJour(etat.jour).map((a) => a.nom);
+        afficherMessages([...nouvelles16, ...(fetes.length > 0 ? [`C'est l'anniversaire de ${fetes.join(' et de ')} aujourd'hui !`] : [])]);
+        majEtat();
+      }
       if (peche && tempsTotal >= peche.fin) {
         peche = null;
         const resultat = pecher(etat, saison);
@@ -1011,7 +1397,11 @@ function demarrer() {
       // Sauvegarde de sécurité toutes les 5 secondes.
       if (maintenant - derniereSauvegarde > 5000) sauvegarder();
     }
-    if (!enPause()) animerClients(dt);
+    if (!enPause()) {
+      animerClients(dt);
+      // Les visiteurs de la vitrine s'arrêtent poliment si Ferrus est sur leur chemin.
+      visiteurs.animer(dt, (depart, arrivee) => zone !== 'place' || clientPeutAvancer(depart, arrivee, position), tournerVers);
+    }
 
     // --- Déplacement de Ferrus ---
     let vitesse = 0;
@@ -1026,7 +1416,7 @@ function demarrer() {
       const avant = position;
       // Sur la place, les clients sont des obstacles eux aussi.
       const autour = zone === 'place'
-        ? obstacles.concat(obstaclesClients([...clients3d.values()].map((c) => c.objet.position), position))
+        ? obstacles.concat(obstaclesClients([...clients3d.values()].map((c) => c.objet.position).concat(visiteurs.positions()), position))
         : obstacles;
       position = deplacerJoueur(position, dx, dz, autour, ZONES[zone]);
       vitesse = dt > 0 ? Math.hypot(position.x - avant.x, position.z - avant.z) / dt : 0;
@@ -1156,17 +1546,43 @@ function demarrer() {
     if (zone === 'galerie') {
       for (const [id, filon] of lieu.decor.filons) filon.userData.regler(progressionFilon(etat, id));
     }
+    // Version 1.6 : les buissons de la forêt (mûrs ou en train de repousser).
+    if (zone === 'foret') lieu.decor.buissons.regler(CUEILLETTES.map((c) => progressionCueillette(etat, c.id)), saisonDuJeu());
     const horlogeMurale = lieux.place.decor.decorations['horloge-murale'];
     if (zone === 'place' && horlogeMurale.visible) horlogeMurale.userData.regler(anglesAiguilles(etat.journee));
 
     // --- La caméra suit Ferrus en douceur (sans secousse) ---
     // À chaque image, elle parcourt une petite partie du chemin qui la sépare
     // de sa place idéale : elle « glisse » vers Ferrus.
-    calculerCamera(positionCameraVoulue);
-    const douceur = 1 - Math.exp(-dt * 3.5);
-    camera.position.lerp(positionCameraVoulue, douceur);
-    viseeLissee.lerp(viseeCamera, douceur);
-    camera.lookAt(viseeLissee);
+    // Version 1.6 : le voyage en dirigeable. On dessine la carte du village vue
+    // du ciel, au lieu du lieu où l'on est.
+    if (voyage) {
+      voyage.temps += dtReel;
+      const t = voyage.temps / voyage.duree;
+      vol.placer(voyage.depuis, voyage.vers, Math.min(1, t), tempsTotal, camera);
+      appliquerLumiere(sceneVol, lumiereDuMoment(reglages.jourNuit ? etat.journee : MOMENT_JOUR_FIXE));
+      renderer.render(sceneVol, camera);
+      if (t >= 1 && !voyage.fini) finirVoyage();
+      requestAnimationFrame(boucle);
+      return;
+    }
+
+    if (photo) {
+      // Le mode photo : la caméra tourne librement autour de Ferrus (en douceur).
+      const m = photoUI.mouvementClavier();
+      bougerCameraPhoto(photo.cam, m.angle * dtReel, m.hauteur * dtReel, m.distance * dtReel);
+      const cible = { x: position.x, y: 1.0, z: position.z };
+      const p = positionCameraPhoto(photo.cam, cible);
+      camera.position.lerp(positionCameraVoulue.set(p.x, p.y, p.z), 1 - Math.exp(-dtReel * 12));
+      viseeLissee.lerp(viseeCamera.set(cible.x, cible.y, cible.z), 1 - Math.exp(-dtReel * 12));
+      camera.lookAt(viseeLissee);
+    } else {
+      calculerCamera(positionCameraVoulue);
+      const douceur = 1 - Math.exp(-dt * 3.5);
+      camera.position.lerp(positionCameraVoulue, douceur);
+      viseeLissee.lerp(viseeCamera, douceur);
+      camera.lookAt(viseeLissee);
+    }
 
     renderer.render(lieu.scene, camera);
     requestAnimationFrame(boucle);
@@ -1294,6 +1710,15 @@ function demarrer() {
     meteo: () => meteoDuMoment(etat.jour, etat.journee, saisonDuJeu(), reglages.meteo),
     peche: () => peche,
     album: () => album.estOuvert(),
+    // Version 1.6 : les nouvelles fenêtres, le mode photo et le voyage.
+    fenetre: () => (fenetres.find((f) => f.estOuvert()) || { element: { id: null } }).element.id,
+    photo: () => Boolean(photo),
+    photos: () => photos.length,
+    voyage: () => (voyage ? { ...voyage, destination: voyage.destination.zone } : null),
+    visiteurs: () => visiteurs.nombre(),
+    // Pour les vérifications : aller directement dans un lieu.
+    allerA: (zoneId) => { const a = Object.values(ZONES[zoneId].arrivees)[0]; placerDansLieu(zoneId, a.x, a.z, a.orientation); majEtat(); },
+    majEtat: () => majEtat(),
   };
 
   // ---------------------------------------------------------------------------
@@ -1304,6 +1729,34 @@ function demarrer() {
   // photo dans un petit cadre de 128 × 128 pixels, et on la garde.
   const portraits = new Map();
   let photographe = null;
+  let mannequin = null; // un deuxième Ferrus, pour l'aperçu de la garde-robe (version 1.6)
+  function obtenirApercuFerrus() {
+    try {
+      if (!photographe) {
+        photographe = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+        photographe.setSize(128, 128);
+        photographe.setPixelRatio(1);
+      }
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color('#e6d3b0');
+      scene.add(new THREE.HemisphereLight('#fff1d8', '#8a7558', 2.2));
+      const lampe = new THREE.DirectionalLight('#ffe0b8', 1.3);
+      lampe.position.set(-2, 3, 4);
+      scene.add(lampe);
+      if (!mannequin) mannequin = creerFerrus();
+      habillerFerrus(mannequin, tenuePortee(etat));
+      mannequin.rotation.y = 0.35;
+      scene.add(mannequin);
+      const appareil = new THREE.PerspectiveCamera(30, 1, 0.05, 20);
+      appareil.position.set(0, 1.3, 2.75);
+      appareil.lookAt(0, 1.05, 0);
+      photographe.render(scene, appareil);
+      scene.remove(mannequin);
+      return photographe.domElement.toDataURL('image/png');
+    } catch {
+      return null;
+    }
+  }
   function obtenirPortrait(id) {
     if (portraits.has(id)) return portraits.get(id);
     try {

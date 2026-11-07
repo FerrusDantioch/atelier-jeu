@@ -11,7 +11,8 @@
 // =============================================================================
 
 import * as THREE from '../lib/three/three.module.js';
-import { matiere } from './decor.js';
+import { matiere, formeEngrenage } from './decor.js';
+import { TENUES as TENUES_FERRUS } from './logique-garderobe.js';
 import { boite, cylindre, boule, tour, gelule } from './formes.js';
 import { MATIERE_LUEUR } from './vie.js';
 
@@ -108,17 +109,22 @@ export function creerFerrus() {
   const jambeG = membre(silhouette, 0.19, 0.58, pantalon, -0.12, 0.62, 0, botte);
   const jambeD = membre(silhouette, 0.19, 0.58, pantalon, 0.12, 0.62, 0, botte);
 
+  // Version 1.6 : la chemise et le tablier ont leurs propres matières, pour
+  // pouvoir changer de couleur (la garde-robe, voir habillerFerrus).
+  const matChemise = new THREE.MeshLambertMaterial({ color: chemise });
+  const matTablier = new THREE.MeshLambertMaterial({ color: cuir, side: THREE.DoubleSide });
+
   // Le buste, la ceinture à outils et le tablier de cuir.
-  piece(corps, buste(0.3, 0.27, 0.62, 1.37), chemise, 0, 0, 0);
+  piece(corps, buste(0.3, 0.27, 0.62, 1.37), matChemise, 0, 0, 0);
   piece(corps, cylindre(0.31, 0.31, 0.1, 20, 0.03), '#4a3226', 0, 0.7, 0);
   piece(corps, boite(0.1, 0.08, 0.05), '#c99a4a', 0, 0.7, 0.32);
-  piece(corps, tablier(0.305, 0.62), matiere(cuir, { side: THREE.DoubleSide }), 0, 0.83, 0);
+  const pieceTablier = piece(corps, tablier(0.305, 0.62), matTablier, 0, 0.83, 0);
   piece(corps, boite(0.08, 0.14, 0.06), '#6b6660', -0.3, 0.62, 0.12); // une clé à molette à la ceinture
 
   // Les bras (avec les mains).
   const main = { forme: boule(0.072, 2), couleur: peau };
-  const brasG = membre(corps, 0.14, 0.56, chemise, -0.36, 1.28, 0, main);
-  const brasD = membre(corps, 0.14, 0.56, chemise, 0.36, 1.28, 0, main);
+  const brasG = membre(corps, 0.14, 0.56, matChemise, -0.36, 1.28, 0, main);
+  const brasD = membre(corps, 0.14, 0.56, matChemise, 0.36, 1.28, 0, main);
 
   // La tête, les cheveux, le nez et une barbe courte.
   piece(corps, tete(0.24), peau, 0, 1.58, 0);
@@ -128,18 +134,162 @@ export function creerFerrus() {
   const barbe = piece(corps, boule(0.15, 2), cheveux, 0, 1.45, 0.12);
   barbe.scale.set(1, 0.5, 0.6);
 
+  // Deux petits yeux (cachés derrière les lunettes quand il les porte).
+  yeux(corps, 1.6, 0.222, 0.09);
+
   // Les lunettes d'artisan : une sangle autour de la tête, deux verres cerclés de cuivre.
-  const sangle = piece(corps, new THREE.TorusGeometry(0.245, 0.03, 8, 32), '#3e2c22', 0, 1.62, 0);
+  const artisan = new THREE.Group();
+  corps.add(artisan);
+  const sangle = piece(artisan, new THREE.TorusGeometry(0.245, 0.03, 8, 32), '#3e2c22', 0, 1.62, 0);
   sangle.rotation.x = Math.PI / 2;
   for (const cote of [-1, 1]) {
-    const cercle = piece(corps, cylindre(0.085, 0.085, 0.09, 20, 0.02), cuivre, cote * 0.1, 1.62, 0.22);
+    const cercle = piece(artisan, cylindre(0.085, 0.085, 0.09, 20, 0.02), cuivre, cote * 0.1, 1.62, 0.22);
     cercle.rotation.x = Math.PI / 2;
-    const verre = piece(corps, new THREE.CylinderGeometry(0.062, 0.062, 0.02, 20), '#6f9e9b', cote * 0.1, 1.62, 0.27);
+    const verre = piece(artisan, new THREE.CylinderGeometry(0.062, 0.062, 0.02, 20), '#6f9e9b', cote * 0.1, 1.62, 0.27);
     verre.rotation.x = Math.PI / 2;
   }
 
-  ferrus.userData = { silhouette, corps, jambeG, jambeD, brasG, brasD, phase: 0 };
+  ferrus.userData = {
+    silhouette, corps, jambeG, jambeD, brasG, brasD, phase: 0,
+    // Version 1.6 : ce que la garde-robe peut changer.
+    matChemise, matTablier, tablier: pieceTablier, coiffe,
+    lunettes: { 'lunettes-artisan': artisan },
+    chapeaux: {},
+    echarpes: {},
+  };
   return ferrus;
+}
+
+// -----------------------------------------------------------------------------
+// LA GARDE-ROBE DE FERRUS (version 1.6)
+// -----------------------------------------------------------------------------
+// « tenue » : { chapeau, lunettes, tablier, echarpe, chemise } (des identifiants
+// de logique-garderobe.js). Les accessoires sont fabriqués la première fois
+// qu'on les porte, puis gardés (on les montre ou on les cache).
+export function habillerFerrus(ferrus, tenue) {
+  const d = ferrus.userData;
+  const cle = JSON.stringify(tenue);
+  if (d.tenueActuelle === cle) return;
+  d.tenueActuelle = cle;
+  const couleur = (id, defaut) => (TENUES_FERRUS[id] && TENUES_FERRUS[id].couleur) || defaut;
+  d.matChemise.color.set(couleur(tenue.chemise, '#e4d5b7'));
+  d.matTablier.color.set(couleur(tenue.tablier, '#8a5a3a'));
+  d.tablier.visible = tenue.tablier !== 'sans-tablier';
+  // Les lunettes.
+  if (!d.lunettes[tenue.lunettes] && tenue.lunettes !== 'sans-lunettes') {
+    const g = fabriquerLunettes(tenue.lunettes);
+    if (g) { d.corps.add(g); d.lunettes[tenue.lunettes] = g; }
+  }
+  for (const [id, g] of Object.entries(d.lunettes)) g.visible = id === tenue.lunettes;
+  // Le chapeau (avec un chapeau, les cheveux sont un peu aplatis dessous).
+  if (!d.chapeaux[tenue.chapeau] && tenue.chapeau !== 'sans-chapeau') {
+    const g = fabriquerChapeau(tenue.chapeau, couleur(tenue.chapeau, '#5e4330'));
+    if (g) { d.corps.add(g); d.chapeaux[tenue.chapeau] = g; }
+  }
+  for (const [id, g] of Object.entries(d.chapeaux)) g.visible = id === tenue.chapeau;
+  d.coiffe.scale.set(1, tenue.chapeau === 'sans-chapeau' ? 0.85 : 0.7, 1);
+  // L'écharpe.
+  if (!d.echarpes[tenue.echarpe] && tenue.echarpe !== 'sans-echarpe') {
+    const g = fabriquerEcharpe(tenue.echarpe, couleur(tenue.echarpe, '#c98b7a'));
+    if (g) { d.corps.add(g); d.echarpes[tenue.echarpe] = g; }
+  }
+  for (const [id, g] of Object.entries(d.echarpes)) g.visible = id === tenue.echarpe;
+}
+
+function fabriquerLunettes(id) {
+  const g = new THREE.Group();
+  if (id === 'monocle') {
+    const cercle = piece(g, new THREE.TorusGeometry(0.058, 0.012, 8, 20), '#c99a4a', 0.09, 1.6, 0.235);
+    cercle.rotation.y = 0.15;
+    piece(g, new THREE.CircleGeometry(0.052, 18), new THREE.MeshLambertMaterial({ color: '#cfe0dc', transparent: true, opacity: 0.45 }), 0.09, 1.6, 0.238);
+    // La petite chaînette qui descend vers la poche.
+    const chaine = piece(g, cylindre(0.006, 0.006, 0.32), '#c99a4a', 0.16, 1.43, 0.22);
+    chaine.rotation.z = 0.35;
+    return g;
+  }
+  if (id === 'lunettes-rondes') {
+    for (const cote of [-1, 1]) piece(g, new THREE.TorusGeometry(0.055, 0.011, 8, 20), '#8a5427', cote * 0.088, 1.6, 0.228);
+    piece(g, boite(0.06, 0.012, 0.012), '#8a5427', 0, 1.61, 0.235);
+    return g;
+  }
+  return null;
+}
+
+function fabriquerChapeau(id, couleur) {
+  const g = new THREE.Group();
+  if (id === 'haut-de-forme' || id === 'haut-de-forme-inventeur') {
+    piece(g, cylindre(0.31, 0.31, 0.035, 24, 0.015), couleur, 0, 1.77, 0);
+    piece(g, cylindre(0.19, 0.2, 0.34, 20, 0.03), couleur, 0, 1.94, 0);
+    if (id === 'haut-de-forme-inventeur') {
+      // Un ruban de laiton, un engrenage et des lunettes de laiton sur le côté.
+      piece(g, cylindre(0.205, 0.205, 0.06, 20), '#c99a4a', 0, 1.83, 0);
+      const roue = piece(g, formeEngrenage(0.08, 8, 0.02), '#b87333', 0.2, 1.9, 0.02);
+      roue.rotation.y = Math.PI / 2;
+      for (const cote of [-1, 1]) {
+        const verre = piece(g, cylindre(0.05, 0.05, 0.04, 14, 0.01), '#c99a4a', cote * 0.07, 1.84, 0.19);
+        verre.rotation.x = Math.PI / 2;
+      }
+    }
+    return g;
+  }
+  if (id === 'chapeau-melon') {
+    piece(g, cylindre(0.29, 0.29, 0.03, 24, 0.015), couleur, 0, 1.75, 0);
+    piece(g, calotte(0.215), couleur, 0, 1.76, 0).scale.set(1, 1.15, 1);
+    piece(g, cylindre(0.218, 0.218, 0.04, 20), '#3d2b1f', 0, 1.79, 0);
+    return g;
+  }
+  if (id === 'casquette-facteur') {
+    piece(g, calotte(0.255), couleur, 0, 1.68, 0);
+    piece(g, cylindre(0.15, 0.15, 0.03, 20, 0.012), couleur, 0, 1.69, 0.2).scale.set(1, 1, 0.75);
+    piece(g, cylindre(0.258, 0.258, 0.05, 20), '#3f4a5c', 0, 1.7, 0);
+    return g;
+  }
+  if (id === 'beret-farine') {
+    const beret = piece(g, boule(0.28, 2), couleur, 0.03, 1.78, 0);
+    beret.scale.set(1, 0.32, 1);
+    beret.rotation.z = 0.15;
+    return g;
+  }
+  if (id === 'casque-mineur') {
+    piece(g, calotte(0.275), couleur, 0, 1.64, 0).scale.set(1, 0.95, 1.05);
+    piece(g, new THREE.TorusGeometry(0.275, 0.025, 6, 24), couleur, 0, 1.64, 0).rotation.x = Math.PI / 2;
+    piece(g, cylindre(0.05, 0.05, 0.06, 12, 0.015).rotateX(Math.PI / 2), '#6b6660', 0, 1.76, 0.245);
+    piece(g, boule(0.04, 1), MATIERE_LUEUR, 0, 1.76, 0.275);
+    return g;
+  }
+  if (id === 'bonnet-marin') {
+    piece(g, calotte(0.262), couleur, 0, 1.62, 0).scale.set(1, 1.12, 1);
+    piece(g, new THREE.TorusGeometry(0.255, 0.045, 8, 24), couleur, 0, 1.66, 0).rotation.x = Math.PI / 2;
+    return g;
+  }
+  if (id === 'casquette-aviateur') {
+    piece(g, calotte(0.265), couleur, 0, 1.62, 0).scale.set(1, 0.98, 1.05);
+    for (const cote of [-1, 1]) piece(g, boite(0.06, 0.2, 0.14, 0.03), couleur, cote * 0.245, 1.52, 0);
+    // Les lunettes de vol, relevées sur le front.
+    piece(g, new THREE.TorusGeometry(0.262, 0.018, 6, 24), '#3e2c22', 0, 1.76, 0).rotation.x = Math.PI / 2 - 0.25;
+    for (const cote of [-1, 1]) {
+      const verre = piece(g, cylindre(0.06, 0.06, 0.05, 16, 0.012), '#c99a4a', cote * 0.08, 1.8, 0.2);
+      verre.rotation.x = Math.PI / 2 - 0.35;
+    }
+    return g;
+  }
+  return null;
+}
+
+function fabriquerEcharpe(id, couleur) {
+  const g = new THREE.Group();
+  const tour = piece(g, new THREE.TorusGeometry(0.19, id === 'foulard-dore' ? 0.04 : 0.065, 8, 22), couleur, 0, 1.36, 0.01);
+  tour.rotation.x = Math.PI / 2;
+  if (id === 'foulard-dore') {
+    // Un foulard noué : une petite pointe sur la poitrine.
+    const pointe = piece(g, new THREE.ConeGeometry(0.1, 0.16, 3), couleur, 0, 1.25, 0.24);
+    pointe.rotation.set(Math.PI + 0.25, 0, 0);
+  } else {
+    // Une écharpe tricotée : un pan qui pend sur le côté.
+    const pan = piece(g, gelule(0.055, 0.28, 8), couleur, 0.11, 1.17, 0.22);
+    pan.rotation.set(0.15, 0, 0.12);
+  }
+  return g;
 }
 
 // Anime la marche de Ferrus (et des habitants). « vitesse » = sa vitesse
@@ -280,6 +430,8 @@ export const TENUES_PNJ = {
   gaston: { peau: '#e0b08c', haut: '#d9b85a', bas: '#4f5a5c', cheveux: '#e8e4dc', chapeau: 'beret', couleurChapeau: '#5b6a78', moustache: '#ece8e0' },
   // Lucie, l'apprentie (version 1.5) : salopette, foulard, lunettes sur le front.
   lucie: { peau: '#f0c9a6', haut: '#e2c9a0', bas: '#5a6a7a', cheveux: '#a0522d', chapeau: 'foulard', couleurChapeau: '#c98b7a', tablier: '#5a6a7a' },
+  // Anatole, l'inventeur de la forêt (version 1.6) : redingote prune, haut-de-forme, moustache blanche.
+  anatole: { peau: '#e8c0a0', haut: '#6f5a7a', bas: '#4a4038', cheveux: '#e8e4dc', chapeau: 'haut-de-forme', couleurChapeau: '#5e4330', moustache: '#ece8e0', boutons: '#c99a4a' },
 };
 
 // Crée un personnage à partir d'une tenue (voir TENUES et TENUES_PNJ).

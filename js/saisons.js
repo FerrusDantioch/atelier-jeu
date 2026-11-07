@@ -60,7 +60,9 @@ export function appliquerSaison(ambiance) {
 // les quais, la terre battue… [x, z, largeur, profondeur] (ou un cercle :
 // { x, z, rayon }). Le marché est entièrement pavé : il n'a pas de fleurs.
 const SANS_FLEURS = {
-  place: [{ x: 0, z: 0.5, rayon: 8 }, [-7, -4.5, 2.6, 6.4], [8, -4.5, 2.4, 6.4], [0, 9.5, 2.8, 6.4], [-14.6, -0.5, 4.6, 3.6]],
+  place: [{ x: 0, z: 0.5, rayon: 8 }, [-7, -4.5, 2.6, 6.4], [8, -4.5, 2.4, 6.4], [0, 9.5, 2.8, 6.4], [-14.6, -0.5, 4.6, 3.6], [16.2, 1, 6, 2.8], [-1.3, -11.4, 3, 1.6]],
+  // Version 1.6 : le sentier de la forêt et la clairière autour de la cabane.
+  foret: [[-7, 0, 14.4, 2.4], [6.5, -2.8, 2.4, 5], [2.6, -0.9, 9, 2.4], [-6.5, -1.6, 2.2, 2.6], { x: -6.5, z: -3.4, rayon: 2 }, { x: 11.3, z: -3.8, rayon: 2 }],
   lac: [[0, -6, 40, 9.6], [8.5, 0, 11.4, 2.6], [2, -0.6, 3.4, 3], [2, -4.2, 2.2, 5.4]],
   moulin: [[-8, 0.5, 13.4, 2.8], [0, -6.5, 30, 3.6]],
   gare: [[-9.5, 0, 10.4, 2.8], [-3.5, -2.2, 3.4, 5], [3.75, -4.65, 21, 2.5], [0, -7, 30, 3.2]],

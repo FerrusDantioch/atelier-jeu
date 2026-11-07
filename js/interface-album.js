@@ -5,13 +5,20 @@
 // Le jeu est en pause pendant qu'il est ouvert. Trois onglets :
 //   - Habitants : le portrait des habitants rencontrés (et des compagnons) ;
 //   - Souvenirs : les quêtes terminées, les fêtes, et quelques chiffres ;
-//   - Pêche : les espèces du lac déjà attrapées.
+//   - Pêche : les espèces du lac déjà attrapées ;
+//   - (version 1.6) Étoiles : les constellations vues au télescope d'Anatole ;
+//   - (version 1.6) Photos : les photos prises en mode photo.
 // Ce que l'on montre est décidé par logique-album.js ; les portraits sont
-// dessinés par main.js (qui a la 3D) et donnés par « obtenirPortrait ».
+// dessinés par main.js (qui a la 3D) et donnés par « obtenirPortrait ». Les
+// fiches des habitants montrent aussi leurs cœurs d'amitié et leur anniversaire.
 // =============================================================================
 
 import { habitantsAlbum, souvenirsAlbum, chiffresAlbum, pecheAlbum } from './logique-album.js';
 import { ESPECES } from './logique-peche.js';
+import { etoilesAlbum, CONSTELLATIONS } from './logique-foret.js';
+import { texteCoeurs, MAX_COEURS } from './logique-amitie.js';
+import { dateLisible, MAX_PHOTOS } from './logique-photo.js';
+import { dessinerConstellation } from './interface-v16.js';
 
 const $ = (id) => document.getElementById(id);
 function el(balise, classe, texte) {
@@ -21,7 +28,7 @@ function el(balise, classe, texte) {
   return e;
 }
 
-export function creerPanneauAlbum({ etat, obtenirPortrait, surOuverture, surFermeture, estDisponible }) {
+export function creerPanneauAlbum({ etat, obtenirPortrait, surOuverture, surFermeture, estDisponible, photos }) {
   const panneau = $('panneau-album');
   const contenu = $('album-contenu');
   const onglets = [...panneau.querySelectorAll('[data-album]')];
@@ -80,6 +87,8 @@ export function creerPanneauAlbum({ etat, obtenirPortrait, surOuverture, surFerm
     contenu.innerHTML = '';
     if (ongletActif === 'habitants') dessinerHabitants();
     else if (ongletActif === 'souvenirs') dessinerSouvenirs();
+    else if (ongletActif === 'etoiles') dessinerEtoiles();
+    else if (ongletActif === 'photos') dessinerPhotos();
     else dessinerPeche();
   }
 
@@ -100,6 +109,13 @@ export function creerPanneauAlbum({ etat, obtenirPortrait, surOuverture, surFerm
       texte.append(el('div', 'fiche-nom', h.connu ? h.nom : '???'));
       texte.append(el('div', 'fiche-role', h.connu ? h.role : 'Pas encore rencontré'));
       if (h.connu) texte.append(el('div', 'fiche-mot', h.mot));
+      // Version 1.6 : les cœurs d'amitié et l'anniversaire.
+      if (h.connu && h.coeurs !== undefined) {
+        const coeurs = el('div', 'fiche-coeurs', texteCoeurs(h.coeurs));
+        coeurs.setAttribute('aria-label', `Amitié : ${h.coeurs} cœurs sur ${MAX_COEURS}`);
+        texte.append(coeurs);
+        texte.append(el('div', 'fiche-role', h.anniversaireAujourdhui ? "C'est son anniversaire aujourd'hui !" : `Anniversaire : ${h.anniversaire}`));
+      }
       fiche.append(texte);
       grille.append(fiche);
     }
@@ -147,5 +163,60 @@ export function creerPanneauAlbum({ etat, obtenirPortrait, surOuverture, surFerm
     contenu.append(grille);
   }
 
-  return { ouvrir, fermer, estOuvert: () => ouvert };
+  // Version 1.6 : les constellations.
+  function dessinerEtoiles() {
+    const liste = etoilesAlbum(etat);
+    const trouvees = liste.filter((c) => c.connue).length;
+    contenu.append(el('p', 'carte-intro', trouvees > 0
+      ? `Constellations découvertes : ${trouvees} sur ${CONSTELLATIONS.length}. Chaque saison en cache deux : une par nuit, au télescope d'Anatole.`
+      : "Dans la forêt, à l'est de la place, Anatole a un grand télescope. La nuit, on y découvre les constellations."));
+    const grille = el('div', 'album-grille');
+    for (const c of liste) {
+      const fiche = el('div', c.connue ? 'fiche etoile' : 'fiche etoile inconnue');
+      fiche.append(dessinerConstellation(c, c.connue));
+      const texte = el('div');
+      texte.append(el('div', 'fiche-nom', c.nom));
+      texte.append(el('div', 'fiche-role', `Saison : ${c.saisonNom}`));
+      if (c.connue) texte.append(el('div', 'fiche-mot', c.texte));
+      fiche.append(texte);
+      grille.append(fiche);
+    }
+    contenu.append(grille);
+  }
+
+  // Version 1.6 : les photos (gardées dans ce navigateur seulement).
+  let aSupprimer = -1;
+  function dessinerPhotos() {
+    const liste = photos ? photos.lister() : [];
+    contenu.append(el('p', 'carte-intro', liste.length > 0
+      ? `Vos photos (${liste.length} sur ${MAX_PHOTOS} au plus : la plus ancienne laisse sa place). Elles restent dans ce navigateur : téléchargez celles que vous voulez garder.`
+      : "Aucune photo pour l'instant. Touchez le bouton de l'appareil photo, à droite de l'écran (ou la touche P), pour en prendre une."));
+    const grille = el('div', 'album-photos');
+    liste.forEach((p, i) => {
+      const fiche = el('div', 'photo');
+      const img = document.createElement('img');
+      img.src = p.image;
+      img.alt = `Photo du ${dateLisible(p.date)}`;
+      fiche.append(img);
+      fiche.append(el('div', 'fiche-role', `${p.lieu ? `${p.lieu} · ` : ''}${dateLisible(p.date)}`));
+      const ligne = el('div', 'ligne-boutons');
+      const telecharger = el('button', 'bouton-action', 'Télécharger');
+      telecharger.type = 'button';
+      telecharger.addEventListener('click', () => photos.telecharger(i));
+      const supprimer = el('button', `bouton-action secondaire${aSupprimer === i ? ' attention' : ''}`, aSupprimer === i ? 'Toucher encore pour supprimer' : 'Supprimer');
+      supprimer.type = 'button';
+      supprimer.addEventListener('click', () => {
+        if (aSupprimer !== i) { aSupprimer = i; dessiner(); return; }
+        aSupprimer = -1;
+        photos.supprimer(i);
+        dessiner();
+      });
+      ligne.append(telecharger, supprimer);
+      fiche.append(ligne);
+      grille.append(fiche);
+    });
+    contenu.append(grille);
+  }
+
+  return { ouvrir, fermer, estOuvert: () => ouvert, rafraichir: () => { if (ouvert) dessiner(); } };
 }

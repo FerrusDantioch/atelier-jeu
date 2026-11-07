@@ -442,14 +442,14 @@ export const ZONES = Object.freeze({
     // Le grand télescope de laiton, sur son estrade ronde.
     telescope: { id: 'telescope', x: 11.3, z: -4.6, rayon: 1.0 },
     // Le chantier du dirigeable : un grand mât d'amarrage.
-    chantier: { id: 'chantier', x: -6, z: -5.6, rayon: 1.5 },
+    chantier: { id: 'chantier', x: -6.5, z: -3.4, rayon: 1.5 },
     cueillettes: CUEILLETTES,
     lampadaires: [{ x: -8, z: -1.6 }, { x: 0.2, z: -1.4 }, { x: 8.4, z: -2.2 }],
     arbres: [
       { x: -12.2, z: -7.6 }, { x: -9.4, z: -7.9 }, { x: -2.8, z: -7.8 }, { x: 0.6, z: -7.6 }, { x: 12.6, z: -7.8 },
-      { x: -12.4, z: 7.6 }, { x: -8.6, z: 7.9 }, { x: -5.2, z: 7.3 }, { x: -1.8, z: 8.0 }, { x: 3.4, z: 7.7 },
-      { x: 6.8, z: 7.9 }, { x: 10.2, z: 7.5 }, { x: 12.8, z: 6.6 }, { x: 12.7, z: 3.6 }, { x: 12.9, z: -2.6 },
-      { x: -12.4, z: -4.8 }, { x: -12.6, z: 4.6 }, { x: -6.6, z: 1.6 }, { x: 6.0, z: 1.2 }, { x: -1.2, z: 3.0 },
+      { x: -12.4, z: 8.2 }, { x: -7.6, z: 8.3 }, { x: -1.8, z: 8.3 }, { x: 4.4, z: 8.3 },
+      { x: 10.2, z: 8.1 }, { x: 12.8, z: 6.6 }, { x: 12.7, z: 3.6 }, { x: 12.9, z: -2.6 },
+      { x: -12.4, z: -4.8 }, { x: -12.6, z: 4.6 },
     ],
     rayonArbre: 0.65,
     pnj: [
@@ -458,7 +458,7 @@ export const ZONES = Object.freeze({
     interactifs: [
       { id: 'anatole', x: 2.2, z: -3.2, distanceInteraction: 2.2 },
       { id: 'telescope', x: 11.3, z: -3.0, distanceInteraction: 1.5 },
-      { id: 'chantier', x: -6, z: -3.6, distanceInteraction: 1.6 },
+      { id: 'chantier', x: -6.5, z: -1.3, distanceInteraction: 1.6 },
       ...CUEILLETTES.map((c) => ({ id: c.id, x: c.x, z: c.z, distanceInteraction: 1.4 })),
     ],
     sorties: [

@@ -64,6 +64,7 @@ export const FLAQUES = {
   gare: [[-8, 0.2, 0.7], [2, -4.6, 0.6], [-3.6, -1.2, 0.55], [6, -4.5, 0.5]],
   mine: [[0, -0.6, 0.8], [5, -1.6, 0.6], [-5.4, 0.4, 0.55]],
   lac: [[6.5, 0, 0.7], [10, 0.2, 0.6], [-2.5, 0.8, 0.6]],
+  foret: [[-9.5, 0.2, 0.7], [-3, -0.1, 0.6], [4.6, -1.6, 0.6]],
 };
 
 const matiereFlaque = new THREE.MeshBasicMaterial({ color: '#8f9fa6', transparent: true, opacity: 0, depthWrite: false });

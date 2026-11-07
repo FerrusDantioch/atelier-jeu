@@ -27,6 +27,7 @@ import {
   progressionFabrication,
   DECORATIONS,
   possedeDecoration,
+  estRecolte,
 } from './logique-atelier.js';
 import {
   carnetOuvert,
@@ -185,8 +186,9 @@ export function creerPanneauAtelier({ etat, surAction, surFermeture }) {
     }
 
     for (const [id, r] of Object.entries(RECETTES)) {
-      // Les bouquets ne se fabriquent pas (ils poussent au potager).
-      if (r.potager) continue;
+      // Les bouquets ne se fabriquent pas (ils poussent au potager), ni les
+      // paniers de la forêt (ils se cueillent, version 1.6).
+      if (estRecolte(id)) continue;
       const carte = el('div', 'carte-atelier');
       const titre = el('div', 'carte-titre', r.nom);
       if (r.quete) {
@@ -216,7 +218,7 @@ export function creerPanneauAtelier({ etat, surAction, surFermeture }) {
         carte.classList.add('verrouillee');
         const plans = AMELIORATIONS[r.plans];
         carte.append(el('div', 'carte-detail', plans.cadeau
-          ? `Verrouillé : il faut les ${plans.nom.toLowerCase()} (un cadeau de Sidonie, à la mine de cuivre).`
+          ? `Verrouillé : il faut les ${plans.nom.toLowerCase()} (${plans.origine}).`
           : `Verrouillé : il faut les ${plans.nom.toLowerCase()} (onglet Améliorer).`));
         contenu.append(carte);
         continue;
@@ -272,9 +274,9 @@ export function creerPanneauAtelier({ etat, surAction, surFermeture }) {
         carte.classList.add('installee');
         carte.append(el('div', 'etiquette-installee', 'Installé ✓'));
       } else if (am.cadeau) {
-        // Les plans d'automate ne s'achètent pas : Sidonie les offre.
+        // Certains plans ne s'achètent pas : ce sont des cadeaux (Sidonie, Augustin).
         carte.classList.add('verrouillee');
-        carte.append(el('div', 'carte-raison', 'Ne s\'achète pas : un cadeau de Sidonie, à la mine de cuivre.'));
+        carte.append(el('div', 'carte-raison', `Ne s'achète pas : c'est ${am.origine}.`));
       } else {
         carte.append(bouton(`Acheter (${am.prix} pièces)`, `ameliorer-${id}`, etat.argent >= am.prix, () => surAction('ameliorer', id)));
         if (etat.argent < am.prix) carte.append(el('div', 'carte-raison', `Encore ${am.prix - etat.argent} pièces à gagner.`));
