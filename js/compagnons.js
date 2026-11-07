@@ -77,6 +77,7 @@ export function creerChat() {
   }
   queue.rotation.x = -0.9;
   chat.userData = { corps, tete, pattes, morceaux, phase: 0, assis: 0, repos: 0 };
+  chat.scale.setScalar(1.25); // un peu plus grand qu'un vrai chat, pour bien le voir de haut
   return chat;
 }
 
@@ -93,9 +94,9 @@ export function animerChat(chat, vitesse, dt, t, calme = false) {
     p.rotation.x = Math.sin(d.phase + (i % 2 ? Math.PI : 0) + (i > 1 ? Math.PI / 2 : 0)) * 0.6 * a;
   }
   // Assis : le corps se redresse (pivot aux hanches), les pattes de devant restent droites.
-  d.corps.rotation.x = -0.75 * d.assis;
-  for (const p of d.pattes) if (p.userData.devant) p.rotation.x += 0.75 * d.assis;
-  d.tete.rotation.x = 0.55 * d.assis;
+  d.corps.rotation.x = -0.5 * d.assis;
+  for (const p of d.pattes) if (p.userData.devant) p.rotation.x += 0.5 * d.assis;
+  d.tete.rotation.x = 0.4 * d.assis;
   d.corps.position.y = 0.16 + Math.abs(Math.sin(d.phase)) * 0.015 * a;
   // La queue ondule lentement (immobile si le système demande moins d'animations).
   const onde = calme ? 0 : 1;
@@ -135,6 +136,7 @@ export function creerOiseau() {
     ailes.push({ pivot, cote });
   }
   oiseau.userData = { ailes, cle, vol: 1, phase: 0 };
+  oiseau.scale.setScalar(1.4);
   return oiseau;
 }
 

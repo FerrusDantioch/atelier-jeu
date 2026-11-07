@@ -42,8 +42,10 @@ export function creerEtatAlbum() {
 }
 
 // Note qu'on a rencontré quelqu'un (on lui a parlé). Renvoie vrai si c'est nouveau.
+// (Les compagnons entrent dans l'album quand on les adopte ou les fabrique.)
 export function noterRencontre(etat, id) {
-  if (!HABITANTS_ALBUM.some((h) => h.id === id) || etat.album.rencontres.includes(id)) return false;
+  const h = HABITANTS_ALBUM.find((x) => x.id === id);
+  if (!h || h.compagnon || etat.album.rencontres.includes(id)) return false;
   etat.album.rencontres.push(id);
   return true;
 }

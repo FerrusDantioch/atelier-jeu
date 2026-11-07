@@ -368,12 +368,13 @@ export const ZONES = Object.freeze({
     limites: { minX: -14, maxX: 14, minZ: -9, maxZ: 9 },
     joueur: MONDE.joueur,
     camera: { minX: -7, maxX: 7, minZ: -4, maxZ: 5 },
+    // Pas de haie au nord : c'est le lac, qui se perd au loin. Les haies de
+    // l'ouest et de l'est s'arrêtent au bord de l'eau.
     haies: [
-      { id: 'haie-nord', x: 0, z: -9.5, largeur: 30, profondeur: 1 },
       { id: 'haie-sud', x: 0, z: 9.5, largeur: 30, profondeur: 1 },
-      { id: 'haie-ouest', x: -14.5, z: 0, largeur: 1, profondeur: 20 },
-      { id: 'haie-est-haut', x: 14.5, z: -5.75, largeur: 1, profondeur: 8.5 },
-      { id: 'haie-est-bas', x: 14.5, z: 5.75, largeur: 1, profondeur: 8.5 },
+      { id: 'haie-ouest', x: -14.5, z: 3.9, largeur: 1, profondeur: 12.2 },
+      { id: 'haie-est-haut', x: 14.5, z: -1.8, largeur: 1, profondeur: 0.8 },
+      { id: 'haie-est-bas', x: 14.5, z: 5.7, largeur: 1, profondeur: 8.6 },
     ],
     // L'eau (on n'y entre pas), en trois morceaux autour du ponton.
     eau: { x: 0, z: -5.6, largeur: 28, profondeur: 6.8 },

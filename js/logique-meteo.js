@@ -24,7 +24,7 @@ function hasardDuJour(jour, sel) {
 export const REGLAGES_METEO = Object.freeze({
   chancePluie: 0.34,
   chanceBrume: 0.34,
-  fondu: 0.025,      // la pluie arrive et repart en 0,025 jour (environ 12 secondes)
+  fondu: 0.05,       // la pluie arrive et repart en 0,05 jour (environ 24 secondes)
   sechage: 0.12,     // les flaques sèchent en 0,12 jour (environ 1 minute)
 });
 

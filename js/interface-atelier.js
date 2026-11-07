@@ -170,13 +170,34 @@ export function creerPanneauAtelier({ etat, surAction, surFermeture }) {
       majProgression();
     }
 
+    // L'apprentie (version 1.5) : ce qu'elle fait en ce moment.
+    if (possedeAmelioration(etat, 'apprentie')) {
+      const ap = a.apprentie;
+      const carte = el('div', 'carte-atelier');
+      carte.append(el('div', 'carte-titre', 'Lucie, votre apprentie'));
+      let texte;
+      if (ap.tache === 'repos') texte = 'Elle se repose. Parlez-lui (dans l\'atelier) pour lui donner du travail.';
+      else if (ap.fabrication) texte = `Elle fabrique ${RECETTES[ap.fabrication.recette].article} : ${Math.round((1 - ap.fabrication.restant / ap.fabrication.total) * 100)} %.`;
+      else if (a.stock[ap.tache] >= Math.min(3, capaciteStock(etat))) texte = `Elle attend : il y a assez de ${RECETTES[ap.tache].pluriel} en réserve.`;
+      else texte = `Elle voudrait fabriquer des ${RECETTES[ap.tache].pluriel}, mais il manque des matériaux (onglet Acheter).`;
+      carte.append(el('div', 'carte-detail', texte));
+      contenu.append(carte);
+    }
+
     for (const [id, r] of Object.entries(RECETTES)) {
+      // Les bouquets ne se fabriquent pas (ils poussent au potager).
+      if (r.potager) continue;
       const carte = el('div', 'carte-atelier');
       const titre = el('div', 'carte-titre', r.nom);
       if (r.quete) {
         carte.classList.add('commandee');
         titre.append(el('span', 'etiquette', 'Pour une quête'));
       }
+      if (r.fete) {
+        carte.classList.add('commandee');
+        titre.append(el('span', 'etiquette', "Pour la fête d'Odile"));
+      }
+      if (r.compagnon) titre.append(el('span', 'etiquette', 'Un compagnon'));
       if (client && client.commande === id) {
         carte.classList.add('commandee');
         titre.append(el('span', 'etiquette', `Commandé par ${client.nom}`));
@@ -189,8 +210,9 @@ export function creerPanneauAtelier({ etat, surAction, surFermeture }) {
       carte.append(titre);
 
       if (!recetteDebloquee(etat, id)) {
-        // Les objets de quête n'apparaissent que pendant leur quête.
-        if (r.quete) continue;
+        // Les objets de quête (ou de fête) n'apparaissent que pendant leur quête
+        // (ou leur fête) ; l'oiseau mécanique disparaît une fois fabriqué.
+        if (r.quete || r.fete || r.compagnon) continue;
         carte.classList.add('verrouillee');
         const plans = AMELIORATIONS[r.plans];
         carte.append(el('div', 'carte-detail', plans.cadeau
@@ -210,9 +232,10 @@ export function creerPanneauAtelier({ etat, surAction, surFermeture }) {
         ingredients.append(morceau);
       });
       carte.append(ingredients);
-      carte.append(el('div', 'carte-detail', r.quete
-        ? `Durée : ${dureeFabrication(etat, id)} s · En stock : ${a.stock[id]}`
-        : `Durée : ${dureeFabrication(etat, id)} s · Vente : ${r.prixVente} pièces · En stock : ${a.stock[id]}`));
+      let detail = `Durée : ${dureeFabrication(etat, id)} s · Vente : ${r.prixVente} pièces · En stock : ${a.stock[id]}`;
+      if (r.quete || r.fete) detail = `Durée : ${dureeFabrication(etat, id)} s · En stock : ${a.stock[id]}`;
+      if (r.compagnon) detail = `Durée : ${dureeFabrication(etat, id)} s · Une fois fini, il s'envole et vous suit partout.`;
+      carte.append(el('div', 'carte-detail', detail));
 
       const verdict = peutFabriquer(etat, id);
       carte.append(bouton('Fabriquer', `fabriquer-${id}`, verdict.possible, () => surAction('fabriquer', id)));
@@ -262,8 +285,14 @@ export function creerPanneauAtelier({ etat, surAction, surFermeture }) {
 
   // Les décorations (version 1.4) : elles ne servent qu'à embellir l'atelier.
   function dessinerDecorer() {
-    contenu.append(el('p', 'carte-intro', "Pour le plaisir des yeux : chaque décoration apparaît aussitôt sur la façade de l'atelier."));
+    contenu.append(el('p', 'carte-intro', "Pour le plaisir des yeux : chaque décoration apparaît aussitôt, sur la façade ou à l'intérieur de l'atelier."));
+    let section = null;
     for (const [id, deco] of Object.entries(DECORATIONS)) {
+      const lieu = deco.lieu === 'interieur' ? "À l'intérieur de l'atelier" : 'Sur la façade';
+      if (lieu !== section) {
+        section = lieu;
+        contenu.append(el('h3', 'album-section', lieu));
+      }
       const carte = el('div', 'carte-atelier');
       carte.append(el('div', 'carte-titre', deco.nom));
       carte.append(el('div', 'carte-detail', deco.description));
