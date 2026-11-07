@@ -358,7 +358,7 @@ test("les décorations s'achètent une fois, avec l'argent gagné", () => {
   assert.equal(possedeDecoration(etat, 'tapis'), true);
   assert.deepEqual(acheterDecoration(etat, 'tapis'), ['Déjà installée.']);
   assert.deepEqual(acheterDecoration(etat, 'inconnue'), []);
-  assert.equal(Object.keys(DECORATIONS).length, 7);
+  assert.equal(Object.values(DECORATIONS).filter((d) => !d.lieu).length, 7); // celles de la façade
 });
 
 test("les pots de fleurs ne gênent pas l'accès à l'établi ni au comptoir, et Ferrus ne s'y coince jamais", () => {

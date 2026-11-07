@@ -17,7 +17,7 @@
 // Ce fichier ne contient aucune 3D : il est testé avec « node --test ».
 // =============================================================================
 
-import { RECETTES, recettesDisponibles } from './logique-atelier.js';
+import { RECETTES, recettesDisponibles, vendableAuComptoir } from './logique-atelier.js';
 import { queteTerminee } from './logique-quetes.js';
 
 // Les réglages du carnet.
@@ -84,7 +84,7 @@ function clientsPossibles(etat) {
   return CLIENTS_CARNET.filter((c) => queteTerminee(etat, c.quete) && !occupes.has(c.id));
 }
 function objetsPossibles(etat) {
-  return recettesDisponibles(etat).filter((id) => !RECETTES[id].quete);
+  return recettesDisponibles(etat).filter(vendableAuComptoir);
 }
 
 // -----------------------------------------------------------------------------

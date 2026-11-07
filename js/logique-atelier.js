@@ -120,7 +120,73 @@ export const RECETTES = Object.freeze({
     prixVente: 0,
     quete: 'wagonnet-mine',
   },
+  // Version 1.5 : les objets des fêtes. On ne peut les fabriquer que le jour de
+  // leur fête (« fete »), pour Odile ; les clients ne les commandent jamais.
+  'lanterne-papier': {
+    nom: 'Lanterne de papier',
+    article: 'une lanterne de papier',
+    pluriel: 'lanternes de papier',
+    ingredients: { bois: 1, ressort: 1 },
+    duree: 6,
+    prixVente: 0,
+    fete: 'fete-lanternes',
+  },
+  carillon: {
+    nom: 'Carillon à vent',
+    article: 'un carillon à vent',
+    pluriel: 'carillons à vent',
+    ingredients: { cuivre: 1, ressort: 1 },
+    duree: 7,
+    prixVente: 0,
+    fete: 'bal-ete',
+  },
+  'presse-pommes': {
+    nom: 'Presse à pommes',
+    article: 'une presse à pommes',
+    pluriel: 'presses à pommes',
+    ingredients: { cuivre: 1, bois: 2 },
+    duree: 9,
+    prixVente: 0,
+    fete: 'foire-pommes',
+  },
+  'etoile-cuivre': {
+    nom: 'Étoile de cuivre',
+    article: 'une étoile de cuivre',
+    pluriel: 'étoiles de cuivre',
+    ingredients: { cuivre: 2 },
+    duree: 7,
+    prixVente: 0,
+    fete: 'fete-lumieres',
+  },
+  // Version 1.5 : le compagnon qu'on fabrique soi-même. Il ne va pas dans le
+  // stock : une fois fini, il s'envole et suit Ferrus partout.
+  'oiseau-mecanique': {
+    nom: 'Oiseau mécanique',
+    article: 'un oiseau mécanique',
+    ingredients: { cuivre: 2, ressort: 1 },
+    duree: 15,
+    prixVente: 0,
+    compagnon: 'oiseau',
+  },
+  // Version 1.5 : les bouquets ne se fabriquent pas, ils poussent au potager.
+  // Ils se vendent au comptoir.
+  bouquet: {
+    nom: 'Bouquet de fleurs',
+    article: 'un bouquet de fleurs',
+    pluriel: 'bouquets de fleurs',
+    ingredients: {},
+    duree: 0,
+    prixVente: 30,
+    potager: true,
+  },
 });
+
+// Un objet qu'un client peut acheter au comptoir ? (pas les objets de quête,
+// de fête, ni l'oiseau mécanique)
+export function vendableAuComptoir(id) {
+  const r = RECETTES[id];
+  return Boolean(r) && !r.quete && !r.fete && !r.compagnon;
+}
 
 // Les améliorations de l'atelier (chacune ne s'achète qu'une fois).
 export const AMELIORATIONS = Object.freeze({
@@ -132,6 +198,8 @@ export const AMELIORATIONS = Object.freeze({
   'plans-boite-musique': { nom: 'Plans de boîte à musique', description: 'Débloque la fabrication des boîtes à musique.', prix: 120 },
   // Celle-ci ne s'achète pas : c'est le cadeau de Sidonie, à la fin de sa quête à la mine.
   'plans-automate': { nom: "Plans d'automate", description: 'Débloque la fabrication des automates de cuivre.', prix: 0, cadeau: 'wagonnet-mine' },
+  // Version 1.5 : une apprentie, qui travaille à son propre établi, dans l'atelier.
+  apprentie: { nom: 'Une apprentie', description: "Lucie, la nièce d'Odile, fabrique toute seule des lanternes ou des bouilloires, à son établi dans l'atelier. Parlez-lui pour choisir.", prix: 150 },
 });
 
 // Les décorations de l'atelier (version 1.4). Elles ne changent rien aux
@@ -145,6 +213,12 @@ export const DECORATIONS = Object.freeze({
   jardinieres: { nom: 'Jardinières fleuries', description: 'Des fleurs sous les deux fenêtres.', prix: 45 },
   girouette: { nom: 'Girouette en cuivre', description: 'Un petit coq de cuivre sur le toit, qui tourne au gré du vent.', prix: 55 },
   'horloge-murale': { nom: 'Horloge murale', description: "Une horloge sur la façade, qui donne l'heure de Cuivrebourg.", prix: 70 },
+  // Version 1.5 : les décorations de l'intérieur de l'atelier.
+  'tapis-salon': { nom: 'Grand tapis', description: 'Un grand tapis moelleux, dans le coin salon.', prix: 30, lieu: 'interieur' },
+  'plante-verte': { nom: 'Plante verte', description: 'Une belle plante dans un pot de cuivre, près de la porte.', prix: 35, lieu: 'interieur' },
+  tableau: { nom: 'Tableau de Cuivrebourg', description: 'Une peinture de la place du village, au mur.', prix: 40, lieu: 'interieur' },
+  fauteuil: { nom: 'Fauteuil et guéridon', description: 'Un fauteuil confortable et sa petite table, pour se reposer.', prix: 60, lieu: 'interieur' },
+  gramophone: { nom: 'Gramophone', description: 'Un gramophone à pavillon de cuivre, dont le disque tourne doucement.', prix: 80, lieu: 'interieur' },
 });
 
 // Les habitants qui viennent acheter (ils arrivent chacun leur tour).
@@ -194,6 +268,9 @@ export function creerEtatAtelier() {
     graine: 20261104,        // pour le « hasard » des commandes (toujours le même)
     recettesQuete: [],       // les objets de quête qu'on a le droit de fabriquer en ce moment
     decorations: [],         // les décorations achetées (version 1.4)
+    recettesFete: [],        // l'objet de la fête du jour, s'il y en a une (version 1.5)
+    // L'apprentie (version 1.5) : ce qu'elle fabrique, et son travail en cours.
+    apprentie: { tache: 'lanterne', fabrication: null },
   };
 }
 
@@ -232,6 +309,9 @@ export function recetteDebloquee(etat, id) {
   const r = RECETTES[id];
   if (!r) return false;
   if (r.quete) return etat.atelier.recettesQuete.includes(id);
+  if (r.fete) return etat.atelier.recettesFete.includes(id);
+  if (r.potager) return false; // les bouquets poussent au potager
+  if (r.compagnon) return Boolean(etat.compagnons) && !etat.compagnons[r.compagnon];
   return !r.plans || possedeAmelioration(etat, r.plans);
 }
 export function recettesDisponibles(etat) {
@@ -283,10 +363,14 @@ export function peutFabriquer(etat, id) {
   if (!r) return { possible: false, raison: 'Recette inconnue.' };
   if (!a.ouvert) return { possible: false, raison: "L'atelier n'est pas encore ouvert." };
   if (!recetteDebloquee(etat, id)) {
-    return { possible: false, raison: r.quete ? 'Cet objet sert à une quête.' : `Il faut d'abord les ${AMELIORATIONS[r.plans].nom.toLowerCase()}.` };
+    if (r.quete) return { possible: false, raison: 'Cet objet sert à une quête.' };
+    if (r.fete) return { possible: false, raison: "Cet objet ne se fabrique que le jour de sa fête." };
+    if (r.potager) return { possible: false, raison: 'Les bouquets poussent au potager.' };
+    if (r.compagnon) return { possible: false, raison: 'Votre oiseau mécanique vole déjà à vos côtés.' };
+    return { possible: false, raison: `Il faut d'abord les ${AMELIORATIONS[r.plans].nom.toLowerCase()}.` };
   }
   if (a.fabrication) return { possible: false, raison: "L'établi est déjà occupé." };
-  if (a.stock[id] >= capaciteStock(etat)) return { possible: false, raison: 'Plus de place pour ranger cet objet.' };
+  if (!r.compagnon && a.stock[id] >= capaciteStock(etat)) return { possible: false, raison: 'Plus de place pour ranger cet objet.' };
   const manque = materiauxManquants(etat, id);
   if (Object.keys(manque).length > 0) return { possible: false, raison: `Il manque : ${decrireMateriaux(manque)}.` };
   return { possible: true, raison: '' };
@@ -400,9 +484,9 @@ export function messageComptoirVide(etat) {
 // d'argent pour acheter de quoi fabriquer quoi que ce soit)
 export function atelierCoince(etat) {
   const a = etat.atelier;
-  if (!a.ouvert || a.fabrication) return false;
+  if (!a.ouvert || a.fabrication || a.apprentie.fabrication) return false;
   // Seuls les objets qu'un client peut acheter comptent (pas les objets de quête).
-  const vendables = Object.keys(RECETTES).filter((id) => !RECETTES[id].quete);
+  const vendables = Object.keys(RECETTES).filter(vendableAuComptoir);
   if (vendables.some((id) => a.stock[id] > 0)) return false;
   return vendables
     .filter((id) => recetteDebloquee(etat, id))
@@ -420,11 +504,20 @@ export function avancerTemps(etat, dt) {
     a.fabrication.restant -= dt;
     if (a.fabrication.restant <= 0) {
       const id = a.fabrication.recette;
-      a.stock[id] += 1;
       a.fabrication = null;
-      messages.push(`Fabrication terminée : ${RECETTES[id].nom}`);
+      if (RECETTES[id].compagnon && etat.compagnons) {
+        // L'oiseau mécanique ne va pas dans le stock : il s'éveille et suit Ferrus.
+        etat.compagnons[RECETTES[id].compagnon] = true;
+        messages.push("Cliquet, l'oiseau mécanique, s'éveille et vole jusqu'à vous !");
+      } else {
+        a.stock[id] += 1;
+        messages.push(`Fabrication terminée : ${RECETTES[id].nom}`);
+      }
     }
   }
+
+  // L'apprentie travaille à son établi (version 1.5).
+  if (possedeAmelioration(etat, 'apprentie')) messages.push(...avancerApprentie(etat, dt));
 
   // Un nouveau client arrive de temps en temps (s'il reste de la place dans la file).
   if (a.clients.length < REGLAGES.fileMax) {
@@ -432,7 +525,9 @@ export function avancerTemps(etat, dt) {
     if (a.prochainClient <= 0) {
       const habitant = HABITANTS[a.compteurClients % HABITANTS.length];
       // Les clients ne commandent que des objets « normaux » (pas d'objets de quête).
-      const disponibles = recettesDisponibles(etat).filter((id) => !RECETTES[id].quete);
+      // Ils prennent aussi des bouquets du potager, s'il y en a en stock.
+      const disponibles = recettesDisponibles(etat).filter(vendableAuComptoir);
+      if (a.stock.bouquet > 0) disponibles.push('bouquet');
       const commande = disponibles[Math.floor(hasard(a) * disponibles.length)];
       a.compteurClients += 1;
       a.clients.push({ id: a.compteurClients, nom: habitant.nom, salut: habitant.salut, commande });
@@ -447,6 +542,77 @@ export function avancerTemps(etat, dt) {
     messages.push(`Odile vous prête ${REGLAGES.aideOdile} pièces pour repartir.`);
   }
   return messages;
+}
+
+// -----------------------------------------------------------------------------
+// 5 bis. L'APPRENTIE (version 1.5)
+// -----------------------------------------------------------------------------
+// Lucie fabrique toute seule, à son établi, l'objet qu'on lui a demandé
+// (lanternes ou bouilloires), avec les matériaux du stock. Elle va un peu
+// moins vite que Ferrus, et s'arrête quand il y en a 3 en réserve (pour ne pas
+// vider tout le stock de matériaux).
+export const TACHES_APPRENTIE = Object.freeze(['lanterne', 'bouilloire', 'repos']);
+export const RESERVE_APPRENTIE = 3;
+export const LENTEUR_APPRENTIE = 1.5;
+
+export function avancerApprentie(etat, dt) {
+  const a = etat.atelier;
+  const ap = a.apprentie;
+  const messages = [];
+  if (ap.fabrication) {
+    ap.fabrication.restant -= dt;
+    if (ap.fabrication.restant > 0) return messages;
+    const id = ap.fabrication.recette;
+    ap.fabrication = null;
+    a.stock[id] = Math.min(capaciteStock(etat), a.stock[id] + 1);
+    messages.push(`Lucie a fabriqué ${RECETTES[id].article}.`);
+  }
+  const id = ap.tache;
+  if (id === 'repos' || !RECETTES[id]) return messages;
+  if (a.stock[id] >= Math.min(RESERVE_APPRENTIE, capaciteStock(etat))) return messages;
+  if (Object.keys(materiauxManquants(etat, id)).length > 0) return messages;
+  for (const [materiau, quantite] of Object.entries(RECETTES[id].ingredients)) a.stock[materiau] -= quantite;
+  const duree = dureeFabrication(etat, id) * LENTEUR_APPRENTIE;
+  ap.fabrication = { recette: id, restant: duree, total: duree };
+  return messages;
+}
+
+// Ce que dit Lucie, et les choix pour lui donner du travail.
+export function dialogueApprentie(etat) {
+  const ap = etat.atelier.apprentie;
+  let repliques;
+  if (ap.tache === 'repos') {
+    repliques = ['Je me repose un peu. Dites-moi quand il faut reprendre !'];
+  } else {
+    const r = RECETTES[ap.tache];
+    const manque = materiauxManquants(etat, ap.tache);
+    if (ap.fabrication) {
+      repliques = [`Je fabrique des ${r.pluriel}. Il y en a une en cours, sur mon établi.`];
+    } else if (etat.atelier.stock[ap.tache] >= Math.min(RESERVE_APPRENTIE, capaciteStock(etat))) {
+      repliques = [`Il y a déjà ${RESERVE_APPRENTIE} ${r.pluriel} en réserve. J'attends qu'on en vende pour en refaire.`];
+    } else if (Object.keys(manque).length > 0) {
+      repliques = [`Je voudrais fabriquer des ${r.pluriel}, mais il manque : ${decrireMateriaux(manque)}. Pouvez-vous en acheter à l'établi ?`];
+    } else {
+      repliques = [`Je m'occupe des ${r.pluriel} !`];
+    }
+  }
+  return {
+    orateur: 'Lucie',
+    repliques: ["Bonjour, maître Ferrus !", ...repliques],
+    choix: [
+      { texte: 'Fais des lanternes', action: 'apprentie:lanterne' },
+      { texte: 'Fais des bouilloires', action: 'apprentie:bouilloire' },
+      { texte: 'Repose-toi', action: 'apprentie:repos' },
+    ],
+  };
+}
+
+// Donner une tâche à l'apprentie (un travail commencé est terminé quand même).
+export function choisirTacheApprentie(etat, tache) {
+  if (!TACHES_APPRENTIE.includes(tache) || !possedeAmelioration(etat, 'apprentie')) return [];
+  etat.atelier.apprentie.tache = tache;
+  if (tache === 'repos') return ['Lucie pose ses outils et se repose.'];
+  return [`Lucie va fabriquer des ${RECETTES[tache].pluriel}.`];
 }
 
 // -----------------------------------------------------------------------------

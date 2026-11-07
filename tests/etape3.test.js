@@ -297,6 +297,8 @@ test('les pales et les personnages sont accessibles', () => {
     if (zoneId === 'place') continue;
     const obs = obstaclesZone(zoneId, etat);
     for (const i of zone.interactifs) {
+      // (Lucie, l'apprentie de la version 1.5, n'est là qu'une fois engagée.)
+      if (!conditionRemplie(etat, i.condition)) continue;
       let trouve = false;
       for (let a = 0; a < Math.PI * 2 && !trouve; a += Math.PI / 16) {
         for (let d = 0.6; d <= i.distanceInteraction && !trouve; d += 0.1) {

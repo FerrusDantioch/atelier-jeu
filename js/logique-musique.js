@@ -81,6 +81,24 @@ export const AMBIANCES = {
     progression: [0, 3, 0, 4, 0, 6, 3, 0],
     densite: 0.24,
   },
+  // Version 1.5 : l'intérieur de l'atelier, chaleureux comme un coin du feu.
+  interieur: {
+    nom: "L'intérieur de l'atelier",
+    tempo: 62,
+    tonique: 53, // fa, comme la place, mais plus intime
+    gamme: 'majeur',
+    progression: [0, 3, 4, 0, 5, 3, 1, 4],
+    densite: 0.36,
+  },
+  // Version 1.5 : le lac, lent et ample, comme l'eau qui clapote.
+  lac: {
+    nom: 'Le lac',
+    tempo: 56,
+    tonique: 55, // sol
+    gamme: 'majeur',
+    progression: [0, 5, 3, 0, 4, 5, 3, 4],
+    densite: 0.3,
+  },
 };
 
 export const TEMPS_PAR_MESURE = 4;

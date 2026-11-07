@@ -2,7 +2,7 @@
 // logique-reglages.js — LES OPTIONS DU JOUEUR (étape 4)
 // -----------------------------------------------------------------------------
 // Musique, petits sons, qualité de l'image, cycle du jour et de la nuit,
-// saisons (version 1.4). Les réglages sont enregistrés à
+// saisons (version 1.4), météo (version 1.5). Les réglages sont enregistrés à
 // part de la partie : « Nouvelle partie » ne les efface pas.
 //
 // Confort avant tout : la musique et les sons sont COUPÉS au départ. C'est le
@@ -13,7 +13,7 @@
 // =============================================================================
 
 // Le numéro de version du jeu (le même que dans package.json et sw.js).
-export const VERSION_JEU = '1.4.0';
+export const VERSION_JEU = '1.5.0';
 
 export const CLE_REGLAGES = 'atelier-cuivrebourg-reglages';
 
@@ -34,6 +34,7 @@ export function creerReglages() {
     qualite: 'normale',
     jourNuit: true,   // le jour et la nuit se succèdent (version 1.2) ; sinon, toujours le jour
     saisons: true,    // les saisons se succèdent (version 1.4) ; sinon, toujours l'été
+    meteo: true,      // pluie douce et brume du matin (version 1.5) ; sinon, toujours beau
   };
 }
 
@@ -52,6 +53,7 @@ export function lireReglages(texte) {
   if (typeof lu.sons === 'boolean') reglages.sons = lu.sons;
   if (typeof lu.jourNuit === 'boolean') reglages.jourNuit = lu.jourNuit;
   if (typeof lu.saisons === 'boolean') reglages.saisons = lu.saisons;
+  if (typeof lu.meteo === 'boolean') reglages.meteo = lu.meteo;
   for (const cle of ['volumeMusique', 'volumeSons']) {
     if (Number.isInteger(lu[cle])) reglages[cle] = Math.min(NIVEAUX_VOLUME, Math.max(1, lu[cle]));
   }
