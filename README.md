@@ -39,6 +39,19 @@ habitants : chaque habitant a un problème à résoudre, ce sont les quêtes.
   pluie, brume du matin), deux **compagnons** (Rouille le chat et Cliquet
   l'oiseau mécanique), l'**intérieur de l'atelier**, une **apprentie**, un
   **potager**, un **lac** où l'on pêche avec Gaston, et l'**album de souvenirs**.
+- **Version 1.6** : la **forêt de l'inventeur** (Anatole, son télescope et
+  les constellations, la cueillette), le grand projet du **dirigeable** (pour
+  voyager en survolant le village), l'**amitié** avec les habitants (cadeaux,
+  anniversaires), le **journal** du matin, la **vitrine** de l'atelier, la
+  **garde-robe** de Ferrus, la **partie dans un fichier** (pour passer d'un
+  appareil à l'autre), le **mode photo**, un **petit jeu d'assemblage**
+  d'engrenages, et une option pour **grossir le texte**.
+
+![La forêt de l'inventeur et le dirigeable amarré à son mât](captures/pc-foret.png)
+
+![Le voyage en dirigeable, au-dessus du village](captures/pc-vol.png)
+
+![Une constellation vue au télescope d'Anatole, la nuit](captures/pc-telescope.png)
 
 ![L'intérieur de l'atelier, avec Lucie l'apprentie](captures/pc-interieur.png)
 
@@ -122,6 +135,9 @@ un téléphone connecté **au même Wi-Fi** peut l'ouvrir pour jouer.
 | Panneau de l'établi | Souris (ou `Tab` puis `Entrée`) ; `Échap` ou `E` pour fermer | Toucher les boutons ; **Fermer** en haut |
 | Options (musique, sons…) | `Échap`, ou le bouton ⚙ en haut | Bouton ⚙ en haut |
 | Album de souvenirs (version 1.5) | `L`, ou le bouton « livre » en haut | Bouton « livre » en haut |
+| Journal du matin (version 1.6) | `J`, ou le bouton « journal » à droite | Bouton « journal » à droite |
+| Mode photo (version 1.6) | `P`, ou le bouton « appareil photo » à droite ; glisser à la souris, flèches, molette ; `Entrée` pour la photo ; `Échap` pour quitter | Bouton « appareil photo » à droite ; glisser le doigt ; boutons − et + |
+| Voyager en dirigeable (version 1.6) | `V`, ou le bouton « dirigeable » à droite | Bouton « dirigeable » à droite |
 
 Sur téléphone, le pouce gauche peut se poser **n'importe où dans la moitié
 gauche du bas de l'écran** : le joystick vient se placer dessous. Plus besoin
@@ -168,6 +184,8 @@ trois phrases comment tout fonctionne.
 | Horloge mécanique | 1 cuivre, 1 bois, 2 ressorts | 14 s | 75 pièces |
 | Boîte à musique (version 1.3) | 1 cuivre, 2 bois, 1 ressort | 12 s | 70 pièces |
 | Automate de cuivre (version 1.3) | 3 cuivres, 2 ressorts | 18 s | 120 pièces |
+| Train miniature (version 1.6) | 2 cuivres, 2 bois, 1 ressort | 16 s | 95 pièces |
+| Panier de baies, de champignons, sac de pommes de pin (version 1.6) | se cueillent dans la forêt | — | 22, 28 et 14 pièces |
 
 | Amélioration | Prix | Effet |
 |---|---|---|
@@ -178,6 +196,7 @@ trois phrases comment tout fonctionne.
 | Plans de boîte à musique | 120 | Débloque les boîtes à musique |
 | Plans d'automate | — | Ne s'achètent pas : c'est le cadeau de Sidonie, à la mine |
 | Une apprentie (version 1.5) | 150 | Lucie fabrique toute seule des lanternes ou des bouilloires |
+| Plans du train miniature (version 1.6) | — | Ne s'achètent pas : c'est le cadeau d'Augustin, quand vous êtes très bons amis |
 
 Chaque amélioration apparaît dans le décor : étagères près de la porte,
 soufflet sur l'établi, grand engrenage au-dessus de l'enseigne, plans roulés.
@@ -193,16 +212,22 @@ Odile prête 30 pièces pour repartir.
 
 ## Les lieux et les quêtes (étape 3)
 
-Cuivrebourg compte maintenant huit lieux (la gare est arrivée avec la
+Cuivrebourg compte maintenant neuf lieux (la gare est arrivée avec la
 version 1.2, la mine avec la version 1.3, sa galerie souterraine avec la
-version 1.4, l'intérieur de l'atelier et le lac avec la version 1.5). On passe
-de l'un à l'autre en marchant jusqu'à la sortie, avec un fondu doux ; pour la
-mine, on prend le train ; pour entrer dans l'atelier, on passe la porte.
+version 1.4, l'intérieur de l'atelier et le lac avec la version 1.5, la forêt
+avec la version 1.6). On passe de l'un à l'autre en marchant jusqu'à la
+sortie, avec un fondu doux ; pour la mine, on prend le train ; pour entrer
+dans l'atelier, on passe la porte. Une fois le dirigeable construit (version
+1.6), il emmène Ferrus d'un lieu à l'autre en survolant le village.
 
 ```
 [ L'intérieur de l'atelier ]
             │ porte
-[ La place ] ─ portail du sud ─ [ Le marché ] ─ chemin de l'est ─ [ Le moulin ] ─ route de l'est ─ [ La gare ]
+[ La place ] ─ chemin de l'est ─ [ La forêt de l'inventeur ]
+     │
+portail du sud
+     │
+[ Le marché ] ─ chemin de l'est ─ [ Le moulin ] ─ route de l'est ─ [ La gare ]
                                       │
                                chemin de l'ouest
                                       │
@@ -236,6 +261,10 @@ mine, on prend le train ; pour entrer dans l'atelier, on passe la porte.
   engrenages, l'établi, l'établi de **Lucie** l'apprentie, et un coin salon.
 - **Le lac** (version 1.5) : à l'ouest du marché. Un ponton, une barque, des
   canards, la cabane du pêcheur, et **Gaston** le vieux pêcheur.
+- **La forêt de l'inventeur** (version 1.6) : à l'est de la place (le chemin
+  s'ouvre avec l'atelier). Une clairière entourée de grands arbres et de
+  sapins, la cabane d'**Anatole** l'inventeur, son grand télescope de
+  laiton, le chantier du dirigeable, et six buissons à cueillir.
 
 Les quêtes s'enchaînent : chacune ouvre la suivante.
 
@@ -259,6 +288,17 @@ Les quêtes s'enchaînent : chacune ouvre la suivante.
    de cuivre tombées du wagonnet, fabriquer une roue de wagonnet à l'établi
    (1 cuivre, 1 bois, 1 ressort), la poser sur le wagonnet, puis revenir voir
    Sidonie. Récompense : 180 pièces et, en cadeau, **les plans de l'automate**.
+7. **Le télescope d'Anatole** (version 1.6) : dans la forêt, retrouver les
+   3 vis dorées emportées par l'écureuil, fabriquer une monture de lentille
+   (2 cuivres, 1 ressort), l'installer sur le télescope, puis revenir voir
+   Anatole. Récompense : 200 pièces, et le télescope montre les étoiles.
+8. à 12. **Le dirigeable** (version 1.6), en cinq étapes : à chaque fois, un
+   habitant apporte sa pièce (l'osier de Barnabé, la toile de Capucine et
+   les cordages de Gaston, le cuivre fin de Sidonie, les dessins d'hélice
+   d'Augustin, la boussole de Léon et le drapeau d'Odile), Ferrus fabrique
+   le reste à l'établi (nacelle, anneaux d'amarrage, chaudière, hélice,
+   tableau de bord), puis l'apporte à Anatole. Récompenses : 100, 100, 120,
+   120 et 250 pièces, et une **casquette d'aviateur** pour la garde-robe.
 
 Les objets de quête n'apparaissent à l'établi que pendant leur quête, et les
 clients ne les commandent jamais. L'atelier continue de vivre pendant que
@@ -285,6 +325,20 @@ toucher deux fois pour confirmer, pour ne pas tout effacer par erreur).
   de commandes vide.
   Avec la version 1.5, elle garde tout, et les nouveautés l'attendent (le
   petit chat sur la place, Gaston au lac, le potager à semer…).
+  Avec la version 1.6, elle garde tout aussi : les cœurs d'amitié tiennent
+  déjà compte des quêtes terminées, et si l'histoire était finie, Anatole
+  attend dans la forêt.
+
+**Changer d'appareil (version 1.6)** : dans les options, « Votre partie dans
+un fichier ». Sur le premier appareil, touchez **Enregistrer dans un
+fichier** : un petit fichier `cuivrebourg-partie-…json` arrive dans vos
+téléchargements. Envoyez-le-vous (par courriel, par exemple). Sur l'autre
+appareil, ouvrez le jeu, puis les options (même depuis l'écran d'accueil),
+**Ouvrir un fichier**, et choisissez ce fichier : le jeu montre un petit
+résumé (jour, pièces, quêtes), puis demande de confirmer avant de remplacer
+la partie de cet appareil. Le fichier est vérifié comme une sauvegarde : un
+fichier abîmé ou trafiqué ne peut rien casser. (Les photos de l'album, elles,
+restent dans le navigateur où elles ont été prises.)
 
 ## Les options (étape 4)
 
@@ -301,6 +355,9 @@ sur l'appareil, à part de la partie : « Nouvelle partie » ne les efface pas.
 | Saisons | Activées | Printemps, été, automne, hiver : chaque saison dure 2 jours du jeu (environ 16 minutes). « Toujours l'été » : le décor ne change plus. |
 | Météo | Activée | Une petite pluie douce certains après-midi, un peu de brume certains matins. « Toujours beau » : ni pluie ni brume. |
 | Qualité de l'image | Normale | « Économie » : image moins fine, sans ombres, 30 images par seconde. Pour un téléphone qui chauffe ou se décharge vite. |
+| Taille du texte (version 1.6) | Normal | « Grand » (15 % plus gros) ou « Très grand » (30 % plus gros) : tous les textes, dialogues et panneaux. |
+| Petit jeu d'assemblage (version 1.6) | Proposé | « Jamais » : les objets rares se fabriquent directement, sans le petit jeu. |
+| Votre partie dans un fichier (version 1.6) | — | Enregistrer la partie dans un fichier, ou en ouvrir une (voir « La sauvegarde »). |
 | Écran | — | Passer en plein écran (si le navigateur le permet). |
 | Application | — | Installer le jeu (quand Chrome le propose). |
 
@@ -581,9 +638,132 @@ jeu est en pause pendant qu'il est ouvert.
   de vos compagnons), avec quelques mots sur lui ;
 - **Souvenirs** : les quêtes terminées, les fêtes, et quelques chiffres
   (jours passés, clients servis, commandes livrées, cuivre récolté…) ;
-- **Pêche** : les espèces du lac déjà attrapées.
+- **Pêche** : les espèces du lac déjà attrapées ;
+- **Étoiles** (version 1.6) : les constellations vues au télescope ;
+- **Photos** (version 1.6) : les photos du mode photo (à télécharger).
+
+Depuis la version 1.6, chaque fiche d'habitant montre aussi ses **cœurs
+d'amitié** et la date de son **anniversaire**.
 
 ![L'album de souvenirs](captures/pc-album.png)
+
+## La forêt de l'inventeur et les étoiles (version 1.6)
+
+À l'est de la place, un chemin mène à la forêt (il s'ouvre avec l'atelier).
+
+- **La cueillette** : six buissons donnent, selon la saison, des **baies**
+  (fraises des bois au printemps, myrtilles en été), des **champignons** à
+  leur pied (en automne) ou des **pommes de pin** (en hiver). Chaque buisson
+  repousse en deux minutes. Ce qu'on cueille se vend au comptoir (les clients
+  en demandent quand il y en a en stock) ou s'offre aux habitants.
+- **Les curiosités** : parfois, sous les feuilles, une plume de geai, une
+  pomme de pin dorée ou un fossile d'ammonite. La toute première vieille
+  botte repêchée au lac en est une aussi. Elles vont dans la vitrine.
+- **Anatole**, le vieil inventeur : sa quête (le télescope) commence après
+  celle du wagonnet de la mine. Avant, il explique qu'il lui faut d'abord le
+  cuivre de la mine.
+- **Le télescope**, une fois réparé : **la nuit**, on y découvre une
+  **constellation** (une par nuit). Chaque saison en a deux, inventées par
+  les gens de Cuivrebourg (le Grand Engrenage, la Bouilloire, la Lanterne,
+  le Chat endormi, la Roue du moulin, la Pomme, le Train des neiges, la Clé à
+  molette). Elles vont dans l'album, page « Étoiles ». Quand on les a toutes,
+  Anatole offre 150 pièces et un éclat de météorite. (Si le cycle du jour
+  est coupé dans les options, le télescope marche à toute heure.)
+
+## Le dirigeable (version 1.6)
+
+Le grand rêve d'Anatole : voler au-dessus de Cuivrebourg. Sur le chantier de
+la forêt, le dirigeable apparaît pièce par pièce : d'abord la nacelle posée
+au sol, puis l'enveloppe qui flotte, amarrée au grand mât, la chaudière qui
+fume doucement, l'hélice, et enfin le drapeau et la boussole.
+
+Une fois fini, un bouton « dirigeable » apparaît à droite de l'écran (ou la
+touche `V`, ou parler au dirigeable dans la forêt). On choisit où aller ;
+après un fondu doux, on survole une **petite carte du village en relief**
+(la place, le marché, le moulin et son canal, la gare et la voie ferrée qui
+monte vers les collines de la mine, le lac, la forêt), puis Ferrus descend
+par l'échelle de corde. Le vol dure 4 à 6 secondes, la caméra suit
+tranquillement, sans secousse. On ne peut pas appeler le dirigeable depuis
+un lieu couvert (l'intérieur de l'atelier, la galerie de la mine).
+
+## L'amitié et les anniversaires (version 1.6)
+
+Chaque habitant a **5 cœurs d'amitié** (on les voit dans l'album). Ils se
+remplissent quand on lui parle (une fois par jour), quand on l'aide (ses
+quêtes, les fêtes pour Odile, les poissons pour Gaston, les commandes du
+carnet…) et quand on lui **offre un cadeau** : dans un dialogue ordinaire,
+le choix « Offrir un cadeau… » propose les objets du stock (une fois par
+jour et par habitant). Chacun a ses goûts : un objet qu'il **adore**, et
+trois qu'il **aime**. L'amitié ne baisse jamais.
+
+**Les anniversaires** sont notés dans l'album, et le journal les annonce (en
+glissant un indice sur ce qui ferait plaisir). Ce jour-là, un cadeau compte
+double. À **3 cœurs**, l'habitant offre un petit cadeau (des pièces ou des
+matériaux) ; à **5 cœurs**, un grand cadeau : une tenue pour la garde-robe,
+ou, pour Augustin, les plans du train miniature.
+
+## Le journal de Cuivrebourg (version 1.6)
+
+Chaque matin (une fois l'atelier ouvert), Léon glisse une feuille de
+nouvelles sous la porte : une petite pastille apparaît sur le bouton
+« journal », à droite de l'écran (touche `J`). On y lit la météo du jour (la
+pluie de l'après-midi, la brume du matin), la fête du jour ou la prochaine,
+les anniversaires, les commandes en attente, une rumeur, et une petite
+annonce qui donne une idée de quoi faire. Le journal dit toujours vrai : il
+est écrit à partir de la partie.
+
+![Le journal du matin](captures/pc-journal.png)
+
+## La vitrine de l'atelier (version 1.6)
+
+Sur la place, à droite de l'atelier, une vitrine vitrée a six places. On y
+expose ses **créations** (l'objet quitte le stock, et y revient si on le
+retire), le **portrait** d'un poisson déjà pêché, ou ses **curiosités**. De
+temps en temps (environ toutes les 75 secondes), un visiteur entre par le
+portail, vient admirer la vitrine, et laisse quelques pièces : plus elle est
+belle, plus il est généreux (25 pièces au plus). Une vitrine vide n'attire
+personne.
+
+![La vitrine et ses six places](captures/pc-vitrine.png)
+
+## La garde-robe (version 1.6)
+
+Dans l'atelier, une grande armoire, contre le mur de droite, permet
+d'habiller Ferrus : chapeau, lunettes, tablier, écharpe, couleur de la
+chemise. Un petit portrait montre Ferrus avec sa tenue. Certaines tenues
+s'achètent (de 20 à 60 pièces) ; d'autres sont des cadeaux d'amitié (la
+casquette de Léon, le béret de Barnabé, le casque de Sidonie avec sa petite
+lampe, le bonnet de Gaston, l'écharpe tricotée d'Odile, le foulard de
+Capucine, les lunettes rondes de Lucie, le haut-de-forme d'Anatole), et la
+casquette d'aviateur récompense le premier vol du dirigeable. C'est
+seulement pour le plaisir des yeux.
+
+![La garde-robe de Ferrus](captures/pc-garderobe.png)
+
+## Le mode photo (version 1.6)
+
+Le bouton « appareil photo », à droite (touche `P`) : le temps se fige,
+l'interface disparaît, et on tourne la caméra librement autour de Ferrus
+(en faisant glisser la souris ou le doigt, ou avec les flèches ; − et +, ou
+la molette, pour reculer ou s'approcher). « Prendre la photo » (ou `Entrée`)
+la range dans l'album, page « Photos », avec un bouton **Télécharger**. Pas
+de flash : seulement une petite vignette. L'album garde les 12 dernières
+photos, dans ce navigateur seulement.
+
+## Le petit jeu d'assemblage (version 1.6)
+
+Pour les objets rares (horloge, boîte à musique, automate, train
+miniature), on peut assembler soi-même le mécanisme. Sur une planche à
+trous, on pose des engrenages pour relier le **moteur** (à gauche) à
+l'**aiguille** (à droite) ; deux engrenages côte à côte s'entraînent (en
+tournant chacun dans un sens). Quand la chaîne est complète, tout se met à
+tourner doucement, et la fabrication va **deux fois plus vite**. Pas de
+chronomètre, pas d'échec : on retire un engrenage en le touchant, et le
+bouton « Laisser la machine assembler » lance la fabrication normalement.
+Il y a six planches différentes. L'option « Petit jeu d'assemblage » permet
+de ne jamais le proposer.
+
+![Le petit jeu d'assemblage](captures/pc-assemblage.png)
 
 ## Confort visuel et sonore
 
@@ -593,7 +773,10 @@ options ; et même activés, musique et sons restent doux. Si votre système
 demande « moins d'animations », les engrenages et les marqueurs ne flottent
 plus, l'eau, la fumée, le feuillage et les lucioles restent immobiles, rien
 ne tombe du ciel (pétales, feuilles, flocons, pluie), la queue du chat et les
-ailes de l'oiseau ne bougent plus, et le joystick ne glisse plus.
+ailes de l'oiseau ne bougent plus, le joystick ne glisse plus, et les
+engrenages du petit jeu d'assemblage ne tournent plus. Le texte peut être
+grossi dans les options (version 1.6). Le mode photo n'a pas de flash, et le
+voyage en dirigeable est lent et doux.
 
 ## Vérifier les règles du jeu (tests automatiques)
 
@@ -601,8 +784,8 @@ ailes de l'oiseau ne bougent plus, et le joystick ne glisse plus.
 npm test
 ```
 
-(C'est la même chose que `node --test`.) 182 tests vérifient les quêtes,
-l'argent, les collisions dans les huit lieux (avec des centaines de
+(C'est la même chose que `node --test`.) 217 tests vérifient les quêtes,
+l'argent, les collisions dans les neuf lieux (avec des centaines de
 promenades au hasard : Ferrus ne se coince jamais), la gestion de l'atelier (dont
 une partie de 15 minutes jouée automatiquement), la sauvegarde (y compris
 des sauvegardes abîmées ou trafiquées), les options, la musique (toutes les
@@ -611,7 +794,11 @@ formes arrondies (bonne taille, aucune surface à l'envers), le jour et la
 nuit et les saisons (aucun changement brusque), l'horaire du train, la
 galerie et ses filons, le carnet de commandes, les décorations, les fêtes,
 la météo, les compagnons (ils ne passent jamais dans un mur), l'apprentie, le
-potager, la pêche, l'album et les fichiers d'installation. Tout doit être indiqué `pass`.
+potager, la pêche, l'album, la forêt (tout y est accessible depuis l'entrée),
+les étoiles, le dirigeable (chaque point d'atterrissage est libre), l'amitié et
+les anniversaires, le journal, la vitrine, la garde-robe, le petit jeu
+d'assemblage (chaque planche a une solution), le mode photo, la partie dans
+un fichier et les fichiers d'installation. Tout doit être indiqué `pass`.
 
 ## L'organisation des fichiers
 
@@ -634,6 +821,14 @@ potager, la pêche, l'album et les fichiers d'installation. Tout doit être indi
 | `js/logique-potager.js` | **Le potager**, sans aucune 3D : semer, pousser, cueillir |
 | `js/logique-peche.js` | **La pêche**, sans aucune 3D : les espèces du lac, les trouvailles, Gaston |
 | `js/logique-album.js` | **L'album de souvenirs**, sans aucune 3D : les habitants, les souvenirs, les chiffres |
+| `js/logique-foret.js` | **La forêt** (version 1.6), sans aucune 3D : la cueillette, les curiosités, les constellations, Anatole |
+| `js/logique-dirigeable.js` | **Le dirigeable** (version 1.6), sans aucune 3D : les destinations, les atterrissages, le trajet du vol |
+| `js/logique-amitie.js` | **L'amitié** (version 1.6), sans aucune 3D : les cœurs, les goûts, les cadeaux, les anniversaires |
+| `js/logique-journal.js` | **Le journal du matin** (version 1.6), sans aucune 3D : les nouvelles du jour |
+| `js/logique-vitrine.js` | **La vitrine** (version 1.6), sans aucune 3D : ce qu'on expose, les visiteurs, les pourboires |
+| `js/logique-garderobe.js` | **La garde-robe** (version 1.6), sans aucune 3D : les tenues, leurs prix, les cadeaux |
+| `js/logique-assemblage.js` | **Le petit jeu d'assemblage** (version 1.6), sans aucune 3D : les planches, les engrenages qui s'entraînent |
+| `js/logique-photo.js` | **Le mode photo** (version 1.6), sans aucune 3D : la caméra libre, la liste des photos |
 | `js/logique-reglages.js` | **Les options**, sans navigateur : valeurs de départ, volumes, qualité, numéro de version |
 | `js/logique-musique.js` | **La composition de la musique**, sans son : gammes, accords, mélodie, petits sons |
 | `js/musique.js` | Fait sonner la musique et les petits sons (Web Audio, le synthétiseur du navigateur) |
@@ -651,11 +846,18 @@ potager, la pêche, l'album et les fichiers d'installation. Tout doit être indi
 | `js/fetes.js` | Les décorations des fêtes sur la place |
 | `js/meteo.js` | La météo en 3D : la pluie, les flaques, la lumière sous la pluie et dans la brume |
 | `js/compagnons.js` | Rouille et Cliquet en 3D, et leur façon de suivre Ferrus |
-| `js/interface-album.js` | L'album de souvenirs (habitants et portraits, souvenirs, pêche) |
+| `js/interface-album.js` | L'album de souvenirs (habitants et portraits, souvenirs, pêche, étoiles, photos) |
+| `js/decor-foret.js` | La forêt en 3D : arbres et sapins, cabane d'Anatole, télescope, buissons, chantier du dirigeable |
+| `js/dirigeable3d.js` | Le dirigeable en 3D (le même dans la forêt et pendant le vol) |
+| `js/vol.js` | Le voyage en dirigeable : la petite carte du village vue du ciel |
+| `js/vitrine.js` | La vitrine en 3D, ses petits objets exposés, et ses visiteurs |
+| `js/interface-fenetre.js` | Une fenêtre toute prête (titre, onglets, « Fermer »), pour les nouveautés de la version 1.6 |
+| `js/interface-v16.js` | Les fenêtres du journal, de la garde-robe, de la vitrine, du petit jeu d'assemblage et du télescope |
+| `js/interface-photo.js` | Les commandes du mode photo |
 | `js/vie.js` | Le décor qui vit : fumée des cheminées, vent dans les feuillages, lanternes et fenêtres qui s'allument la nuit, lucioles |
 | `js/formes.js` | Les formes de base aux bords arrondis : boîtes, cylindres, gélules, formes « tournées » comme un vase |
 | `js/eau.js` | L'eau qui bouge : reflets qui ondulent, ronds dans l'eau, feuilles au fil du canal, reflet des étoiles la nuit |
-| `js/personnages.js` | Ferrus (avec ses lunettes d'artisan), Odile, Capucine, Barnabé, Léon, Augustin, Sidonie, les clients, et leurs animations |
+| `js/personnages.js` | Ferrus (avec ses lunettes d'artisan, et ses tenues de la garde-robe), Odile, Capucine, Barnabé, Léon, Augustin, Sidonie, Gaston, Lucie, Anatole, les clients, et leurs animations |
 | `js/commandes.js` | Le clavier, le joystick tactile (qui vient sous le pouce) et le bouton « Interagir » |
 | `js/interface.js` | L'argent, le calendrier, l'objectif, la barre de fabrication, les petits messages, la boîte de dialogue |
 | `js/interface-atelier.js` | Le panneau de l'établi (onglets Fabriquer, Acheter, Améliorer, Décorer, Carnet) |
@@ -669,6 +871,7 @@ potager, la pêche, l'album et les fichiers d'installation. Tout doit être indi
 | `tests/version13.test.js` | Les tests automatiques du voyage en train, de la mine, de la boîte à musique et de l'automate |
 | `tests/version14.test.js` | Les tests automatiques de la galerie, des saisons, du carnet de commandes et des décorations |
 | `tests/version15.test.js` | Les tests automatiques des fêtes, de la météo, des compagnons, de l'intérieur, de l'apprentie, du potager, de la pêche et de l'album |
+| `tests/version16.test.js` | Les tests automatiques de la forêt, des étoiles, du dirigeable, de l'amitié, du journal, de la vitrine, de la garde-robe, de l'assemblage, du mode photo et de la partie dans un fichier |
 | `manifest.webmanifest` | La « fiche d'identité » de l'application : nom, icône, couleurs, plein écran |
 | `sw.js` | Le « service worker » : garde une copie du jeu pour jouer sans connexion |
 | `icones/` | L'icône du jeu (un engrenage de cuivre et une flamme) : le dessin `icone.svg` et ses versions PNG |
@@ -713,7 +916,7 @@ https://ferrusdantioch.github.io/atelier-jeu/ . Dans les messageries, le
 lien s'affiche avec le titre du jeu et une image du marché.
 
 **Publier une nouvelle version** : changez le numéro de version (par exemple
-`1.5.0` → `1.5.1`) aux **trois** endroits suivants, puis envoyez sur `main` :
+`1.6.0` → `1.6.1`) aux **trois** endroits suivants, puis envoyez sur `main` :
 `package.json`, `js/logique-reglages.js` (`VERSION_JEU`) et `sw.js`
 (`VERSION`). Un test vérifie qu'ils sont identiques. Les téléphones qui ont
 installé le jeu reçoivent la nouvelle version à la prochaine ouverture avec
