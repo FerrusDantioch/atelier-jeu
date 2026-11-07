@@ -159,11 +159,12 @@ test('sans les matériaux, la fabrication est refusée et dit ce qui manque', ()
 
 test('l\'horloge est verrouillée sans les plans d\'horloger', () => {
   const etat = partieAtelierOuvert(1000);
-  assert.deepEqual(recettesDisponibles(etat), ['lanterne', 'bouilloire']);
+  // (L'oiseau mécanique de la version 1.5 se fabrique dès l'ouverture.)
+  assert.deepEqual(recettesDisponibles(etat), ['lanterne', 'bouilloire', 'oiseau-mecanique']);
   acheterMateriau(etat, 'ressort', 2);
   assert.equal(peutFabriquer(etat, 'horloge').possible, false);
   acheterAmelioration(etat, 'plans-horloge');
-  assert.deepEqual(recettesDisponibles(etat), ['lanterne', 'bouilloire', 'horloge']);
+  assert.deepEqual(recettesDisponibles(etat), ['lanterne', 'bouilloire', 'horloge', 'oiseau-mecanique']);
   assert.equal(peutFabriquer(etat, 'horloge').possible, true);
 });
 

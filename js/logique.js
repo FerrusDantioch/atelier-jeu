@@ -39,6 +39,12 @@ import {
 import { DEBUT_JOURNEE } from './logique-temps.js';
 import { creerEtatCarnet, objectifCarnet, commandePrete } from './logique-commandes.js';
 import { creerEtatGalerie } from './logique-galerie.js';
+import { creerEtatFetes, feteAAider, dialogueFete, livrerFete, objectifFete } from './logique-fetes.js';
+import { creerEtatCompagnons, adopterChat } from './logique-compagnons.js';
+import { creerEtatPotager } from './logique-potager.js';
+import { creerEtatPeche, appliquerActionPeche } from './logique-peche.js';
+import { creerEtatAlbum } from './logique-album.js';
+import { choisirTacheApprentie } from './logique-atelier.js';
 
 // -----------------------------------------------------------------------------
 // 1. LE PLAN DE LA PLACE
@@ -130,6 +136,9 @@ export const MONDE = Object.freeze({
   pots: [{ id: 'pot-gauche', x: -11.35, z: -6.7 }, { id: 'pot-droite', x: -2.65, z: -6.7 }],
   rayonPot: 0.3,
 
+  // Le potager (version 1.5), à gauche de la place, entouré d'une barrière.
+  potager: { id: 'potager', x: -14.6, z: -0.5, largeur: 4, profondeur: 3 },
+
   // Les 3 engrenages perdus par Odile (invisibles tant que la quête n'est pas
   // acceptée). Ils sont décrits dans la quête elle-même (logique-quetes.js).
   engrenages: QUETES['lampe-odile'].etapes[0].objets,
@@ -144,6 +153,7 @@ export function obstaclesDuMonde(monde = MONDE) {
     rect(monde.etabli),
     rect(monde.comptoir),
     rect(monde.portail),
+    ...(monde.potager ? [rect(monde.potager)] : []),
     ...monde.haies.map(rect),
     { type: 'cercle', id: monde.puits.id, x: monde.puits.x, z: monde.puits.z, rayon: monde.puits.rayon },
     { type: 'cercle', id: monde.odile.id, x: monde.odile.x, z: monde.odile.z, rayon: monde.odile.rayon },
@@ -322,6 +332,12 @@ export function creerEtatJeu() {
     jour: 1,                     // le numéro du jour (version 1.4) : il compte aussi les saisons
     carnet: creerEtatCarnet(),   // les commandes spéciales (version 1.4)
     galerie: creerEtatGalerie(), // les filons de cuivre de la mine (version 1.4)
+    // Version 1.5 :
+    fetes: creerEtatFetes(),         // les fêtes des saisons déjà faites
+    compagnons: creerEtatCompagnons(), // Rouille le chat et Cliquet l'oiseau
+    potager: creerEtatPotager(),     // les fleurs du potager
+    peche: creerEtatPeche(),         // la canne de Gaston, les poissons attrapés
+    album: creerEtatAlbum(),         // les habitants rencontrés
   };
 }
 
@@ -341,6 +357,9 @@ export function etapeLampe(etat) {
 export function objectifActuel(etat) {
   const quete = objectifQuetes(etat);
   if (quete) return quete;
+  // Version 1.5 : le jour d'une fête, on aide Odile (si aucun client n'attend).
+  const fete = objectifFete(etat);
+  if (fete && !clientAuComptoir(etat)) return fete;
   if (etat.atelier.ouvert && !clientAuComptoir(etat) && !etat.atelier.fabrication) {
     const carnet = objectifCarnet(etat);
     if (carnet) return carnet;
@@ -361,7 +380,7 @@ export function marqueursActifs(etat) {
   const atelier = marqueursAtelier(etat);
   const quetes = marqueursQuetes(etat);
   return {
-    odile: quetes.has('odile'),
+    odile: quetes.has('odile') || Boolean(feteAAider(etat)),
     etabli: atelier.etabli || quetes.has('etabli') || commandePrete(etat),
     comptoir: atelier.comptoir,
   };
@@ -401,6 +420,9 @@ export function libelleInteraction(etat, cible) {
 // des choix à la fin. Chaque choix a une « action » que le jeu applique ensuite.
 export function dialogueOdile(etat) {
   if (!queteTerminee(etat, 'lampe-odile')) return dialoguePnjQuete(etat, 'odile', 'Odile');
+  // Version 1.5 : le jour d'une fête, Odile en parle (c'est elle qui l'organise).
+  const fete = dialogueFete(etat);
+  if (fete) return fete;
   return {
     orateur: 'Odile',
     repliques: [
@@ -418,6 +440,12 @@ export function dialogueOdile(etat) {
 // Les actions de quête ressemblent à 'quete:accepter:lampe-odile'.
 export function appliquerAction(etat, action) {
   if (action === 'servir') return servirClient(etat);
+  // Version 1.5 : les fêtes, l'apprentie, le chat et la pêche.
+  const [prefixe, type, id] = String(action).split(':');
+  if (prefixe === 'fete' && type === 'livrer') return livrerFete(etat, id);
+  if (prefixe === 'apprentie') return choisirTacheApprentie(etat, type);
+  if (action === 'compagnon:adopter-chat') return adopterChat(etat);
+  if (prefixe === 'peche') return appliquerActionPeche(etat, action);
   return appliquerActionQuete(etat, action);
 }
 

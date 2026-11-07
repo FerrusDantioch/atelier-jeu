@@ -15,9 +15,12 @@
 // =============================================================================
 
 import { creerEtatJeu } from './logique.js';
-import { RECETTES, DECORATIONS } from './logique-atelier.js';
+import { RECETTES, DECORATIONS, vendableAuComptoir } from './logique-atelier.js';
 import { CLIENTS_CARNET } from './logique-commandes.js';
 import { DUREE_REPOUSSE } from './logique-galerie.js';
+import { TACHES_APPRENTIE } from './logique-atelier.js';
+import { FETES } from './logique-fetes.js';
+import { HABITANTS_ALBUM } from './logique-album.js';
 import { ZONES } from './logique-zones.js';
 import { QUETES, majDisponibilites } from './logique-quetes.js';
 import { bouclerJournee } from './logique-temps.js';
@@ -118,13 +121,29 @@ export function chargerPartie(texte) {
   carnet.dernierJour = Math.max(0, Math.floor(carnet.dernierJour));
   const clients = new Set(CLIENTS_CARNET.map((c) => c.id));
   carnet.commandes = carnet.commandes
-    .filter((c) => estObjet(c) && estNombre(c.id) && clients.has(c.client) && RECETTES[c.objet] && !RECETTES[c.objet].quete
+    .filter((c) => estObjet(c) && estNombre(c.id) && clients.has(c.client) && RECETTES[c.objet] && vendableAuComptoir(c.objet) && !RECETTES[c.objet].potager
       && Number.isInteger(c.quantite) && c.quantite >= 1 && c.quantite <= 10 && estNombre(c.limite) && estNombre(c.recompense) && c.recompense >= 0)
     .slice(0, 2)
     .map((c) => ({ id: c.id, client: c.client, objet: c.objet, quantite: c.quantite, limite: Math.floor(c.limite), recompense: Math.floor(c.recompense) }));
   for (const id of Object.keys(etat.galerie.filons)) {
     etat.galerie.filons[id] = Math.min(DUREE_REPOUSSE, Math.max(0, etat.galerie.filons[id]));
   }
+  // Version 1.5 : l'apprentie, les fêtes, le potager, la pêche et l'album.
+  const ap = etat.atelier.apprentie;
+  if (!TACHES_APPRENTIE.includes(ap.tache)) ap.tache = 'lanterne';
+  const fa = estObjet(lu.atelier) && estObjet(lu.atelier.apprentie) ? lu.atelier.apprentie.fabrication : null;
+  ap.fabrication = estObjet(fa) && ['lanterne', 'bouilloire'].includes(fa.recette) && estNombre(fa.restant) && estNombre(fa.total) && fa.total > 0
+    ? { recette: fa.recette, restant: fa.restant, total: fa.total }
+    : null;
+  etat.atelier.recettesFete = etat.atelier.recettesFete.filter((id) => RECETTES[id] && RECETTES[id].fete);
+  etat.fetes.faites = [...new Set(etat.fetes.faites.filter((c) => typeof c === 'string' && FETES.some((f) => c.startsWith(`${f.id}-`))))];
+  etat.fetes.annonce = Math.max(0, Math.floor(etat.fetes.annonce));
+  etat.potager.pousse = Math.min(1, Math.max(-1, etat.potager.pousse));
+  etat.potager.recoltes = Math.max(0, Math.floor(etat.potager.recoltes));
+  for (const id of Object.keys(etat.peche.especes)) etat.peche.especes[id] = Math.max(0, Math.floor(etat.peche.especes[id]));
+  etat.peche.prises = Math.max(0, Math.floor(etat.peche.prises));
+  if (!(etat.peche.graine >= 1 && etat.peche.graine < 2147483647)) etat.peche.graine = 777;
+  etat.album.rencontres = [...new Set(etat.album.rencontres.filter((id) => HABITANTS_ALBUM.some((h) => h.id === id)))];
   // Les quêtes.
   const statuts = ['verrouillee', 'disponible', 'en_cours', 'terminee'];
   for (const [id, s] of Object.entries(etat.quetes)) {

@@ -14,6 +14,8 @@
 //   depuis la gare, une fois la quête du premier train terminée.
 // - La galerie souterraine (version 1.4) : on y descend par l'entrée de la
 //   mine, une fois le wagonnet de Sidonie réparé.
+// - Version 1.5 : l'intérieur de l'atelier (on entre par la porte, sur la
+//   place), et le lac, à l'ouest du marché, où Gaston pêche.
 //
 // Pour chaque lieu : ses limites, ses obstacles, ses personnages, les choses
 // avec lesquelles on peut interagir, ses sorties et ses points d'arrivée.
@@ -23,8 +25,10 @@
 
 import { MONDE, obstaclesDuMonde, libelleInteraction } from './logique.js';
 import { queteTerminee, queteEnCours, objetsARamasser } from './logique-quetes.js';
-import { heureAffichee } from './logique-temps.js';
-import { possedeDecoration } from './logique-atelier.js';
+import { heureAffichee, versRvb } from './logique-temps.js';
+import { possedeDecoration, possedeAmelioration } from './logique-atelier.js';
+import { CHAT_ERRANT, chatAAdopter } from './logique-compagnons.js';
+import { libellePotager } from './logique-potager.js';
 import { FILONS, estFilon, galerieOuverte, libelleFilon } from './logique-galerie.js';
 
 // Raccourci : un rectangle d'obstacle.
@@ -45,6 +49,10 @@ export const ZONES = Object.freeze({
       { id: 'odile', ...pick(MONDE.odile) },
       { id: 'etabli', ...pick(MONDE.etabli) },
       { id: 'comptoir', ...pick(MONDE.comptoir) },
+      // Version 1.5 : la porte de l'atelier, le petit chat, le potager.
+      { id: 'porte-atelier', x: MONDE.atelier.x, z: -6.4, distanceInteraction: 1.1, condition: 'portail' },
+      { id: 'chat', x: CHAT_ERRANT.x, z: CHAT_ERRANT.z, distanceInteraction: 1.7, condition: 'chat-errant' },
+      { id: 'potager', x: -12.2, z: MONDE.potager.z, distanceInteraction: 1.5 },
     ],
     // Les lanternes de la place (elles s'allument le soir).
     lampadaires: MONDE.lampadaires,
@@ -54,6 +62,7 @@ export const ZONES = Object.freeze({
     ],
     arrivees: {
       marche: { x: 0, z: 10.3, orientation: Math.PI },
+      interieur: { x: MONDE.atelier.x, z: -5.7, orientation: 0 }, // en sortant de l'atelier
     },
   },
 
@@ -68,7 +77,9 @@ export const ZONES = Object.freeze({
       { id: 'haie-nord-gauche', x: -8.25, z: -9.5, largeur: 13.5, profondeur: 1 },
       { id: 'haie-nord-droite', x: 8.25, z: -9.5, largeur: 13.5, profondeur: 1 },
       { id: 'haie-sud', x: 0, z: 9.5, largeur: 30, profondeur: 1 },
-      { id: 'haie-ouest', x: -14.5, z: 0, largeur: 1, profondeur: 20 },
+      // À l'ouest, une ouverture vers le lac (version 1.5).
+      { id: 'haie-ouest-haut', x: -14.5, z: -5.7, largeur: 1, profondeur: 8.6 },
+      { id: 'haie-ouest-bas', x: -14.5, z: 5.7, largeur: 1, profondeur: 8.6 },
       { id: 'haie-est-haut', x: 14.5, z: -5.75, largeur: 1, profondeur: 8.5 },
       { id: 'haie-est-bas', x: 14.5, z: 5.75, largeur: 1, profondeur: 8.5 },
     ],
@@ -101,10 +112,12 @@ export const ZONES = Object.freeze({
     sorties: [
       { vers: 'place', minX: -1.4, maxX: 1.4, minZ: -99, maxZ: -8.4 },
       { vers: 'moulin', minX: 13.4, maxX: 99, minZ: -1.4, maxZ: 1.4, condition: 'chemin-moulin' },
+      { vers: 'lac', minX: -99, maxX: -13.4, minZ: -1.4, maxZ: 1.4 },
     ],
     arrivees: {
       place: { x: 0, z: -7.4, orientation: 0 },
       moulin: { x: 12.3, z: 0, orientation: -Math.PI / 2 },
+      lac: { x: -12.3, z: 0, orientation: Math.PI / 2 },
     },
   },
 
@@ -300,6 +313,110 @@ export const ZONES = Object.freeze({
       mine: { x: -10.4, z: 0, orientation: Math.PI / 2 },
     },
   },
+
+  // --- L'intérieur de l'atelier (version 1.5) : la forge, la grande machine à
+  // engrenages, l'établi (le même panneau que dehors), l'établi de l'apprentie,
+  // et un coin salon qu'on peut décorer. On ressort par la porte, au sud.
+  interieur: {
+    id: 'interieur',
+    nom: "L'intérieur de l'atelier",
+    lumiereFixe: 'interieur', // une lumière douce de lampes, qui ne change pas
+    limites: { minX: -6.5, maxX: 6.5, minZ: -4.5, maxZ: 4.0 },
+    joueur: MONDE.joueur,
+    camera: { minX: -2, maxX: 2, minZ: -1.5, maxZ: 1 },
+    parois: [
+      { id: 'mur-nord', x: 0, z: -5.1, largeur: 15, profondeur: 1.2 },
+      { id: 'mur-sud-gauche', x: -4.35, z: 4.1, largeur: 6.7, profondeur: 1.2 },
+      { id: 'mur-sud-droite', x: 4.35, z: 4.1, largeur: 6.7, profondeur: 1.2 },
+      { id: 'mur-ouest', x: -7.1, z: 0, largeur: 1.2, profondeur: 10.4 },
+      { id: 'mur-est', x: 7.1, z: 0, largeur: 1.2, profondeur: 10.4 },
+    ],
+    // Les meubles. Ceux qui ont « decoration » n'apparaissent qu'une fois achetés.
+    meubles: [
+      { id: 'forge', x: -4.6, z: -3.6, largeur: 2.4, profondeur: 1.6 },
+      { id: 'etabli-interieur', x: 0, z: -3.9, largeur: 2.6, profondeur: 0.9 },
+      { id: 'machine', x: 4.5, z: -3.7, largeur: 2.4, profondeur: 1.4 },
+      { id: 'etageres-interieur', x: -6.0, z: 0.2, largeur: 0.8, profondeur: 2.6 },
+      { id: 'etabli-lucie', x: 5.95, z: 0.4, largeur: 1.0, profondeur: 2.2 },
+      { id: 'fauteuil', x: -4.4, z: 2.6, largeur: 2.0, profondeur: 1.0, decoration: 'fauteuil' },
+      { id: 'gramophone', x: -1.9, z: 2.7, rayon: 0.35, decoration: 'gramophone' },
+      { id: 'plante-verte', x: 2.2, z: 2.9, rayon: 0.35, decoration: 'plante-verte' },
+    ],
+    pnj: [
+      { id: 'lucie', nom: 'Lucie', x: 4.9, z: 0.4, rayon: 0.45, distanceInteraction: 2.2, condition: 'apprentie' },
+    ],
+    interactifs: [
+      { id: 'etabli', x: 0, z: -3.0, distanceInteraction: 1.7 },
+      { id: 'forge', x: -4.6, z: -2.3, distanceInteraction: 1.6 },
+      { id: 'machine', x: 4.5, z: -2.5, distanceInteraction: 1.6 },
+      { id: 'lucie', x: 4.9, z: 0.4, distanceInteraction: 2.2, condition: 'apprentie' },
+    ],
+    sorties: [
+      { vers: 'place', minX: -1, maxX: 1, minZ: 3.4, maxZ: 99 },
+    ],
+    arrivees: {
+      place: { x: 0, z: 2.6, orientation: Math.PI },
+    },
+  },
+
+  // --- Le lac (version 1.5) : à l'ouest du marché. Un grand lac paisible au
+  // nord, un ponton en bois qui avance dans l'eau, la cabane du pêcheur, et
+  // Gaston, le vieux pêcheur.
+  lac: {
+    id: 'lac',
+    nom: 'Le lac',
+    limites: { minX: -14, maxX: 14, minZ: -9, maxZ: 9 },
+    joueur: MONDE.joueur,
+    camera: { minX: -7, maxX: 7, minZ: -4, maxZ: 5 },
+    haies: [
+      { id: 'haie-nord', x: 0, z: -9.5, largeur: 30, profondeur: 1 },
+      { id: 'haie-sud', x: 0, z: 9.5, largeur: 30, profondeur: 1 },
+      { id: 'haie-ouest', x: -14.5, z: 0, largeur: 1, profondeur: 20 },
+      { id: 'haie-est-haut', x: 14.5, z: -5.75, largeur: 1, profondeur: 8.5 },
+      { id: 'haie-est-bas', x: 14.5, z: 5.75, largeur: 1, profondeur: 8.5 },
+    ],
+    // L'eau (on n'y entre pas), en trois morceaux autour du ponton.
+    eau: { x: 0, z: -5.6, largeur: 28, profondeur: 6.8 },
+    lacs: [
+      { id: 'lac-ouest', x: -6.4, z: -5.6, largeur: 15.2, profondeur: 6.8 },
+      { id: 'lac-est', x: 8.4, z: -5.6, largeur: 11.2, profondeur: 6.8 },
+      { id: 'lac-bout', x: 2, z: -7.7, largeur: 1.6, profondeur: 2.6 },
+    ],
+    // Le ponton : on peut marcher dessus jusqu'au bout (z = -6,4).
+    ponton: { x: 2, z: -4.2, largeur: 1.5, profondeur: 4.8 },
+    batiments: [
+      { id: 'cabane-peche', x: -9.5, z: 3.6, largeur: 5, profondeur: 3, murs: '#b9a284', toit: '#6f8a8a', enseigne: 'PÊCHE' },
+    ],
+    bancs: [{ id: 'banc', x: 5, z: 2.6, largeur: 1.5, profondeur: 0.55 }],
+    lampadaires: [{ x: 0.3, z: -1.6 }, { x: -5, z: 1.4 }, { x: 7.5, z: -1.4 }, { x: 8.5, z: 4.6 }],
+    arbres: [{ x: -11.5, z: 7.6 }, { x: -4.5, z: 7.8 }, { x: 4.5, z: 7.6 }, { x: 10.5, z: 6.8 }, { x: 11.8, z: 3.2 }],
+    rayonArbre: 0.65,
+    pnj: [
+      { id: 'gaston', nom: 'Gaston', x: -1.4, z: -1.0, rayon: 0.45, distanceInteraction: 2.2 },
+    ],
+    interactifs: [
+      { id: 'gaston', x: -1.4, z: -1.0, distanceInteraction: 2.2 },
+      { id: 'ponton', x: 2, z: -5.6, distanceInteraction: 0.9 },
+    ],
+    sorties: [
+      { vers: 'marche', minX: 13.4, maxX: 99, minZ: -1.4, maxZ: 1.4 },
+    ],
+    arrivees: {
+      marche: { x: 12.3, z: 0, orientation: -Math.PI / 2 },
+    },
+  },
+});
+
+// Les lumières fixes (qui ne suivent ni le jour ni la nuit) : l'intérieur de
+// l'atelier, éclairé par ses lampes. (La galerie a la sienne : logique-galerie.js.)
+export const LUMIERE_INTERIEUR = Object.freeze({
+  ciel: versRvb('#2b2119'),
+  hautCiel: versRvb('#ffe8c8'),
+  basSol: versRvb('#7a5a40'),
+  forceCiel: 1.65,
+  soleil: versRvb('#ffd9a8'),
+  forceSoleil: 0.85,
+  nuit: 0.6,
 });
 
 // Garde seulement la position et la distance d'interaction d'un objet de MONDE.
@@ -324,6 +441,10 @@ export function conditionRemplie(etat, condition) {
       return queteTerminee(etat, 'roue-moulin');
     case 'gare-fermee':
       return !queteTerminee(etat, 'roue-moulin');
+    case 'apprentie': // Lucie est engagée (version 1.5)
+      return possedeAmelioration(etat, 'apprentie');
+    case 'chat-errant': // le petit chat attend d'être adopté (version 1.5)
+      return chatAAdopter(etat);
     default:
       return false;
   }
@@ -350,6 +471,13 @@ export function obstaclesZone(zoneId, etat) {
   (z.haies || []).forEach(ajouterRect);
   (z.parois || []).forEach(ajouterRect);
   (z.caisses || []).forEach(ajouterRect);
+  (z.lacs || []).forEach(ajouterRect);
+  // Les meubles de l'intérieur (ceux qui sont des décorations : une fois achetés).
+  for (const m of z.meubles || []) {
+    if (m.decoration && !possedeDecoration(etat, m.decoration)) continue;
+    if (m.rayon) liste.push({ type: 'cercle', id: m.id, x: m.x, z: m.z, rayon: m.rayon });
+    else ajouterRect(m);
+  }
   (z.batiments || []).forEach(ajouterRect);
   (z.etals || []).forEach(ajouterRect);
   (z.bancs || []).forEach(ajouterRect);
@@ -362,7 +490,9 @@ export function obstaclesZone(zoneId, etat) {
   if (z.barriere && !conditionRemplie(etat, z.barriere.ouverteSi)) ajouterRect(z.barriere);
   for (const c of [z.fontaine, z.mecanisme, z.horloge, z.chateauEau, z.bassin].filter(Boolean)) liste.push({ type: 'cercle', id: c.id, x: c.x, z: c.z, rayon: c.rayon });
   (z.lampadaires || []).forEach((l, i) => liste.push({ type: 'cercle', id: `lampadaire-${i + 1}`, x: l.x, z: l.z, rayon: RAYON_LAMPADAIRE }));
-  for (const p of z.pnj || []) liste.push({ type: 'cercle', id: p.id, x: p.x, z: p.z, rayon: p.rayon });
+  for (const p of z.pnj || []) {
+    if (conditionRemplie(etat, p.condition)) liste.push({ type: 'cercle', id: p.id, x: p.x, z: p.z, rayon: p.rayon });
+  }
   (z.arbres || []).forEach((a, i) => liste.push({ type: 'cercle', id: `arbre-${i + 1}`, x: a.x, z: a.z, rayon: z.rayonArbre }));
   return liste;
 }
@@ -392,8 +522,8 @@ export function cibleProcheZone(zoneId, x, z, etat) {
   return meilleure ? meilleure.id : null;
 }
 
-// Le petit texte d'aide (« Parler à Capucine »).
-export function libelleZone(etat, cible) {
+// Le petit texte d'aide (« Parler à Capucine »). « saisonId » sert au potager.
+export function libelleZone(etat, cible, saisonId = 'ete') {
   const pnj = Object.values(ZONES).flatMap((z) => z.pnj || []).find((p) => p.id === cible);
   if (pnj) return `Parler à ${pnj.nom}`;
   if (cible === 'barriere') return 'Le chemin du moulin';
@@ -409,6 +539,13 @@ export function libelleZone(etat, cible) {
   }
   if (cible === 'train-retour') return 'Rentrer à Cuivrebourg en train';
   if (cible === 'entree-mine') return galerieOuverte(etat) ? 'Descendre dans la mine' : "L'entrée de la mine";
+  // Version 1.5.
+  if (cible === 'porte-atelier') return "Entrer dans l'atelier";
+  if (cible === 'chat') return 'Le petit chat';
+  if (cible === 'potager') return libellePotager(etat, saisonId);
+  if (cible === 'ponton') return etat.peche.canne ? 'Pêcher' : 'Le bout du ponton';
+  if (cible === 'forge') return 'La forge';
+  if (cible === 'machine') return 'La machine à engrenages';
   if (estFilon(cible)) return libelleFilon(etat, cible);
   if (cible === 'wagonnet') return aUtiliser ? 'Poser la roue neuve' : 'Le wagonnet';
   return libelleInteraction(etat, cible);
@@ -504,6 +641,9 @@ export function messageObjet(etat, cible) {
   }
   if (cible === 'train-retour') return ['Le train attend à quai.'];
   if (cible === 'entree-mine') return ["L'entrée de la mine est fermée : Sidonie n'y laisse descendre personne tant que son wagonnet est en panne."];
+  if (cible === 'ponton') return ['Un bel endroit pour pêcher… Il vous faudrait une canne. Gaston, le vieux pêcheur, en a peut-être une.'];
+  if (cible === 'forge') return [etat.atelier.fabrication ? 'La forge rougeoie : une fabrication est en cours.' : 'La forge ronronne doucement. Rouille adore dormir à côté.'];
+  if (cible === 'machine') return ['La grande machine à engrenages de l\'ancien propriétaire. Elle tourne toute seule, tic-tac, tic-tac.'];
   if (cible === 'locomotive') {
     if (queteTerminee(etat, 'train-cuivrebourg')) return ['Le train de Cuivrebourg roule de nouveau !'];
     return ['Une belle locomotive, froide et silencieuse. Son vieux sifflet est tout rouillé.'];

@@ -276,6 +276,10 @@ export const TENUES_PNJ = {
   augustin: { peau: '#e2b48f', haut: '#56677a', bas: '#3f434a', cheveux: '#9a948a', chapeau: 'casquette', couleurChapeau: '#a05a4c', moustache: '#9a948a', boutons: '#c99a4a' },
   // Sidonie, la mineuse (version 1.3) : veste de cuir, casque de laiton avec sa lampe.
   sidonie: { peau: '#d9a882', haut: '#8a6a50', bas: '#4a4038', cheveux: '#5b3e2c', chapeau: 'casque', couleurChapeau: '#c9a35a', tablier: '#6f5a48' },
+  // Gaston, le vieux pêcheur (version 1.5) : ciré jaune doux, bonnet, barbe blanche.
+  gaston: { peau: '#e0b08c', haut: '#d9b85a', bas: '#4f5a5c', cheveux: '#e8e4dc', chapeau: 'beret', couleurChapeau: '#5b6a78', moustache: '#ece8e0' },
+  // Lucie, l'apprentie (version 1.5) : salopette, foulard, lunettes sur le front.
+  lucie: { peau: '#f0c9a6', haut: '#e2c9a0', bas: '#5a6a7a', cheveux: '#a0522d', chapeau: 'foulard', couleurChapeau: '#c98b7a', tablier: '#5a6a7a' },
 };
 
 // Crée un personnage à partir d'une tenue (voir TENUES et TENUES_PNJ).
