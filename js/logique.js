@@ -45,6 +45,12 @@ import { creerEtatPotager } from './logique-potager.js';
 import { creerEtatPeche, appliquerActionPeche } from './logique-peche.js';
 import { creerEtatAlbum } from './logique-album.js';
 import { choisirTacheApprentie } from './logique-atelier.js';
+import { dialogueEtapeQuete } from './logique-quetes.js';
+import { creerEtatAmitie, appliquerActionAmitie } from './logique-amitie.js';
+import { creerEtatGarderobe } from './logique-garderobe.js';
+import { creerEtatVitrine } from './logique-vitrine.js';
+import { creerEtatForet, appliquerActionForet } from './logique-foret.js';
+import { creerEtatJournal } from './logique-journal.js';
 
 // -----------------------------------------------------------------------------
 // 1. LE PLAN DE LA PLACE
@@ -124,9 +130,16 @@ export const MONDE = Object.freeze({
     { id: 'haie-sud-gauche', x: -10.25, z: 12.5, largeur: 17.5, profondeur: 1 },
     { id: 'haie-sud-droite', x: 10.25, z: 12.5, largeur: 17.5, profondeur: 1 },
     { id: 'haie-ouest', x: -18.5, z: -0.5, largeur: 1, profondeur: 27 },
-    { id: 'haie-est', x: 18.5, z: -0.5, largeur: 1, profondeur: 27 },
+    // À l'est, une ouverture vers la forêt (version 1.6).
+    { id: 'haie-est-haut', x: 18.5, z: -7.2, largeur: 1, profondeur: 13.6 },
+    { id: 'haie-est-bas', x: 18.5, z: 7.7, largeur: 1, profondeur: 10.6 },
   ],
   portail: { id: 'portail', x: 0, z: 12.5, largeur: 3, profondeur: 0.6 },
+  // La petite barrière du chemin de la forêt : elle s'ouvre avec l'atelier.
+  passageEst: { id: 'passage-est', x: 18.15, z: 1, largeur: 0.5, profondeur: 2.8 },
+
+  // La vitrine de l'atelier (version 1.6), à droite de l'atelier, contre la haie.
+  vitrine: { id: 'vitrine', x: -1.3, z: -11.4, largeur: 2.4, profondeur: 0.9 },
 
   // Les lanternes autour de la place (version 1.2) : elles s'allument le soir.
   lampadaires: [{ x: -5.8, z: -2.6 }, { x: 10.4, z: -5.4 }, { x: 6.5, z: 5.5 }],
@@ -154,6 +167,8 @@ export function obstaclesDuMonde(monde = MONDE) {
     rect(monde.comptoir),
     rect(monde.portail),
     ...(monde.potager ? [rect(monde.potager)] : []),
+    ...(monde.passageEst ? [rect(monde.passageEst)] : []),
+    ...(monde.vitrine ? [rect(monde.vitrine)] : []),
     ...monde.haies.map(rect),
     { type: 'cercle', id: monde.puits.id, x: monde.puits.x, z: monde.puits.z, rayon: monde.puits.rayon },
     { type: 'cercle', id: monde.odile.id, x: monde.odile.x, z: monde.odile.z, rayon: monde.odile.rayon },
@@ -338,6 +353,13 @@ export function creerEtatJeu() {
     potager: creerEtatPotager(),     // les fleurs du potager
     peche: creerEtatPeche(),         // la canne de Gaston, les poissons attrapés
     album: creerEtatAlbum(),         // les habitants rencontrés
+    // Version 1.6 :
+    amitie: creerEtatAmitie(),       // les cœurs d'amitié de chaque habitant
+    garderobe: creerEtatGarderobe(), // les tenues de Ferrus
+    vitrine: creerEtatVitrine(),     // ce qui est exposé dans la vitrine
+    foret: creerEtatForet(),         // la cueillette et les étoiles
+    curiosites: [],                  // les curiosités trouvées (pour la vitrine)
+    journal: creerEtatJournal(),     // le journal du matin
   };
 }
 
@@ -419,6 +441,9 @@ export function libelleInteraction(etat, cible) {
 // Un dialogue = qui parle, une liste de répliques (affichées une par une), et
 // des choix à la fin. Chaque choix a une « action » que le jeu applique ensuite.
 export function dialogueOdile(etat) {
+  // Version 1.6 : une étape du grand projet passe par Odile (le drapeau).
+  const etape = dialogueEtapeQuete(etat, 'odile', 'Odile');
+  if (etape) return etape;
   if (!queteTerminee(etat, 'lampe-odile')) return dialoguePnjQuete(etat, 'odile', 'Odile');
   // Version 1.5 : le jour d'une fête, Odile en parle (c'est elle qui l'organise).
   const fete = dialogueFete(etat);
@@ -446,6 +471,9 @@ export function appliquerAction(etat, action) {
   if (prefixe === 'apprentie') return choisirTacheApprentie(etat, type);
   if (action === 'compagnon:adopter-chat') return adopterChat(etat);
   if (prefixe === 'peche') return appliquerActionPeche(etat, action);
+  // Version 1.6 : l'amitié (cadeaux) et la forêt (la récompense des étoiles).
+  if (prefixe === 'amitie') return appliquerActionAmitie(etat, action);
+  if (prefixe === 'foret') return appliquerActionForet(etat, action);
   return appliquerActionQuete(etat, action);
 }
 

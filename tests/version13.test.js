@@ -140,9 +140,9 @@ test('quête du wagonnet : pépites, roue, wagonnet, Sidonie → les plans de l\
   assert.ok(messages.includes("Cadeau : Plans d'automate"), messages.join(' | '));
   assert.ok(etat.atelier.ameliorations.includes('plans-automate'));
   assert.equal(recetteDebloquee(etat, 'automate'), true);
-  // C'est la dernière quête : plus rien à aller chercher.
-  assert.equal(queteDisponible(etat), null);
-  assert.equal(objectifQuetes(etat), null);
+  // Version 1.6 : la suite se passe dans la forêt, chez Anatole.
+  assert.equal(queteDisponible(etat).id, 'telescope-anatole');
+  assert.match(objectifQuetes(etat), /Anatole/);
   assert.match(dialogueLeon(etat).repliques[0], /Cuivrebourg revit/);
 });
 

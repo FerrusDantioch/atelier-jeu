@@ -99,6 +99,16 @@ export const AMBIANCES = {
     progression: [0, 5, 3, 0, 4, 5, 3, 4],
     densite: 0.3,
   },
+  // Version 1.6 : la forêt, douce et un peu mystérieuse (comme des oiseaux
+  // qui se répondent entre les arbres).
+  foret: {
+    nom: "La forêt de l'inventeur",
+    tempo: 60,
+    tonique: 57, // la
+    gamme: 'dorien',
+    progression: [0, 3, 4, 0, 6, 3, 4, 0],
+    densite: 0.32,
+  },
 };
 
 export const TEMPS_PAR_MESURE = 4;
