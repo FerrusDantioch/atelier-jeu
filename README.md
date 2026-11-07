@@ -35,6 +35,16 @@ habitants : chaque habitant a un problème à résoudre, ce sont les quêtes.
   soi-même du cuivre, **les saisons** se succèdent (fleurs, feuilles rousses,
   neige), un **carnet de commandes** spéciales apportées par Léon, et des
   **décorations** pour embellir l'atelier.
+- **Version 1.5** : les **fêtes des saisons**, une **météo douce** (petite
+  pluie, brume du matin), deux **compagnons** (Rouille le chat et Cliquet
+  l'oiseau mécanique), l'**intérieur de l'atelier**, une **apprentie**, un
+  **potager**, un **lac** où l'on pêche avec Gaston, et l'**album de souvenirs**.
+
+![L'intérieur de l'atelier, avec Lucie l'apprentie](captures/pc-interieur.png)
+
+![La Fête des lanternes, le soir, sur la place](captures/pc-fete.png)
+
+![La pêche au lac](captures/pc-lac.png)
 
 ![L'atelier décoré, au printemps](captures/pc-decorations.png)
 
@@ -111,6 +121,7 @@ un téléphone connecté **au même Wi-Fi** peut l'ouvrir pour jouer.
 | Dialogue : choisir une réponse | Flèches puis `E`, ou clic | Toucher la réponse |
 | Panneau de l'établi | Souris (ou `Tab` puis `Entrée`) ; `Échap` ou `E` pour fermer | Toucher les boutons ; **Fermer** en haut |
 | Options (musique, sons…) | `Échap`, ou le bouton ⚙ en haut | Bouton ⚙ en haut |
+| Album de souvenirs (version 1.5) | `L`, ou le bouton « livre » en haut | Bouton « livre » en haut |
 
 Sur téléphone, le pouce gauche peut se poser **n'importe où dans la moitié
 gauche du bas de l'écran** : le joystick vient se placer dessous. Plus besoin
@@ -166,6 +177,7 @@ trois phrases comment tout fonctionne.
 | Plans d'horloger | 140 | Débloque les horloges |
 | Plans de boîte à musique | 120 | Débloque les boîtes à musique |
 | Plans d'automate | — | Ne s'achètent pas : c'est le cadeau de Sidonie, à la mine |
+| Une apprentie (version 1.5) | 150 | Lucie fabrique toute seule des lanternes ou des bouilloires |
 
 Chaque amélioration apparaît dans le décor : étagères près de la porte,
 soufflet sur l'établi, grand engrenage au-dessus de l'enseigne, plans roulés.
@@ -181,13 +193,20 @@ Odile prête 30 pièces pour repartir.
 
 ## Les lieux et les quêtes (étape 3)
 
-Cuivrebourg compte maintenant six lieux (la gare est arrivée avec la
+Cuivrebourg compte maintenant huit lieux (la gare est arrivée avec la
 version 1.2, la mine avec la version 1.3, sa galerie souterraine avec la
-version 1.4). On passe de l'un à l'autre en marchant jusqu'à la sortie, avec
-un fondu doux ; pour la mine, on prend le train.
+version 1.4, l'intérieur de l'atelier et le lac avec la version 1.5). On passe
+de l'un à l'autre en marchant jusqu'à la sortie, avec un fondu doux ; pour la
+mine, on prend le train ; pour entrer dans l'atelier, on passe la porte.
 
 ```
+[ L'intérieur de l'atelier ]
+            │ porte
 [ La place ] ─ portail du sud ─ [ Le marché ] ─ chemin de l'est ─ [ Le moulin ] ─ route de l'est ─ [ La gare ]
+                                      │
+                               chemin de l'ouest
+                                      │
+                                  [ Le lac ]
                                                                                                       │
                                                                                                     train
                                                                                                       │
@@ -213,6 +232,10 @@ un fondu doux ; pour la mine, on prend le train.
   les rochers, un wagonnet sur ses petits rails, et **Sidonie** la mineuse.
 - **La galerie souterraine** (version 1.4) : sous la colline, des parois de
   roche, des lanternes, une petite source, et les **filons de cuivre**.
+- **L'intérieur de l'atelier** (version 1.5) : la forge, la grande machine à
+  engrenages, l'établi, l'établi de **Lucie** l'apprentie, et un coin salon.
+- **Le lac** (version 1.5) : à l'ouest du marché. Un ponton, une barque, des
+  canards, la cabane du pêcheur, et **Gaston** le vieux pêcheur.
 
 Les quêtes s'enchaînent : chacune ouvre la suivante.
 
@@ -260,6 +283,8 @@ toucher deux fois pour confirmer, pour ne pas tout effacer par erreur).
 - une partie commencée avec une version plus ancienne continue sans souci :
   avec la version 1.4, elle reprend au jour 1, au printemps, avec un carnet
   de commandes vide.
+  Avec la version 1.5, elle garde tout, et les nouveautés l'attendent (le
+  petit chat sur la place, Gaston au lac, le potager à semer…).
 
 ## Les options (étape 4)
 
@@ -274,6 +299,7 @@ sur l'appareil, à part de la partie : « Nouvelle partie » ne les efface pas.
 | Petits sons | **Coupés** | De douces notes de clochette : objet ramassé, pièces gagnées, fabrication terminée, client qui arrive. Volume en 5 crans. |
 | Jour et nuit | Activé | Le soir tombe, les lanternes s'allument, puis le jour revient (une journée dure 8 minutes). « Toujours le jour » : la lumière ne change plus. |
 | Saisons | Activées | Printemps, été, automne, hiver : chaque saison dure 2 jours du jeu (environ 16 minutes). « Toujours l'été » : le décor ne change plus. |
+| Météo | Activée | Une petite pluie douce certains après-midi, un peu de brume certains matins. « Toujours beau » : ni pluie ni brume. |
 | Qualité de l'image | Normale | « Économie » : image moins fine, sans ombres, 30 images par seconde. Pour un téléphone qui chauffe ou se décharge vite. |
 | Écran | — | Passer en plein écran (si le navigateur le permet). |
 | Application | — | Installer le jeu (quand Chrome le propose). |
@@ -462,8 +488,102 @@ façade de l'atelier.
 | Jardinières fleuries | 45 | Sous les deux fenêtres |
 | Girouette en cuivre | 55 | Un petit coq sur le toit, qui tourne lentement au gré du vent |
 | Horloge murale | 70 | Sur la façade ; elle donne l'heure de Cuivrebourg |
+| Grand tapis (version 1.5) | 30 | À l'intérieur, dans le coin salon |
+| Plante verte (version 1.5) | 35 | À l'intérieur, près de la porte |
+| Tableau de Cuivrebourg (version 1.5) | 40 | À l'intérieur, au mur : une peinture de la place |
+| Fauteuil et guéridon (version 1.5) | 60 | À l'intérieur, dans le coin salon |
+| Gramophone (version 1.5) | 80 | À l'intérieur ; son disque tourne doucement |
 
 ![L'atelier décoré, le soir](captures/pc-decorations-soir.png)
+
+## Les fêtes des saisons (version 1.5)
+
+Chaque saison a sa fête, sur la place, **le 2e jour de la saison** (jours 2,
+4, 6 et 8, puis 10, 12…). Le calendrier l'indique (« Printemps · jour 2 · Fête
+des lanternes »), et Léon l'annonce le matin. La place se décore, et
+**Odile**, qui organise la fête, demande deux objets spéciaux. Ils se
+fabriquent à l'établi **ce jour-là seulement**.
+
+| Fête | Saison | Décor | Objet à fabriquer (×2) | Récompense |
+|---|---|---|---|---|
+| Fête des lanternes | Printemps | Des lanternes de papier qui s'allument le soir | Lanterne de papier (1 bois, 1 ressort) | 120 pièces |
+| Bal d'été | Été | Des fanions et un parquet pour danser | Carillon à vent (1 cuivre, 1 ressort) | 120 pièces |
+| Foire aux pommes | Automne | Des fanions roux, des pommes, des potirons | Presse à pommes (1 cuivre, 2 bois) | 120 pièces |
+| Fête des lumières | Hiver | De petites lumières partout, une étoile sur le puits | Étoile de cuivre (2 cuivres) | 120 pièces |
+
+Chaque fête ne se fait qu'une fois par an (une année = 8 jours), et entre dans
+l'album de souvenirs. Pas de stress : si on la manque, elle reviendra l'année
+suivante.
+
+## La météo douce (version 1.5)
+
+Environ **un jour sur trois**, une petite pluie tranquille tombe l'après-midi
+(pendant une à deux minutes). Le ciel devient un peu plus gris, des
+**flaques** apparaissent sur les chemins, puis sèchent doucement. Environ
+**un matin sur trois**, une **brume** légère s'étend sur le village, puis se
+lève. Jamais d'orage, ni d'éclair. Pas de pluie en hiver (il neige déjà). La
+pluie fait pousser le potager plus vite. L'option « Météo » peut la couper.
+
+## Les compagnons (version 1.5)
+
+- **Rouille**, un petit chat roux, attend près de la maison d'Odile une fois
+  l'atelier ouvert. Parlez-lui pour l'adopter : il vous suit partout, marche
+  dans vos pas, et s'assoit quand vous vous arrêtez.
+- **Cliquet**, un oiseau mécanique, se fabrique à l'établi (2 cuivres,
+  1 ressort, 15 s). Une fois fini, il s'envole et vous suit ; quand vous vous
+  arrêtez, il se pose sur votre épaule.
+
+## L'intérieur de l'atelier et l'apprentie (version 1.5)
+
+Sur la place, devant la porte de l'atelier, `E` : « Entrer dans l'atelier ».
+Dedans : la **forge** (ses braises rougeoient plus fort pendant une
+fabrication), la grande **machine à engrenages**, l'**établi** (le même
+panneau que dehors), des étagères, le panier de Rouille, et un **coin salon**
+à décorer (onglet Décorer). On ressort par la porte, en bas.
+
+Dans l'onglet **Améliorer**, on peut engager **Lucie, l'apprentie** (150 pièces).
+Elle travaille à son propre établi, dans l'atelier, en même temps que Ferrus :
+elle fabrique **des lanternes ou des bouilloires** avec les matériaux du stock,
+un peu moins vite que Ferrus, et s'arrête quand il y en a **3 en réserve**.
+Parlez-lui pour choisir (« Fais des lanternes », « Fais des bouilloires »,
+« Repose-toi »). L'onglet Fabriquer dit toujours ce qu'elle fait.
+
+## Le potager (version 1.5)
+
+Sur la place, à gauche, un petit jardin entouré d'une barrière.
+
+- **Semer** (au printemps ou en été, gratuitement) ;
+- les fleurs poussent en **un jour et demi** du jeu (12 minutes), plus vite
+  sous la pluie ; en hiver, elles attendent le printemps (sans mourir) ;
+- **Cueillir** : 4 **bouquets de fleurs**, qui se vendent **30 pièces** au
+  comptoir (les clients en demandent quand il y en a en stock).
+
+## Le lac et la pêche (version 1.5)
+
+À l'ouest du marché, un chemin mène au **lac**. **Gaston**, le vieux pêcheur,
+vous prête sa canne. Au bout du ponton, `E` : « Pêcher ». On attend quelques
+secondes en regardant le bouchon… et ça mord, sans avoir besoin de réflexes.
+Bougez pour ranger la canne.
+
+- **8 espèces** de poissons, selon les saisons (la truite au printemps, le
+  brochet en automne, la lotte en hiver…), et un **poisson-lune doré** très
+  rare. Tous sont remis à l'eau, mais notés dans l'album.
+- Parfois, on remonte autre chose : un ressort, une plaque de cuivre, une
+  petite bourse… ou une vieille botte !
+- Quand l'album compte toutes les espèces, Gaston offre **150 pièces**.
+
+## L'album de souvenirs (version 1.5)
+
+Le bouton « livre », en haut de l'écran (ou la touche `L`), ouvre l'album. Le
+jeu est en pause pendant qu'il est ouvert.
+
+- **Habitants** : le portrait de chaque habitant à qui vous avez parlé (et
+  de vos compagnons), avec quelques mots sur lui ;
+- **Souvenirs** : les quêtes terminées, les fêtes, et quelques chiffres
+  (jours passés, clients servis, commandes livrées, cuivre récolté…) ;
+- **Pêche** : les espèces du lac déjà attrapées.
+
+![L'album de souvenirs](captures/pc-album.png)
 
 ## Confort visuel et sonore
 
@@ -472,7 +592,8 @@ secousse de caméra. **Aucun son tant qu'on ne l'a pas activé** dans les
 options ; et même activés, musique et sons restent doux. Si votre système
 demande « moins d'animations », les engrenages et les marqueurs ne flottent
 plus, l'eau, la fumée, le feuillage et les lucioles restent immobiles, rien
-ne tombe du ciel (pétales, feuilles, flocons), et le joystick ne glisse plus.
+ne tombe du ciel (pétales, feuilles, flocons, pluie), la queue du chat et les
+ailes de l'oiseau ne bougent plus, et le joystick ne glisse plus.
 
 ## Vérifier les règles du jeu (tests automatiques)
 
@@ -480,16 +601,17 @@ ne tombe du ciel (pétales, feuilles, flocons), et le joystick ne glisse plus.
 npm test
 ```
 
-(C'est la même chose que `node --test`.) 158 tests vérifient les quêtes,
-l'argent, les collisions dans les six lieux (avec des centaines de
+(C'est la même chose que `node --test`.) 182 tests vérifient les quêtes,
+l'argent, les collisions dans les huit lieux (avec des centaines de
 promenades au hasard : Ferrus ne se coince jamais), la gestion de l'atelier (dont
 une partie de 15 minutes jouée automatiquement), la sauvegarde (y compris
 des sauvegardes abîmées ou trafiquées), les options, la musique (toutes les
 notes dans la gamme, pas de grand saut, des silences pour respirer), les
 formes arrondies (bonne taille, aucune surface à l'envers), le jour et la
 nuit et les saisons (aucun changement brusque), l'horaire du train, la
-galerie et ses filons, le carnet de commandes, les décorations et les
-fichiers d'installation. Tout doit être indiqué `pass`.
+galerie et ses filons, le carnet de commandes, les décorations, les fêtes,
+la météo, les compagnons (ils ne passent jamais dans un mur), l'apprentie, le
+potager, la pêche, l'album et les fichiers d'installation. Tout doit être indiqué `pass`.
 
 ## L'organisation des fichiers
 
@@ -506,6 +628,12 @@ fichiers d'installation. Tout doit être indiqué `pass`.
 | `js/logique-saisons.js` | **Les saisons**, sans aucune 3D : les couleurs de chaque saison, ce qui tombe du ciel, le calendrier |
 | `js/logique-commandes.js` | **Le carnet de commandes**, sans aucune 3D : qui commande quoi, pour quand, et combien ça rapporte |
 | `js/logique-galerie.js` | **La galerie de la mine**, sans aucune 3D : les filons de cuivre et leur temps pour se reformer |
+| `js/logique-fetes.js` | **Les fêtes des saisons**, sans aucune 3D : le calendrier des fêtes, ce qu'Odile demande |
+| `js/logique-meteo.js` | **La météo douce**, sans aucune 3D : les jours de pluie, la brume, les flaques |
+| `js/logique-compagnons.js` | **Les compagnons**, sans aucune 3D : adopter Rouille, la trace des pas de Ferrus |
+| `js/logique-potager.js` | **Le potager**, sans aucune 3D : semer, pousser, cueillir |
+| `js/logique-peche.js` | **La pêche**, sans aucune 3D : les espèces du lac, les trouvailles, Gaston |
+| `js/logique-album.js` | **L'album de souvenirs**, sans aucune 3D : les habitants, les souvenirs, les chiffres |
 | `js/logique-reglages.js` | **Les options**, sans navigateur : valeurs de départ, volumes, qualité, numéro de version |
 | `js/logique-musique.js` | **La composition de la musique**, sans son : gammes, accords, mélodie, petits sons |
 | `js/musique.js` | Fait sonner la musique et les petits sons (Web Audio, le synthétiseur du navigateur) |
@@ -517,6 +645,13 @@ fichiers d'installation. Tout doit être indiqué `pass`.
 | `js/decor-mine.js` | La mine de cuivre en 3D : quai en bois, cabane, entrée dans les rochers, wagonnet, pépites |
 | `js/decor-galerie.js` | La galerie souterraine en 3D : parois de roche, étais, lanternes, source, chariot, filons de cuivre |
 | `js/saisons.js` | Les saisons en 3D : couleurs de l'herbe et des arbres, fleurs du printemps, pétales, feuilles mortes et flocons |
+| `js/decor-interieur.js` | L'intérieur de l'atelier en 3D : forge, machine à engrenages, établis, étagères, coin salon |
+| `js/decor-lac.js` | Le lac en 3D : l'eau, le ponton, la barque, les roseaux, les canards, la canne à pêche |
+| `js/decor-potager.js` | Le potager en 3D : la barrière, les carrés de terre, les fleurs qui poussent |
+| `js/fetes.js` | Les décorations des fêtes sur la place |
+| `js/meteo.js` | La météo en 3D : la pluie, les flaques, la lumière sous la pluie et dans la brume |
+| `js/compagnons.js` | Rouille et Cliquet en 3D, et leur façon de suivre Ferrus |
+| `js/interface-album.js` | L'album de souvenirs (habitants et portraits, souvenirs, pêche) |
 | `js/vie.js` | Le décor qui vit : fumée des cheminées, vent dans les feuillages, lanternes et fenêtres qui s'allument la nuit, lucioles |
 | `js/formes.js` | Les formes de base aux bords arrondis : boîtes, cylindres, gélules, formes « tournées » comme un vase |
 | `js/eau.js` | L'eau qui bouge : reflets qui ondulent, ronds dans l'eau, feuilles au fil du canal, reflet des étoiles la nuit |
@@ -533,6 +668,7 @@ fichiers d'installation. Tout doit être indiqué `pass`.
 | `tests/version12.test.js` | Les tests automatiques de la gare, du jour et de la nuit, et du train |
 | `tests/version13.test.js` | Les tests automatiques du voyage en train, de la mine, de la boîte à musique et de l'automate |
 | `tests/version14.test.js` | Les tests automatiques de la galerie, des saisons, du carnet de commandes et des décorations |
+| `tests/version15.test.js` | Les tests automatiques des fêtes, de la météo, des compagnons, de l'intérieur, de l'apprentie, du potager, de la pêche et de l'album |
 | `manifest.webmanifest` | La « fiche d'identité » de l'application : nom, icône, couleurs, plein écran |
 | `sw.js` | Le « service worker » : garde une copie du jeu pour jouer sans connexion |
 | `icones/` | L'icône du jeu (un engrenage de cuivre et une flamme) : le dessin `icone.svg` et ses versions PNG |
@@ -577,7 +713,7 @@ https://ferrusdantioch.github.io/atelier-jeu/ . Dans les messageries, le
 lien s'affiche avec le titre du jeu et une image du marché.
 
 **Publier une nouvelle version** : changez le numéro de version (par exemple
-`1.4.0` → `1.4.1`) aux **trois** endroits suivants, puis envoyez sur `main` :
+`1.5.0` → `1.5.1`) aux **trois** endroits suivants, puis envoyez sur `main` :
 `package.json`, `js/logique-reglages.js` (`VERSION_JEU`) et `sw.js`
 (`VERSION`). Un test vérifie qu'ils sont identiques. Les téléphones qui ont
 installé le jeu reçoivent la nouvelle version à la prochaine ouverture avec
