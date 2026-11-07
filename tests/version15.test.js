@@ -445,12 +445,13 @@ test("l'album : les habitants rencontrés, les souvenirs, la pêche", () => {
   etat.compagnons.chat = true;
   const connus = habitantsAlbum(etat).filter((h) => h.connu).map((h) => h.id);
   assert.deepEqual(connus, ['gaston', 'chat']);
-  // Les souvenirs : les 6 quêtes, puis les fêtes.
+  // Les souvenirs : toutes les quêtes (12 depuis la version 1.6), puis les fêtes.
   etat.fetes.faites.push('foire-pommes-1');
   const souvenirs = souvenirsAlbum(etat);
-  assert.equal(souvenirs.length, 7);
-  assert.equal(souvenirs[6].titre, 'Foire aux pommes (année 1)');
-  assert.equal(chiffresAlbum(etat).length, 7);
+  const nombre = Object.keys(QUETES).length;
+  assert.equal(souvenirs.length, nombre + 1);
+  assert.equal(souvenirs[nombre].titre, 'Foire aux pommes (année 1)');
+  assert.equal(chiffresAlbum(etat).length, 12);
   const peche = pecheAlbum(etat);
   assert.equal(peche.length, ESPECES.length);
   assert.ok(peche.every((e) => e.nom === '???'));

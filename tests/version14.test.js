@@ -213,7 +213,7 @@ test("seuls les habitants qu'on a aidés passent commande", () => {
   }
   assert.deepEqual([...clients].sort(), ['capucine', 'odile']);
   // Les objets verrouillés (horloge, boîte à musique, automate) ne sont jamais commandés.
-  assert.equal(CLIENTS_CARNET.length, 5);
+  assert.equal(CLIENTS_CARNET.length, 6); // version 1.6 : Anatole aussi
 });
 
 test('livrer une commande : il faut tout le stock ; on est payé, le stock baisse', () => {
@@ -247,7 +247,8 @@ test("une commande en retard est annulée gentiment, sans rien coûter", () => {
 });
 
 test("l'objectif rappelle le carnet quand rien de plus pressé n'attend ; l'établi a un marqueur quand c'est prêt", () => {
-  const etat = partieFinieJusqua('wagonnet-mine');
+  // (Toutes les quêtes finies, jusqu'au dirigeable de la version 1.6.)
+  const etat = partieFinieJusqua('dirigeable-envol');
   etat.carnet.commandes = [{ id: 1, client: 'odile', objet: 'lanterne', quantite: 2, limite: 3, recompense: 95 }];
   assert.equal(objectifActuel(etat), "Commande d'Odile : 2 lanternes, à fabriquer (carnet, à l'établi).");
   assert.equal(marqueursActifs(etat).etabli, false);

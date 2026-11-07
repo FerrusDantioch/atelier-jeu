@@ -18,6 +18,7 @@
 // =============================================================================
 
 import { capaciteStock } from './logique-atelier.js';
+import { trouverCuriosite } from './logique-foret.js';
 
 // Les espèces du lac. « saisons » : quand elles mordent ; « poids » : plus il
 // est grand, plus elles sont fréquentes.
@@ -99,6 +100,10 @@ function trouvaille(etat, id) {
     const n = 10 + Math.floor(hasard(etat.peche) * 11);
     etat.argent += n;
     return { messages: [`+${n} pièces`, 'Une petite bourse oubliée au fond du lac !'], prise: { type: 'objet', id } };
+  }
+  // Version 1.6 : la première vieille botte rejoint les curiosités (pour la vitrine).
+  if (trouverCuriosite(etat, 'vieille-botte')) {
+    return { messages: ['Une vieille botte ! Vous la gardez en souvenir : elle ira très bien dans la vitrine.'], prise: { type: 'objet', id: 'botte' } };
   }
   return { messages: ['Une vieille botte ! Vous la posez sur le ponton en souriant.'], prise: { type: 'objet', id: 'botte' } };
 }

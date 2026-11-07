@@ -19,6 +19,7 @@
 
 import { RECETTES, recettesDisponibles, vendableAuComptoir } from './logique-atelier.js';
 import { queteTerminee } from './logique-quetes.js';
+import { ajouterPoints, GAINS_AMITIE } from './logique-amitie.js';
 
 // Les réglages du carnet.
 export const REGLAGES_CARNET = Object.freeze({
@@ -36,6 +37,8 @@ export const CLIENTS_CARNET = Object.freeze([
   { id: 'barnabe', nom: 'Barnabé', quete: 'roue-moulin', raison: 'pour les familles du moulin' },
   { id: 'augustin', nom: 'Augustin', quete: 'horloge-gare', raison: 'pour les voyageurs de la gare' },
   { id: 'sidonie', nom: 'Sidonie', quete: 'wagonnet-mine', raison: 'pour les mineurs' },
+  // Version 1.6 : Anatole, l'inventeur de la forêt.
+  { id: 'anatole', nom: 'Anatole', quete: 'telescope-anatole', raison: 'pour ses expériences' },
 ]);
 
 export function creerEtatCarnet() {
@@ -139,7 +142,9 @@ export function livrerCommande(etat, id) {
   etat.argent += commande.recompense;
   carnet.commandes = carnet.commandes.filter((c) => c.id !== id);
   carnet.livrees += 1;
-  return [`+${commande.recompense} pièces`, `Léon livre ${decrireObjets(commande.objet, commande.quantite)} à ${nomClient(commande.client)}. Merci !`];
+  // Version 1.6 : une commande livrée rapproche de l'habitant.
+  const amitie = etat.amitie ? ajouterPoints(etat, commande.client, GAINS_AMITIE.commande) : [];
+  return [`+${commande.recompense} pièces`, `Léon livre ${decrireObjets(commande.objet, commande.quantite)} à ${nomClient(commande.client)}. Merci !`, ...amitie];
 }
 
 // « de Capucine », mais « d'Odile » (devant une voyelle).

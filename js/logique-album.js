@@ -4,7 +4,9 @@
 // Un petit livre que Ferrus remplit au fil de la partie :
 //   - les HABITANTS rencontrés, avec leur portrait (dessiné par main.js) ;
 //   - les SOUVENIRS : les quêtes terminées, les fêtes, et quelques chiffres ;
-//   - la PÊCHE : les espèces du lac déjà attrapées.
+//   - la PÊCHE : les espèces du lac déjà attrapées ;
+//   - (version 1.6) les cœurs d'amitié et l'anniversaire de chaque habitant ;
+//     les ÉTOILES (logique-foret.js) et les PHOTOS (main.js) ont leur page.
 //
 // Ce fichier décide seulement de ce qu'on montre. Il est testé avec « node --test ».
 // =============================================================================
@@ -12,6 +14,7 @@
 import { QUETES, queteTerminee } from './logique-quetes.js';
 import { FETES, anneeDuJour } from './logique-fetes.js';
 import { ESPECES } from './logique-peche.js';
+import { ami, coeurs, texteAnniversaire, estAnniversaire } from './logique-amitie.js';
 
 // Les habitants (et les compagnons) de l'album, dans l'ordre des rencontres.
 export const HABITANTS_ALBUM = Object.freeze([
@@ -23,6 +26,7 @@ export const HABITANTS_ALBUM = Object.freeze([
   { id: 'sidonie', nom: 'Sidonie', role: 'La mineuse', mot: 'Elle a dessiné ses premiers automates avec son grand-père.' },
   { id: 'gaston', nom: 'Gaston', role: 'Le vieux pêcheur', mot: 'Il pêche sur le lac depuis cinquante ans, sans jamais se presser.' },
   { id: 'lucie', nom: 'Lucie', role: "L'apprentie", mot: "La nièce d'Odile. Elle rêve d'ouvrir un jour son propre atelier." },
+  { id: 'anatole', nom: 'Anatole', role: "L'inventeur de la forêt", mot: "Il connaît toutes les étoiles par leur nom, et rêve de voler au-dessus des nuages." },
   { id: 'chat', nom: 'Rouille', role: 'Le chat de l\'atelier', mot: 'Un petit chat roux qui vous suit partout, et ronronne près de la forge.', compagnon: true },
   { id: 'oiseau', nom: 'Cliquet', role: "L'oiseau mécanique", mot: 'Fabriqué de vos mains. Il fait « cliquet-cliquet » en battant des ailes.', compagnon: true },
 ]);
@@ -35,6 +39,13 @@ export const SOUVENIRS_QUETES = Object.freeze({
   'horloge-gare': "L'horloge de la gare donne l'heure juste, grâce à un régulateur tout neuf.",
   'train-cuivrebourg': 'Un sifflet neuf, et le premier train depuis des années est parti de la gare.',
   'wagonnet-mine': 'Le wagonnet de Sidonie roule, et le cuivre descend de nouveau en ville.',
+  // Version 1.6.
+  'telescope-anatole': "Le télescope d'Anatole voit de nouveau les étoiles, et les cratères de la lune.",
+  'dirigeable-nacelle': "La nacelle du dirigeable, tressée avec l'osier de Barnabé.",
+  'dirigeable-enveloppe': "L'enveloppe du dirigeable, cousue dans la toile de Capucine et attachée par les cordages de Gaston.",
+  'dirigeable-chaudiere': 'Une petite chaudière, légère comme une plume, en cuivre de la mine de Sidonie.',
+  'dirigeable-helice': "L'hélice du dirigeable, réglée d'après les dessins d'Augustin.",
+  'dirigeable-envol': "Le grand envol ! « Le Cuivrebourg » survole le village, avec la boussole de Léon et le drapeau d'Odile.",
 });
 
 export function creerEtatAlbum() {
@@ -51,10 +62,17 @@ export function noterRencontre(etat, id) {
 }
 
 // Les habitants à montrer : { ...habitant, connu } (les inconnus sont grisés).
+// Version 1.6 : pour les habitants, leurs cœurs d'amitié et leur anniversaire.
 export function habitantsAlbum(etat) {
   return HABITANTS_ALBUM.map((h) => {
     const connu = h.compagnon ? Boolean(etat.compagnons[h.id]) : etat.album.rencontres.includes(h.id);
-    return { ...h, connu };
+    const fiche = { ...h, connu };
+    if (!h.compagnon && ami(h.id)) {
+      fiche.coeurs = coeurs(etat, h.id);
+      fiche.anniversaire = texteAnniversaire(h.id);
+      fiche.anniversaireAujourdhui = estAnniversaire(etat, h.id);
+    }
+    return fiche;
   });
 }
 
@@ -84,6 +102,12 @@ export function chiffresAlbum(etat) {
     ['Plaques de cuivre récoltées dans la galerie', etat.galerie.recoltes],
     ['Récoltes de fleurs au potager', etat.potager.recoltes],
     ['Poissons pêchés (et remis à l\'eau)', etat.peche.prises],
+    // Version 1.6.
+    ['Cueillettes en forêt', etat.foret.recoltes],
+    ['Curiosités trouvées', etat.curiosites.length],
+    ['Visiteurs de la vitrine', etat.vitrine.visiteurs],
+    ['Assemblages réussis', etat.atelier.assemblages],
+    ['Constellations découvertes', etat.foret.constellations.length],
   ];
 }
 

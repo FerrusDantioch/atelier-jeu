@@ -2,7 +2,8 @@
 // logique-reglages.js — LES OPTIONS DU JOUEUR (étape 4)
 // -----------------------------------------------------------------------------
 // Musique, petits sons, qualité de l'image, cycle du jour et de la nuit,
-// saisons (version 1.4), météo (version 1.5). Les réglages sont enregistrés à
+// saisons (version 1.4), météo (version 1.5), taille du texte et petit jeu
+// d'assemblage (version 1.6). Les réglages sont enregistrés à
 // part de la partie : « Nouvelle partie » ne les efface pas.
 //
 // Confort avant tout : la musique et les sons sont COUPÉS au départ. C'est le
@@ -13,7 +14,7 @@
 // =============================================================================
 
 // Le numéro de version du jeu (le même que dans package.json et sw.js).
-export const VERSION_JEU = '1.5.0';
+export const VERSION_JEU = '1.6.0';
 
 export const CLE_REGLAGES = 'atelier-cuivrebourg-reglages';
 
@@ -23,6 +24,14 @@ export const NIVEAUX_VOLUME = 5;
 export const QUALITES = {
   normale: { nom: 'Normale', detail: 'Image fine et ombres douces.' },
   economie: { nom: 'Économie', detail: 'Pour un téléphone qui chauffe ou se décharge vite : image moins fine, sans ombres, 30 images par seconde.' },
+};
+
+// Les tailles du texte (version 1.6) : le texte de l'interface est multiplié
+// par ce nombre.
+export const TAILLES_TEXTE = {
+  normal: { nom: 'Normal', echelle: 1 },
+  grand: { nom: 'Grand', echelle: 1.15 },
+  'tres-grand': { nom: 'Très grand', echelle: 1.3 },
 };
 
 export function creerReglages() {
@@ -35,6 +44,8 @@ export function creerReglages() {
     jourNuit: true,   // le jour et la nuit se succèdent (version 1.2) ; sinon, toujours le jour
     saisons: true,    // les saisons se succèdent (version 1.4) ; sinon, toujours l'été
     meteo: true,      // pluie douce et brume du matin (version 1.5) ; sinon, toujours beau
+    texte: 'normal',  // la taille du texte (version 1.6)
+    assemblage: true, // proposer le petit jeu d'assemblage pour les objets rares (version 1.6)
   };
 }
 
@@ -54,6 +65,8 @@ export function lireReglages(texte) {
   if (typeof lu.jourNuit === 'boolean') reglages.jourNuit = lu.jourNuit;
   if (typeof lu.saisons === 'boolean') reglages.saisons = lu.saisons;
   if (typeof lu.meteo === 'boolean') reglages.meteo = lu.meteo;
+  if (typeof lu.assemblage === 'boolean') reglages.assemblage = lu.assemblage;
+  if (typeof lu.texte === 'string' && TAILLES_TEXTE[lu.texte]) reglages.texte = lu.texte;
   for (const cle of ['volumeMusique', 'volumeSons']) {
     if (Number.isInteger(lu[cle])) reglages[cle] = Math.min(NIVEAUX_VOLUME, Math.max(1, lu[cle]));
   }

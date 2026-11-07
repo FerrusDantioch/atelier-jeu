@@ -16,6 +16,8 @@
 //   mine, une fois le wagonnet de Sidonie réparé.
 // - Version 1.5 : l'intérieur de l'atelier (on entre par la porte, sur la
 //   place), et le lac, à l'ouest du marché, où Gaston pêche.
+// - Version 1.6 : la forêt de l'inventeur, à l'est de la place (le chemin
+//   s'ouvre avec l'atelier).
 //
 // Pour chaque lieu : ses limites, ses obstacles, ses personnages, les choses
 // avec lesquelles on peut interagir, ses sorties et ses points d'arrivée.
@@ -30,6 +32,8 @@ import { possedeDecoration, possedeAmelioration } from './logique-atelier.js';
 import { CHAT_ERRANT, chatAAdopter } from './logique-compagnons.js';
 import { libellePotager } from './logique-potager.js';
 import { FILONS, estFilon, galerieOuverte, libelleFilon } from './logique-galerie.js';
+import { CUEILLETTES, RAYON_BUISSON, estCueillette, libelleCueillette, libelleTelescope, telescopeRepare } from './logique-foret.js';
+import { etapesDirigeable, dirigeablePret } from './logique-dirigeable.js';
 
 // Raccourci : un rectangle d'obstacle.
 const rect = (id, x, z, largeur, profondeur) => ({ type: 'rectangle', id, x, z, largeur, profondeur });
@@ -53,16 +57,21 @@ export const ZONES = Object.freeze({
       { id: 'porte-atelier', x: MONDE.atelier.x, z: -6.4, distanceInteraction: 1.1, condition: 'portail' },
       { id: 'chat', x: CHAT_ERRANT.x, z: CHAT_ERRANT.z, distanceInteraction: 1.7, condition: 'chat-errant' },
       { id: 'potager', x: -12.2, z: MONDE.potager.z, distanceInteraction: 1.5 },
+      // Version 1.6 : la vitrine de l'atelier.
+      { id: 'vitrine', x: MONDE.vitrine.x, z: -10.1, distanceInteraction: 1.4, condition: 'portail' },
     ],
     // Les lanternes de la place (elles s'allument le soir).
     lampadaires: MONDE.lampadaires,
     sorties: [
       // Le portail du sud : on sort en marchant tout au bout, entre les poteaux.
       { vers: 'marche', minX: -1.4, maxX: 1.4, minZ: 11.35, maxZ: 99, condition: 'portail' },
+      // Version 1.6 : le chemin de la forêt, à l'est (on sort en marchant tout au bout).
+      { vers: 'foret', minX: 17.4, maxX: 99, minZ: -0.2, maxZ: 2.2, condition: 'portail' },
     ],
     arrivees: {
       marche: { x: 0, z: 10.3, orientation: Math.PI },
       interieur: { x: MONDE.atelier.x, z: -5.7, orientation: 0 }, // en sortant de l'atelier
+      foret: { x: 16.3, z: 1, orientation: -Math.PI / 2 },
     },
   },
 
@@ -341,6 +350,8 @@ export const ZONES = Object.freeze({
       { id: 'fauteuil', x: -4.4, z: 2.6, largeur: 2.0, profondeur: 1.0, decoration: 'fauteuil' },
       { id: 'gramophone', x: -1.9, z: 2.7, rayon: 0.35, decoration: 'gramophone' },
       { id: 'plante-verte', x: 2.2, z: 2.9, rayon: 0.35, decoration: 'plante-verte' },
+      // Version 1.6 : la grande armoire de la garde-robe.
+      { id: 'armoire', x: 6.0, z: 2.75, largeur: 0.9, profondeur: 1.4 },
     ],
     pnj: [
       { id: 'lucie', nom: 'Lucie', x: 4.9, z: 0.4, rayon: 0.45, distanceInteraction: 2.2, condition: 'apprentie' },
@@ -350,6 +361,7 @@ export const ZONES = Object.freeze({
       { id: 'forge', x: -4.6, z: -2.3, distanceInteraction: 1.6 },
       { id: 'machine', x: 4.5, z: -2.5, distanceInteraction: 1.6 },
       { id: 'lucie', x: 4.9, z: 0.4, distanceInteraction: 2.2, condition: 'apprentie' },
+      { id: 'armoire', x: 5.0, z: 2.75, distanceInteraction: 1.4 },
     ],
     sorties: [
       { vers: 'place', minX: -1, maxX: 1, minZ: 3.4, maxZ: 99 },
@@ -404,6 +416,56 @@ export const ZONES = Object.freeze({
     ],
     arrivees: {
       marche: { x: 12.3, z: 0, orientation: -Math.PI / 2 },
+    },
+  },
+
+  // --- La forêt de l'inventeur (version 1.6) : à l'est de la place. Une
+  // clairière entourée de grands arbres, la cabane d'Anatole et son grand
+  // télescope, le chantier du dirigeable, et six buissons à cueillir.
+  foret: {
+    id: 'foret',
+    nom: "La forêt de l'inventeur",
+    limites: { minX: -14, maxX: 14, minZ: -9, maxZ: 9 },
+    joueur: MONDE.joueur,
+    camera: { minX: -7, maxX: 7, minZ: -4, maxZ: 5 },
+    haies: [
+      { id: 'haie-nord', x: 0, z: -9.5, largeur: 30, profondeur: 1 },
+      { id: 'haie-sud', x: 0, z: 9.5, largeur: 30, profondeur: 1 },
+      // À l'ouest, l'ouverture du chemin qui revient sur la place.
+      { id: 'haie-ouest-haut', x: -14.5, z: -5.75, largeur: 1, profondeur: 8.5 },
+      { id: 'haie-ouest-bas', x: -14.5, z: 5.75, largeur: 1, profondeur: 8.5 },
+      { id: 'haie-est', x: 14.5, z: 0, largeur: 1, profondeur: 20 },
+    ],
+    batiments: [
+      { id: 'cabane-anatole', x: 6.5, z: -6.4, largeur: 6, profondeur: 3.2, murs: '#b9a080', toit: '#5f7a6a', enseigne: 'INVENTEUR' },
+    ],
+    // Le grand télescope de laiton, sur son estrade ronde.
+    telescope: { id: 'telescope', x: 11.3, z: -4.6, rayon: 1.0 },
+    // Le chantier du dirigeable : un grand mât d'amarrage.
+    chantier: { id: 'chantier', x: -6, z: -5.6, rayon: 1.5 },
+    cueillettes: CUEILLETTES,
+    lampadaires: [{ x: -8, z: -1.6 }, { x: 0.2, z: -1.4 }, { x: 8.4, z: -2.2 }],
+    arbres: [
+      { x: -12.2, z: -7.6 }, { x: -9.4, z: -7.9 }, { x: -2.8, z: -7.8 }, { x: 0.6, z: -7.6 }, { x: 12.6, z: -7.8 },
+      { x: -12.4, z: 7.6 }, { x: -8.6, z: 7.9 }, { x: -5.2, z: 7.3 }, { x: -1.8, z: 8.0 }, { x: 3.4, z: 7.7 },
+      { x: 6.8, z: 7.9 }, { x: 10.2, z: 7.5 }, { x: 12.8, z: 6.6 }, { x: 12.7, z: 3.6 }, { x: 12.9, z: -2.6 },
+      { x: -12.4, z: -4.8 }, { x: -12.6, z: 4.6 }, { x: -6.6, z: 1.6 }, { x: 6.0, z: 1.2 }, { x: -1.2, z: 3.0 },
+    ],
+    rayonArbre: 0.65,
+    pnj: [
+      { id: 'anatole', nom: 'Anatole', x: 2.2, z: -3.2, rayon: 0.45, distanceInteraction: 2.2 },
+    ],
+    interactifs: [
+      { id: 'anatole', x: 2.2, z: -3.2, distanceInteraction: 2.2 },
+      { id: 'telescope', x: 11.3, z: -3.0, distanceInteraction: 1.5 },
+      { id: 'chantier', x: -6, z: -3.6, distanceInteraction: 1.6 },
+      ...CUEILLETTES.map((c) => ({ id: c.id, x: c.x, z: c.z, distanceInteraction: 1.4 })),
+    ],
+    sorties: [
+      { vers: 'place', minX: -99, maxX: -13.4, minZ: -1.4, maxZ: 1.4 },
+    ],
+    arrivees: {
+      place: { x: -12.3, z: 0, orientation: Math.PI / 2 },
     },
   },
 });
@@ -463,8 +525,8 @@ export function obstaclesZone(zoneId, etat) {
     if (possedeDecoration(etat, 'pots-fleurs')) {
       for (const p of MONDE.pots) liste.push({ type: 'cercle', id: p.id, x: p.x, z: p.z, rayon: MONDE.rayonPot });
     }
-    // Portail ouvert : on peut passer entre les poteaux.
-    return conditionRemplie(etat, 'portail') ? liste.filter((o) => o.id !== 'portail') : liste;
+    // Portail ouvert : on peut passer entre les poteaux (et vers la forêt).
+    return conditionRemplie(etat, 'portail') ? liste.filter((o) => o.id !== 'portail' && o.id !== 'passage-est') : liste;
   }
   const z = ZONES[zoneId];
   const liste = [];
@@ -489,7 +551,9 @@ export function obstaclesZone(zoneId, etat) {
   (z.rochers || []).forEach((r, i) => liste.push({ type: 'cercle', id: `rocher-${i + 1}`, x: r.x, z: r.z, rayon: r.rayon }));
   // Une barrière (arbre tombé, barrière de la gare) bloque tant qu'elle n'est pas ouverte.
   if (z.barriere && !conditionRemplie(etat, z.barriere.ouverteSi)) ajouterRect(z.barriere);
-  for (const c of [z.fontaine, z.mecanisme, z.horloge, z.chateauEau, z.bassin].filter(Boolean)) liste.push({ type: 'cercle', id: c.id, x: c.x, z: c.z, rayon: c.rayon });
+  for (const c of [z.fontaine, z.mecanisme, z.horloge, z.chateauEau, z.bassin, z.telescope, z.chantier].filter(Boolean)) liste.push({ type: 'cercle', id: c.id, x: c.x, z: c.z, rayon: c.rayon });
+  // Les buissons de la forêt (version 1.6).
+  for (const c of z.cueillettes || []) liste.push({ type: 'cercle', id: c.id, x: c.x, z: c.z, rayon: RAYON_BUISSON });
   (z.lampadaires || []).forEach((l, i) => liste.push({ type: 'cercle', id: `lampadaire-${i + 1}`, x: l.x, z: l.z, rayon: RAYON_LAMPADAIRE }));
   for (const p of z.pnj || []) {
     if (conditionRemplie(etat, p.condition)) liste.push({ type: 'cercle', id: p.id, x: p.x, z: p.z, rayon: p.rayon });
@@ -547,6 +611,15 @@ export function libelleZone(etat, cible, saisonId = 'ete') {
   if (cible === 'ponton') return etat.peche.canne ? 'Pêcher' : 'Le bout du ponton';
   if (cible === 'forge') return 'La forge';
   if (cible === 'machine') return 'La machine à engrenages';
+  // Version 1.6.
+  if (cible === 'vitrine') return 'La vitrine de l\'atelier';
+  if (cible === 'armoire') return 'La garde-robe';
+  if (cible === 'telescope') return aUtiliser ? 'Réparer le télescope' : libelleTelescope(etat);
+  if (cible === 'chantier') {
+    if (dirigeablePret(etat)) return 'Monter dans le dirigeable';
+    return etapesDirigeable(etat) > 0 ? 'Le chantier du dirigeable' : "Le grand mât d'amarrage";
+  }
+  if (estCueillette(cible)) return libelleCueillette(etat, cible, saisonId);
   if (estFilon(cible)) return libelleFilon(etat, cible);
   if (cible === 'wagonnet') return aUtiliser ? 'Poser la roue neuve' : 'Le wagonnet';
   return libelleInteraction(etat, cible);
@@ -601,6 +674,17 @@ export function dialogueLeon(etat) {
       "Le train monte jusqu'à la mine de cuivre, dans les collines ! Montez-y depuis la gare.",
       'Sidonie, la mineuse, a des ennuis avec son wagonnet, paraît-il.',
     ];
+  } else if (!queteTerminee(etat, 'telescope-anatole')) {
+    // Version 1.6 : la suite se passe dans la forêt.
+    repliques = [
+      'Le train m\'apporte des lettres de partout ! Elles disent toutes : « Cuivrebourg revit ! »',
+      "Paraît qu'Anatole, le vieil inventeur de la forêt (à l'est de la place), cherche un artisan pour réparer son télescope.",
+    ];
+  } else if (!queteTerminee(etat, 'dirigeable-envol')) {
+    repliques = [
+      "Tout le village ne parle que du dirigeable d'Anatole ! Chacun veut y apporter sa pièce.",
+      'Moi aussi, j\'aurai quelque chose pour vous, le moment venu. Un facteur a toujours ce qu\'il faut dans sa sacoche !',
+    ];
   } else {
     repliques = [
       'Le train m\'apporte des lettres de partout ! Elles disent toutes : « Cuivrebourg revit ! »',
@@ -645,6 +729,15 @@ export function messageObjet(etat, cible) {
   if (cible === 'ponton') return ['Un bel endroit pour pêcher… Il vous faudrait une canne. Gaston, le vieux pêcheur, en a peut-être une.'];
   if (cible === 'forge') return [etat.atelier.fabrication ? 'La forge rougeoie : une fabrication est en cours.' : 'La forge ronronne doucement. Rouille adore dormir à côté.'];
   if (cible === 'machine') return ['La grande machine à engrenages de l\'ancien propriétaire. Elle tourne toute seule, tic-tac, tic-tac.'];
+  if (cible === 'telescope') {
+    if (telescopeRepare(etat)) return ['Le grand télescope de laiton pointe vers le ciel.'];
+    return ["Un grand télescope de laiton. Il lui manque trois vis, et sa lentille pend tristement. C'est celui d'Anatole."];
+  }
+  if (cible === 'chantier') {
+    const n = etapesDirigeable(etat);
+    if (n === 0) return ["Un grand mât de bois, planté au milieu de la clairière. Anatole a sûrement une idée derrière la tête…"];
+    return [`Le dirigeable prend forme : ${n} étape${n > 1 ? 's' : ''} sur 5.`];
+  }
   if (cible === 'locomotive') {
     if (queteTerminee(etat, 'train-cuivrebourg')) return ['Le train de Cuivrebourg roule de nouveau !'];
     return ['Une belle locomotive, froide et silencieuse. Son vieux sifflet est tout rouillé.'];

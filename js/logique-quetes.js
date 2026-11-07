@@ -11,11 +11,14 @@
 //   - 'livrer'    : parler à un personnage en ayant l'objet dans le stock ;
 //   - 'utiliser'  : utiliser un objet du décor (l'établi, un mécanisme…), en
 //                   ayant l'objet demandé dans le stock s'il y en a un ;
-//   - 'parler'    : simplement parler à un personnage.
+//   - 'parler'    : simplement parler à un personnage (version 1.6 : l'étape
+//                   peut avoir ses propres répliques, quand un AUTRE habitant
+//                   que le donneur apporte son aide au grand projet).
 //
 // Les quêtes s'enchaînent : chacune a pour prérequis la précédente
 // (la lampe → la balance → la roue → l'horloge de la gare → le premier train
-// → le wagonnet de la mine). La toute
+// → le wagonnet de la mine → le télescope d'Anatole → les cinq étapes du
+// dirigeable, version 1.6). La toute
 // première (la lampe d'Odile) n'a pas de prérequis : elle est disponible dès
 // le début de la partie, et la terminer ouvre l'atelier.
 //
@@ -24,6 +27,7 @@
 // =============================================================================
 
 import { RECETTES, AMELIORATIONS, ouvrirAtelier } from './logique-atelier.js';
+import { recevoirTenue } from './logique-garderobe.js';
 
 // Distance (en mètres) pour ramasser un objet de quête en marchant dessus.
 export const DISTANCE_RAMASSAGE_QUETE = 1.0;
@@ -331,6 +335,307 @@ export const QUETES = Object.freeze({
       ],
     },
   },
+
+  // --- Version 1.6 : la forêt de l'inventeur ------------------------------------------
+  'telescope-anatole': {
+    titre: "Le télescope d'Anatole",
+    donneur: 'anatole',
+    lieuDonneur: "dans la forêt, à l'est de la place",
+    prerequis: 'wagonnet-mine',
+    recettes: ['monture-lentille'],
+    etapes: [
+      {
+        type: 'ramasser',
+        // Les vis dorées du télescope, que l'écureuil de la forêt a emportées.
+        objets: [
+          { id: 'vis-1', lieu: 'foret', x: -9.6, z: 5.6 },
+          { id: 'vis-2', lieu: 'foret', x: 0.4, z: 6.4 },
+          { id: 'vis-3', lieu: 'foret', x: 10.4, z: 1.2 },
+        ],
+        ramasse: 'Vis dorée ramassée',
+        messageFin: 'Toutes les vis ! Il faut encore une monture neuve pour la lentille.',
+        objectif: 'Retrouve les vis dorées du télescope, dans la forêt',
+      },
+      {
+        type: 'fabriquer',
+        objet: 'monture-lentille',
+        objectif: "Fabrique une monture de lentille à l'établi de l'atelier (2 cuivres, 1 ressort).",
+      },
+      {
+        type: 'utiliser',
+        cible: 'telescope',
+        objet: 'monture-lentille',
+        messageFait: 'La lentille est en place : le télescope est réparé !',
+        objectif: "Installe la monture et les vis sur le télescope, à côté de la cabane d'Anatole.",
+      },
+      {
+        type: 'parler',
+        pnj: 'anatole',
+        objectif: 'Le télescope est réparé ! Retourne voir Anatole.',
+      },
+    ],
+    recompense: 200,
+    textes: {
+      proposition: [
+        'Oh ! Un visiteur ! Bonjour, je suis Anatole, inventeur de mon état.',
+        "Mon grand télescope ne marche plus : l'écureuil de la forêt a emporté ses trois vis dorées, et la lentille s'est décrochée.",
+        "Retrouvez les vis dans la forêt et fabriquez-moi une monture neuve : je vous paierai 200 pièces. Et je vous montrerai les étoiles !",
+      ],
+      enCours: ['Trois vis dorées, une monture de lentille, et mon télescope verra de nouveau les étoiles !'],
+      fin: [
+        'Regardez ! On voit les cratères de la lune comme si on y était !',
+        'Voici vos 200 pièces. Revenez la nuit : avec ce télescope, on découvre une constellation chaque soir.',
+        "Et j'ai un vieux rêve, un très grand projet… Revenez me voir, je vous en parlerai !",
+      ],
+      apres: ["Revenez la nuit observer le ciel avec le télescope. Chaque saison a ses constellations !"],
+    },
+  },
+
+  // --- Version 1.6 : le grand projet, le dirigeable (cinq étapes) -------------------
+  // À chaque étape, un habitant aidé apporte sa pièce ; Ferrus fabrique le
+  // reste à l'établi, puis l'apporte à Anatole.
+  'dirigeable-nacelle': {
+    titre: 'Le dirigeable (1/5) : la nacelle',
+    donneur: 'anatole',
+    lieuDonneur: "dans la forêt, à l'est de la place",
+    prerequis: 'telescope-anatole',
+    recettes: ['nacelle'],
+    etapes: [
+      {
+        type: 'parler',
+        pnj: 'barnabe',
+        repliques: [
+          'Anatole veut construire un dirigeable ? Quelle aventure !',
+          "Tenez : de l'osier du bord du canal, bien souple. Il n'y a rien de mieux pour tresser une nacelle.",
+        ],
+        choix: 'Merci, Barnabé !',
+        messageFait: "Barnabé vous donne de l'osier tressé.",
+        objectif: "Va voir Barnabé, au moulin : il a de l'osier pour la nacelle.",
+      },
+      {
+        type: 'fabriquer',
+        objet: 'nacelle',
+        objectif: "Fabrique l'armature de la nacelle à l'établi (1 cuivre, 3 bois).",
+      },
+      {
+        type: 'livrer',
+        pnj: 'anatole',
+        objet: 'nacelle',
+        objectif: "Apporte l'armature de la nacelle à Anatole, dans la forêt.",
+      },
+    ],
+    recompense: 100,
+    textes: {
+      proposition: [
+        'Mon grand rêve, Ferrus, c\'est de voler au-dessus de Cuivrebourg… dans un dirigeable !',
+        "J'en ai tous les plans. Mais il faudra l'aide de tout le village : chacun a quelque chose à nous apporter.",
+        "Commençons par la nacelle, la cabine où l'on monte. Barnabé, au moulin, a de l'osier. Je vous paierai à chaque étape !",
+      ],
+      enCours: ["L'osier de Barnabé et une bonne armature : voilà une nacelle !"],
+      livraison: ['Magnifique ! La nacelle est solide et légère à la fois.', 'Voici 100 pièces. Prochaine étape : l\'enveloppe, le grand ballon. Revenez me voir !'],
+      apres: ['La nacelle est prête. Le dirigeable prend forme !'],
+    },
+  },
+
+  'dirigeable-enveloppe': {
+    titre: "Le dirigeable (2/5) : l'enveloppe",
+    donneur: 'anatole',
+    lieuDonneur: "dans la forêt, à l'est de la place",
+    prerequis: 'dirigeable-nacelle',
+    recettes: ['anneaux'],
+    etapes: [
+      {
+        type: 'parler',
+        pnj: 'capucine',
+        repliques: [
+          "Un dirigeable ! Il faudra une toile immense… J'ai justement un grand rouleau de toile cirée.",
+          "Prenez-le : c'est mon cadeau pour le village !",
+        ],
+        choix: 'Merci, Capucine !',
+        messageFait: 'Capucine vous donne un grand rouleau de toile.',
+        objectif: "Va voir Capucine, au marché : elle a de la toile pour l'enveloppe.",
+      },
+      {
+        type: 'parler',
+        pnj: 'gaston',
+        repliques: [
+          "Des cordages pour un ballon ? J'ai les meilleurs nœuds de marin de toute la région.",
+          'Voilà de la bonne corde. Elle ne cassera jamais, foi de pêcheur !',
+        ],
+        choix: 'Merci, Gaston !',
+        messageFait: 'Gaston vous donne de solides cordages de marin.',
+        objectif: "Va voir Gaston, au lac : il a des cordages pour l'enveloppe.",
+      },
+      {
+        type: 'fabriquer',
+        objet: 'anneaux',
+        objectif: "Fabrique des anneaux d'amarrage à l'établi (1 cuivre, 2 ressorts).",
+      },
+      {
+        type: 'livrer',
+        pnj: 'anatole',
+        objet: 'anneaux',
+        objectif: "Apporte les anneaux d'amarrage à Anatole, dans la forêt.",
+      },
+    ],
+    recompense: 100,
+    textes: {
+      proposition: [
+        "La nacelle est prête ! Maintenant, l'enveloppe : le grand ballon qui flotte dans le ciel.",
+        'Il faut de la toile, et des cordages pour l\'attacher. Capucine et Gaston pourront nous aider.',
+        'Et des anneaux de cuivre pour que tout tienne ensemble. 100 pièces, comme promis !',
+      ],
+      enCours: ['De la toile, des cordages et des anneaux de cuivre !'],
+      livraison: ["L'enveloppe est cousue et gonflée ! Regardez-la flotter…", 'Voici 100 pièces. Il faut maintenant de quoi avancer : une chaudière !'],
+      apres: ["L'enveloppe flotte au-dessus de la forêt. Quel spectacle !"],
+    },
+  },
+
+  'dirigeable-chaudiere': {
+    titre: 'Le dirigeable (3/5) : la chaudière',
+    donneur: 'anatole',
+    lieuDonneur: "dans la forêt, à l'est de la place",
+    prerequis: 'dirigeable-enveloppe',
+    recettes: ['chaudiere'],
+    etapes: [
+      {
+        type: 'parler',
+        pnj: 'sidonie',
+        repliques: [
+          'Une chaudière pour un dirigeable ? Il faudra du cuivre très fin, pour qu\'elle soit légère.',
+          "J'en ai trouvé un filon spécial, tout au fond de la galerie. Le voici !",
+        ],
+        choix: 'Merci, Sidonie !',
+        messageFait: 'Sidonie vous donne des feuilles de cuivre très fin.',
+        objectif: 'Va voir Sidonie, à la mine : elle a du cuivre fin pour la chaudière.',
+      },
+      {
+        type: 'fabriquer',
+        objet: 'chaudiere',
+        objectif: "Fabrique une petite chaudière à l'établi (3 cuivres, 1 bois).",
+      },
+      {
+        type: 'livrer',
+        pnj: 'anatole',
+        objet: 'chaudiere',
+        objectif: 'Apporte la petite chaudière à Anatole, dans la forêt.',
+      },
+    ],
+    recompense: 120,
+    textes: {
+      proposition: [
+        "Une enveloppe, c'est bien. Mais pour avancer, il faut de la vapeur !",
+        'Une petite chaudière, légère comme une plume. Sidonie, à la mine, a sûrement le cuivre qu\'il faut.',
+        'Cette étape-là vaut bien 120 pièces.',
+      ],
+      enCours: ['Du cuivre très fin, et une chaudière légère comme une plume !'],
+      livraison: ['Elle chauffe à merveille, et elle ne pèse presque rien !', "Voici 120 pièces. Il manque encore l'hélice…"],
+      apres: ['La chaudière ronronne doucement. Le dirigeable est presque prêt !'],
+    },
+  },
+
+  'dirigeable-helice': {
+    titre: "Le dirigeable (4/5) : l'hélice",
+    donneur: 'anatole',
+    lieuDonneur: "dans la forêt, à l'est de la place",
+    prerequis: 'dirigeable-chaudiere',
+    recettes: ['helice'],
+    etapes: [
+      {
+        type: 'parler',
+        pnj: 'augustin',
+        repliques: [
+          "Une hélice ? Les locomotives n'en ont pas, mais je connais bien les engrenages qui font tourner les roues.",
+          "Tenez, j'ai dessiné le meilleur réglage possible. Avec ça, elle tournera rond !",
+        ],
+        choix: 'Merci, Augustin !',
+        messageFait: "Augustin vous donne ses dessins d'hélice.",
+        objectif: "Va voir Augustin, à la gare : il a des dessins pour l'hélice.",
+      },
+      {
+        type: 'fabriquer',
+        objet: 'helice',
+        objectif: "Fabrique une hélice de cuivre à l'établi (2 cuivres, 1 bois, 1 ressort).",
+      },
+      {
+        type: 'livrer',
+        pnj: 'anatole',
+        objet: 'helice',
+        objectif: "Apporte l'hélice de cuivre à Anatole, dans la forêt.",
+      },
+    ],
+    recompense: 120,
+    textes: {
+      proposition: [
+        'La chaudière est installée. Maintenant, il faut une hélice pour pousser le dirigeable !',
+        "Augustin, le chef de gare, s'y connaît en mécanique. Demandez-lui conseil.",
+        '120 pièces pour cette étape !',
+      ],
+      enCours: ["Les dessins d'Augustin, et une belle hélice de cuivre !"],
+      livraison: ['Elle tourne ! Le dirigeable avance tout seul sous la brise.', 'Voici 120 pièces. Il ne manque plus que les instruments de bord… et un drapeau !'],
+      apres: ["L'hélice tourne. Encore une étape, et nous volerons !"],
+    },
+  },
+
+  'dirigeable-envol': {
+    titre: 'Le dirigeable (5/5) : le grand envol',
+    donneur: 'anatole',
+    lieuDonneur: "dans la forêt, à l'est de la place",
+    prerequis: 'dirigeable-helice',
+    recettes: ['tableau-bord'],
+    // En cadeau, à la fin : la casquette d'aviateur (pour la garde-robe).
+    donneTenue: 'casquette-aviateur',
+    etapes: [
+      {
+        type: 'parler',
+        pnj: 'leon',
+        repliques: [
+          "Une boussole pour le dirigeable ? Prenez la mienne : elle m'a guidé sur toutes les routes de la région.",
+          'Comme ça, vous ne vous perdrez jamais !',
+        ],
+        choix: 'Merci, Léon !',
+        messageFait: 'Léon vous donne sa vieille boussole de facteur.',
+        objectif: 'Va voir Léon, au marché : il a une boussole pour le dirigeable.',
+      },
+      {
+        type: 'parler',
+        pnj: 'odile',
+        repliques: [
+          'Le dirigeable est presque prêt ? Alors il lui faut un drapeau !',
+          "Je l'ai cousu moi-même : un engrenage de cuivre sur fond crème. Les couleurs de Cuivrebourg !",
+        ],
+        choix: 'Merci, Odile !',
+        messageFait: 'Odile vous donne le drapeau de Cuivrebourg.',
+        objectif: 'Va voir Odile, sur la place : elle a cousu un drapeau pour le dirigeable.',
+      },
+      {
+        type: 'fabriquer',
+        objet: 'tableau-bord',
+        objectif: "Fabrique le tableau de bord à l'établi (1 cuivre, 1 bois, 2 ressorts).",
+      },
+      {
+        type: 'livrer',
+        pnj: 'anatole',
+        objet: 'tableau-bord',
+        objectif: 'Apporte le tableau de bord à Anatole : le dirigeable va s\'envoler !',
+      },
+    ],
+    recompense: 250,
+    textes: {
+      proposition: [
+        'Dernière étape, mon ami ! Les instruments de bord : une boussole et un tableau de bord.',
+        'Et un drapeau, pour que tout le monde nous reconnaisse dans le ciel.',
+        'Léon et Odile vont nous aider. Pour le grand envol : 250 pièces… et une surprise !',
+      ],
+      enCours: ['La boussole de Léon, le drapeau d\'Odile, et un beau tableau de bord !'],
+      livraison: [
+        'Le tableau de bord est en place, la boussole indique le nord, et le drapeau flotte au vent…',
+        'Le dirigeable est prêt ! Il s\'appellera « Le Cuivrebourg ».',
+        "Voici 250 pièces, et ma casquette d'aviateur. Maintenant, il vous emmène où vous voulez : touchez le bouton du dirigeable, en haut de l'écran (ou la touche V) !",
+      ],
+      apres: ["Le dirigeable vous attend ! Touchez son bouton en haut de l'écran (ou la touche V) pour voyager au-dessus du village."],
+    },
+  },
 });
 
 // -----------------------------------------------------------------------------
@@ -413,6 +718,8 @@ function etapeSuivante(etat, id) {
     etat.atelier.ameliorations.push(q.donneAmelioration);
     messages.push(`Cadeau : ${AMELIORATIONS[q.donneAmelioration].nom}`);
   }
+  // Version 1.6 : une quête peut offrir une tenue (la casquette d'aviateur).
+  if (q.donneTenue) messages.push(...recevoirTenue(etat, q.donneTenue));
   return [...messages, ...majDisponibilites(etat)];
 }
 
@@ -485,13 +792,13 @@ export function dialoguePnjQuete(etat, pnj, nomPnj) {
       if (etat.atelier.stock[etape.objet] > 0) {
         return {
           orateur: nomPnj,
-          repliques: quete.textes.livraison,
+          repliques: etape.repliques || quete.textes.livraison,
           choix: [{ texte: `Donner ${RECETTES[etape.objet].article}`, action: `quete:livrer:${id}` }],
         };
       }
     }
     if (etape.type === 'parler' && etape.pnj === pnj) {
-      return { orateur: nomPnj, repliques: quete.textes.fin, choix: [{ texte: etape.choix || 'Avec plaisir !', action: `quete:parler:${id}` }] };
+      return { orateur: nomPnj, repliques: etape.repliques || quete.textes.fin, choix: [{ texte: etape.choix || 'Avec plaisir !', action: `quete:parler:${id}` }] };
     }
     if (quete.donneur === pnj) {
       // Certaines étapes ont leurs propres répliques ({n} et {total} : les objets ramassés).
@@ -519,6 +826,17 @@ export function dialoguePnjQuete(etat, pnj, nomPnj) {
   return null;
 }
 
+// Version 1.6 : seulement quand une étape en cours concerne ce personnage
+// (lui livrer un objet, ou lui parler). Pour les habitants qui ont leurs
+// propres dialogues (Odile, Léon, Gaston…) mais qui aident au grand projet.
+export function dialogueEtapeQuete(etat, pnj, nomPnj) {
+  const enCours = queteEnCours(etat);
+  if (!enCours || enCours.etape.pnj !== pnj) return null;
+  const { type, objet } = enCours.etape;
+  if (type === 'parler' || (type === 'livrer' && etat.atelier.stock[objet] > 0)) return dialoguePnjQuete(etat, pnj, nomPnj);
+  return null;
+}
+
 // Applique une action de quête choisie dans un dialogue.
 export function appliquerActionQuete(etat, action) {
   const [prefixe, type, id] = String(action).split(':');
@@ -532,7 +850,10 @@ export function appliquerActionQuete(etat, action) {
     etat.atelier.stock[objet] -= 1;
     return etapeSuivante(etat, id);
   }
-  if (type === 'parler' && enCours.etape.type === 'parler') return etapeSuivante(etat, id);
+  if (type === 'parler' && enCours.etape.type === 'parler') {
+    const fait = enCours.etape.messageFait;
+    return [...(fait ? [fait] : []), ...etapeSuivante(etat, id)];
+  }
   return [];
 }
 
@@ -557,7 +878,7 @@ export function objectifQuetes(etat) {
   return null;
 }
 
-const NOMS = { odile: 'Odile', capucine: 'Capucine', barnabe: 'Barnabé', augustin: 'Augustin', sidonie: 'Sidonie' };
+const NOMS = { odile: 'Odile', capucine: 'Capucine', barnabe: 'Barnabé', augustin: 'Augustin', sidonie: 'Sidonie', anatole: 'Anatole', leon: 'Léon', gaston: 'Gaston' };
 function nomDonneur(pnj) {
   return NOMS[pnj] || pnj;
 }

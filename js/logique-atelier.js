@@ -77,6 +77,16 @@ export const RECETTES = Object.freeze({
     prixVente: 120,
     plans: 'plans-automate',
   },
+  // Version 1.6 : le train miniature (les plans sont un cadeau d'amitié d'Augustin).
+  'train-miniature': {
+    nom: 'Train miniature',
+    article: 'un train miniature',
+    pluriel: 'trains miniatures',
+    ingredients: { cuivre: 2, bois: 2, ressort: 1 },
+    duree: 16,
+    prixVente: 95,
+    plans: 'plans-train',
+  },
   // Objets de quête (étape 3) : on ne peut les fabriquer que pendant la quête
   // qui les demande (« quete »), et les clients ne les commandent jamais.
   balance: {
@@ -179,7 +189,92 @@ export const RECETTES = Object.freeze({
     prixVente: 30,
     potager: true,
   },
+  // Version 1.6 : ce qu'on cueille dans la forêt (selon la saison). Comme les
+  // bouquets, ça ne se fabrique pas : ça se vend au comptoir, ou s'offre.
+  baies: {
+    nom: 'Panier de baies',
+    article: 'un panier de baies',
+    pluriel: 'paniers de baies',
+    ingredients: {},
+    duree: 0,
+    prixVente: 22,
+    foret: true,
+  },
+  champignons: {
+    nom: 'Panier de champignons',
+    article: 'un panier de champignons',
+    pluriel: 'paniers de champignons',
+    ingredients: {},
+    duree: 0,
+    prixVente: 28,
+    foret: true,
+  },
+  'pommes-pin': {
+    nom: 'Pommes de pin',
+    article: 'un sac de pommes de pin',
+    pluriel: 'sacs de pommes de pin',
+    ingredients: {},
+    duree: 0,
+    prixVente: 14,
+    foret: true,
+  },
+  // Version 1.6 : les objets de quête de la forêt (le télescope d'Anatole) et
+  // du grand projet (le dirigeable).
+  'monture-lentille': {
+    nom: 'Monture de lentille',
+    article: 'une monture de lentille',
+    ingredients: { cuivre: 2, ressort: 1 },
+    duree: 9,
+    prixVente: 0,
+    quete: 'telescope-anatole',
+  },
+  nacelle: {
+    nom: 'Armature de nacelle',
+    article: 'une armature de nacelle',
+    ingredients: { cuivre: 1, bois: 3 },
+    duree: 12,
+    prixVente: 0,
+    quete: 'dirigeable-nacelle',
+  },
+  anneaux: {
+    nom: "Anneaux d'amarrage",
+    article: "des anneaux d'amarrage",
+    ingredients: { cuivre: 1, ressort: 2 },
+    duree: 10,
+    prixVente: 0,
+    quete: 'dirigeable-enveloppe',
+  },
+  chaudiere: {
+    nom: 'Petite chaudière',
+    article: 'une petite chaudière',
+    ingredients: { cuivre: 3, bois: 1 },
+    duree: 14,
+    prixVente: 0,
+    quete: 'dirigeable-chaudiere',
+  },
+  helice: {
+    nom: 'Hélice de cuivre',
+    article: 'une hélice de cuivre',
+    ingredients: { cuivre: 2, bois: 1, ressort: 1 },
+    duree: 12,
+    prixVente: 0,
+    quete: 'dirigeable-helice',
+  },
+  'tableau-bord': {
+    nom: 'Tableau de bord',
+    article: 'un tableau de bord',
+    ingredients: { cuivre: 1, bois: 1, ressort: 2 },
+    duree: 12,
+    prixVente: 0,
+    quete: 'dirigeable-envol',
+  },
 });
+
+// Ce qui pousse au potager ou se cueille en forêt (ne se fabrique pas).
+export function estRecolte(id) {
+  const r = RECETTES[id];
+  return Boolean(r && (r.potager || r.foret));
+}
 
 // Un objet qu'un client peut acheter au comptoir ? (pas les objets de quête,
 // de fête, ni l'oiseau mécanique)
@@ -197,8 +292,10 @@ export const AMELIORATIONS = Object.freeze({
   // Version 1.3.
   'plans-boite-musique': { nom: 'Plans de boîte à musique', description: 'Débloque la fabrication des boîtes à musique.', prix: 120 },
   // Celle-ci ne s'achète pas : c'est le cadeau de Sidonie, à la fin de sa quête à la mine.
-  'plans-automate': { nom: "Plans d'automate", description: 'Débloque la fabrication des automates de cuivre.', prix: 0, cadeau: 'wagonnet-mine' },
+  'plans-automate': { nom: "Plans d'automate", description: 'Débloque la fabrication des automates de cuivre.', prix: 0, cadeau: 'wagonnet-mine', origine: 'un cadeau de Sidonie, à la mine de cuivre' },
   // Version 1.5 : une apprentie, qui travaille à son propre établi, dans l'atelier.
+  // Version 1.6 : un cadeau d'Augustin, quand on est devenus très bons amis.
+  'plans-train': { nom: 'Plans du train miniature', description: 'Débloque la fabrication des trains miniatures.', prix: 0, cadeau: 'amitie', origine: "un cadeau d'Augustin, quand vous serez très bons amis (5 cœurs)" },
   apprentie: { nom: 'Une apprentie', description: "Lucie, la nièce d'Odile, fabrique toute seule des lanternes ou des bouilloires, à son établi dans l'atelier. Parlez-lui pour choisir.", prix: 150 },
 });
 
@@ -271,6 +368,7 @@ export function creerEtatAtelier() {
     recettesFete: [],        // l'objet de la fête du jour, s'il y en a une (version 1.5)
     // L'apprentie (version 1.5) : ce qu'elle fabrique, et son travail en cours.
     apprentie: { tache: 'lanterne', fabrication: null },
+    assemblages: 0,          // les assemblages d'engrenages réussis (version 1.6)
   };
 }
 
@@ -310,7 +408,7 @@ export function recetteDebloquee(etat, id) {
   if (!r) return false;
   if (r.quete) return etat.atelier.recettesQuete.includes(id);
   if (r.fete) return etat.atelier.recettesFete.includes(id);
-  if (r.potager) return false; // les bouquets poussent au potager
+  if (r.potager || r.foret) return false; // les bouquets poussent au potager, les baies dans la forêt
   if (r.compagnon) return Boolean(etat.compagnons) && !etat.compagnons[r.compagnon];
   return !r.plans || possedeAmelioration(etat, r.plans);
 }
@@ -366,6 +464,7 @@ export function peutFabriquer(etat, id) {
     if (r.quete) return { possible: false, raison: 'Cet objet sert à une quête.' };
     if (r.fete) return { possible: false, raison: "Cet objet ne se fabrique que le jour de sa fête." };
     if (r.potager) return { possible: false, raison: 'Les bouquets poussent au potager.' };
+    if (r.foret) return { possible: false, raison: 'Cela se cueille dans la forêt.' };
     if (r.compagnon) return { possible: false, raison: 'Votre oiseau mécanique vole déjà à vos côtés.' };
     return { possible: false, raison: `Il faut d'abord les ${AMELIORATIONS[r.plans].nom.toLowerCase()}.` };
   }
@@ -381,13 +480,19 @@ export function peutFabriquer(etat, id) {
 // -----------------------------------------------------------------------------
 
 // Lancer une fabrication : les matériaux sont utilisés tout de suite.
-export function lancerFabrication(etat, id) {
+// Version 1.6 : « assemble » = Ferrus a lui-même assemblé les engrenages
+// (le petit jeu d'assemblage) : la fabrication va deux fois plus vite.
+export function lancerFabrication(etat, id, { assemble = false } = {}) {
   const verdict = peutFabriquer(etat, id);
   if (!verdict.possible) return [verdict.raison];
   const a = etat.atelier;
   for (const [materiau, quantite] of Object.entries(RECETTES[id].ingredients)) a.stock[materiau] -= quantite;
-  const duree = dureeFabrication(etat, id);
+  const duree = dureeFabrication(etat, id) * (assemble ? 0.5 : 1);
   a.fabrication = { recette: id, restant: duree, total: duree };
+  if (assemble) {
+    a.assemblages += 1;
+    return [`Bel assemblage ! Fabrication lancée : ${RECETTES[id].nom} (deux fois plus vite)`];
+  }
   return [`Fabrication lancée : ${RECETTES[id].nom}`];
 }
 
@@ -415,7 +520,7 @@ export function acheterAmelioration(etat, id) {
   if (!amelioration) return [];
   if (!a.ouvert) return ["L'atelier n'est pas encore ouvert."];
   if (possedeAmelioration(etat, id)) return ['Déjà installé.'];
-  if (amelioration.cadeau) return ["Ces plans ne s'achètent pas : Sidonie, à la mine de cuivre, pourrait vous les offrir."];
+  if (amelioration.cadeau) return [`Ces plans ne s'achètent pas : c'est ${amelioration.origine}.`];
   if (etat.argent < amelioration.prix) return [`Pas assez d'argent (${amelioration.prix} pièces).`];
   etat.argent -= amelioration.prix;
   a.ameliorations.push(id);
@@ -525,9 +630,10 @@ export function avancerTemps(etat, dt) {
     if (a.prochainClient <= 0) {
       const habitant = HABITANTS[a.compteurClients % HABITANTS.length];
       // Les clients ne commandent que des objets « normaux » (pas d'objets de quête).
-      // Ils prennent aussi des bouquets du potager, s'il y en a en stock.
+      // Ils prennent aussi des bouquets du potager et des paniers de la forêt
+      // (version 1.6), s'il y en a en stock.
       const disponibles = recettesDisponibles(etat).filter(vendableAuComptoir);
-      if (a.stock.bouquet > 0) disponibles.push('bouquet');
+      for (const id of Object.keys(RECETTES)) if (estRecolte(id) && a.stock[id] > 0) disponibles.push(id);
       const commande = disponibles[Math.floor(hasard(a) * disponibles.length)];
       a.compteurClients += 1;
       a.clients.push({ id: a.compteurClients, nom: habitant.nom, salut: habitant.salut, commande });
