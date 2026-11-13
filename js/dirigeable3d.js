@@ -11,7 +11,7 @@
 
 import * as THREE from '../lib/three/three.module.js';
 import { objet, COULEURS, formeEngrenage } from './decor.js';
-import { boite, cylindre, boule } from './formes.js';
+import { boite, cylindre } from './formes.js';
 import { creerFumee } from './vie.js';
 
 const CREME = '#e8dcc0';

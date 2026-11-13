@@ -838,6 +838,13 @@ export function voyageTram(etat, depuis) {
   return { zone: vers, x: a.x, z: a.z, orientation: a.orientation };
 }
 
+// La roue du moulin est-elle réparée ? (dès que l'axe est installé)
+export function roueReparee(etat) {
+  if (queteTerminee(etat, 'roue-moulin')) return true;
+  const enCours = queteEnCours(etat);
+  return Boolean(enCours && enCours.id === 'roue-moulin' && enCours.etape.type === 'parler');
+}
+
 // Le wagonnet de la mine est-il réparé ? (dès que la roue neuve est posée)
 export function wagonnetRepare(etat) {
   if (queteTerminee(etat, 'wagonnet-mine')) return true;

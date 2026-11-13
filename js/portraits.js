@@ -9,11 +9,13 @@
 // =============================================================================
 
 import * as THREE from '../lib/three/three.module.js';
+import { creerFerrus, creerOdile, creerPersonnage, habillerFerrus, TENUES_PNJ } from './personnages.js';
+import { creerChat, creerOiseau, animerChat } from './compagnons.js';
 
 // « renderer » : le moteur 3D du jeu ; « redessiner » : redessine le lieu.
 // Renvoie la fonction photographier(modele, hauteur, distance, surplomb), qui
 // renvoie l'image (une adresse « data: ») d'un portrait de 128 × 128 pixels.
-export function creerStudio(renderer, redessiner) {
+function creerStudio(renderer, redessiner) {
   const TAILLE_PORTRAIT = 128;
   let studio = null;
   return function photographier(modele, hauteur, distance, surplomb = 0.1) {
@@ -50,4 +52,51 @@ export function creerStudio(renderer, redessiner) {
       redessiner(); // on redessine tout de suite le lieu par-dessus
     }
   };
+}
+
+// -----------------------------------------------------------------------------
+// Les portraits de l'album (version 1.5) et l'aperçu de la garde-robe (1.6)
+// -----------------------------------------------------------------------------
+// Chaque portrait est dessiné une seule fois, la première fois qu'on ouvre
+// l'album : on place le personnage devant la petite caméra du studio, on prend
+// la photo, et on la garde.
+// Renvoie { portrait(id), apercuFerrus(tenue) } ; chacune renvoie une image,
+// ou null si elle n'a pas pu être faite (l'album affiche alors un « ? »).
+export function creerPortraits(renderer, redessiner) {
+  const photographier = creerStudio(renderer, redessiner);
+  const portraits = new Map();
+  let mannequin = null; // un deuxième Ferrus, pour l'aperçu de la garde-robe
+
+  function portrait(id) {
+    if (portraits.has(id)) return portraits.get(id);
+    let image = null;
+    try {
+      let modele;
+      let hauteur = 1.5;
+      let distance = 1.7;
+      if (id === 'odile') modele = creerOdile();
+      else if (id === 'chat') { modele = creerChat(); modele.userData.repos = 10; animerChat(modele, 0, 1, 0, true); hauteur = 0.32; distance = 1.5; }
+      else if (id === 'oiseau') { modele = creerOiseau(); hauteur = 0.03; distance = 0.55; }
+      else modele = creerPersonnage(TENUES_PNJ[id]);
+      modele.rotation.y = 0.35;
+      image = photographier(modele, hauteur, distance);
+    } catch {
+      image = null;
+    }
+    portraits.set(id, image);
+    return image;
+  }
+
+  function apercuFerrus(tenue) {
+    try {
+      if (!mannequin) mannequin = creerFerrus();
+      habillerFerrus(mannequin, tenue);
+      mannequin.rotation.y = 0.35;
+      return photographier(mannequin, 1.05, 2.75, 0.25);
+    } catch {
+      return null;
+    }
+  }
+
+  return { portrait, apercuFerrus };
 }

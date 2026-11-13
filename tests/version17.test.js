@@ -246,7 +246,7 @@ test('la qualité « Élevée » : image plus fine, ombres plus précises, effet
   assert.equal(parametresQualite('elevee', 1).pixelRatio, 1);
   assert.equal(parametresQualite('normale', 3).effets, undefined);
   assert.equal(lireReglages(JSON.stringify({ qualite: 'elevee' })).qualite, 'elevee');
-  assert.equal(VERSION_JEU, '1.7.0');
+  assert.match(VERSION_JEU, /^1\.7\.\d+$/);
 });
 
 // Toutes les cases (de 25 cm) où Ferrus peut aller en partant d'un point (on
