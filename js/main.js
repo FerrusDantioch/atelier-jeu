@@ -94,7 +94,7 @@ import {
   wagonnetRepare,
   LUMIERE_INTERIEUR,
 } from './logique-zones.js';
-import { MOMENT_JOUR_FIXE, lumiereDuMoment, avancerJournee, anglesAiguilles, etatTrain } from './logique-temps.js';
+import { MOMENT_JOUR_FIXE, directionSoleil, lumiereDuMoment, avancerJournee, anglesAiguilles, etatTrain } from './logique-temps.js';
 import { CLE_SAUVEGARDE, serialiserPartie, chargerPartie, nomFichierSauvegarde, resumePartie, TAILLE_MAX_FICHIER } from './logique-sauvegarde.js';
 import { construireDecor, creerEngrenageQuete, creerMarqueur, allumerLampe } from './decor.js';
 import { construireMarche, construireMoulin, creerPaleQuete } from './decor-zones.js';
@@ -125,6 +125,7 @@ import { creerJournal, creerGarderobe, creerPanneauVitrine, creerPanneauAssembla
 import { creerModePhoto } from './interface-photo.js';
 import { animerEau, eclairerEau } from './eau.js';
 import { fusionnerDecor } from './fusion.js';
+import { reglerMoteur, creerReflets, definirReflets, eclairerMetaux, creerCiel, FORCES } from './rendu.js';
 import { animerVent, eclairerNuit } from './vie.js';
 import {
   creerFerrus,
@@ -249,6 +250,10 @@ function demarrer() {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
+  // Version 1.7 : une image plus riche (correction tonale), et les reflets du
+  // ciel sur le cuivre et le laiton (voir rendu.js).
+  reglerMoteur(renderer);
+  definirReflets(creerReflets(renderer));
   document.getElementById('scene').appendChild(renderer.domElement);
 
   // Si le téléphone « perd » la 3D (manque de mémoire…), on prévient clairement.
@@ -271,7 +276,13 @@ function demarrer() {
   Object.assign(soleil.shadow.camera, { left: -24, right: 24, top: 22, bottom: -22, near: 1, far: 60 });
   soleil.shadow.bias = -0.0005;
   soleil.shadow.normalBias = 0.03;
+  soleil.shadow.radius = 2.6; // des ombres aux bords doux
   const soleils = [soleil]; // (pour couper les ombres en mode Économie)
+  // Sous terre et dans l'atelier, la lumière vient toujours du même côté.
+  const SOLEIL_FIXE = { x: -10 / 27, y: 22 / 27, z: 12 / 27 };
+  // Le dôme du ciel (version 1.7) suit aussi Ferrus de lieu en lieu.
+  const domeCiel = creerCiel();
+  const directionAstre = new THREE.Vector3();
   function creerSceneDeBase() {
     const scene = new THREE.Scene();
     // Un ciel couleur sable doux et une brume légère qui cache l'horizon.
@@ -300,9 +311,13 @@ function demarrer() {
     scene.fog.color.setRGB(...l.ciel, THREE.SRGBColorSpace);
     ciel.color.setRGB(...l.hautCiel, THREE.SRGBColorSpace);
     ciel.groundColor.setRGB(...l.basSol, THREE.SRGBColorSpace);
-    ciel.intensity = l.forceCiel;
+    ciel.intensity = l.forceCiel * FORCES.ciel;
     soleil.color.setRGB(...l.soleil, THREE.SRGBColorSpace);
-    soleil.intensity = l.forceSoleil;
+    soleil.intensity = l.forceSoleil * FORCES.soleil;
+    // Version 1.7 : le soleil se déplace au fil de la journée (dehors seulement).
+    const d = sousTerre ? SOLEIL_FIXE : directionSoleil(reglages.jourNuit ? etat.journee : MOMENT_JOUR_FIXE);
+    soleil.position.set(d.x * 27, d.y * 27, d.z * 27);
+    eclairerMetaux(sousTerre ? 0.4 : l.nuit);
     eclairerNuit(l.nuit);
     eclairerEau(sousTerre ? 0 : l.nuit); // les étoiles se reflètent dans l'eau (pas sous terre !)
     eclairerFetes(l.nuit); // les lanternes des fêtes s'allument le soir (version 1.5)
@@ -555,7 +570,7 @@ function demarrer() {
   const ferrus = creerFerrus();
   ferrus.position.set(MONDE.joueur.x, 0, MONDE.joueur.z);
   lieux.place.scene.add(ferrus);
-  lieux.place.scene.add(soleil, soleil.target);
+  lieux.place.scene.add(soleil, soleil.target, domeCiel);
 
   // La qualité de l'image (option « Normale » ou « Économie »).
   let imagesParSeconde = 60;
@@ -1024,7 +1039,7 @@ function demarrer() {
     zone = nouveauLieu;
     audio.changerAmbiance(zone); // chaque lieu a sa musique
     lieux[zone].scene.add(ferrus); // Ferrus quitte l'ancienne scène et entre dans la nouvelle
-    lieux[zone].scene.add(soleil, soleil.target); // le soleil (et ses ombres) aussi
+    lieux[zone].scene.add(soleil, soleil.target, domeCiel); // le soleil (et ses ombres) et le ciel aussi
     lieux[zone].scene.add(chutes); // les flocons (ou les pétales) le suivent
     lieux[zone].scene.add(pluie, compagnons.chat, compagnons.oiseau); // la pluie et les compagnons aussi
     obstacles = obstaclesZone(zone, etat);
@@ -1079,7 +1094,7 @@ function demarrer() {
     afficherMessages(['Le dirigeable « Le Cuivrebourg » prend son envol…']);
     fondu.classList.add('visible');
     setTimeout(() => {
-      sceneVol.add(soleil, soleil.target); // le soleil éclaire maintenant la carte du ciel
+      sceneVol.add(soleil, soleil.target, domeCiel); // le soleil éclaire maintenant la carte du ciel
       voyage = { depuis: zone, vers: destination.zone, temps: 0, duree: dureeVol(zone, destination.zone), destination, fini: false };
       document.body.classList.add('mode-photo'); // pendant le vol, l'interface se fait discrète
       fondu.classList.remove('visible');
@@ -1356,6 +1371,7 @@ function demarrer() {
   // ---------------------------------------------------------------------------
   let tempsPrecedent = performance.now();
   let tempsTotal = 0;
+  let pluieDuCiel = 0;         // la pluie du moment, pour couvrir le ciel (version 1.7)
   let dernierDessin = 0;
   let debutTrain = null;     // le moment où le train a commencé à rouler
   let trainRoulait = false;  // pour le petit « tchou » au départ
@@ -1382,6 +1398,7 @@ function demarrer() {
     // La saison et la météo du moment : calculées une seule fois par image.
     const saisonImage = saisonDuJeu();
     const meteo = meteoDuMoment(etat.jour, etat.journee, saisonImage, reglages.meteo);
+    pluieDuCiel = meteo.pluie;
 
     // --- L'atelier vit, même quand Ferrus est ailleurs (fabrication, clients) ---
     // (Pendant les options, le jeu est en pause : l'atelier attend aussi.)
@@ -1643,7 +1660,22 @@ function demarrer() {
   // Dessine ce que le joueur regarde : le lieu où il est, ou la carte du ciel
   // pendant un voyage en dirigeable.
   function dessinerLieu() {
-    renderer.render(voyage ? sceneVol : lieux[zone].scene, camera);
+    const scene = voyage ? sceneVol : lieux[zone].scene;
+    // Le ciel entoure la caméra ; il n'y en a pas sous terre ni dans l'atelier.
+    const abrite = !voyage && Boolean(ZONES[zone].souterrain || ZONES[zone].lumiereFixe);
+    domeCiel.visible = !abrite;
+    if (!abrite) {
+      domeCiel.position.copy(camera.position);
+      const l = lumiereDuMoment(reglages.jourNuit ? etat.journee : MOMENT_JOUR_FIXE);
+      domeCiel.userData.regler({
+        horizon: scene.fog.color,
+        nuit: l.nuit,
+        soleil: directionAstre.copy(soleil.position).normalize(),
+        temps: tempsTotal,
+        pluie: voyage ? 0 : pluieDuCiel,
+      });
+    }
+    renderer.render(scene, camera);
   }
 
   // L'horloge et le train de la gare (version 1.2).
@@ -1739,6 +1771,8 @@ function demarrer() {
     position: () => ({ ...position }),
     zone: () => zone,
     scene: () => lieux[zone].scene,
+    moteur: () => renderer,
+    forces: FORCES,
     dessin: () => ({ ...renderer.info.render }),
     // Les triangles de chaque partie du lieu affiché (pour surveiller les performances).
     triangles: () => {
@@ -1773,6 +1807,7 @@ function demarrer() {
     // Version 1.6 : les nouvelles fenêtres, le mode photo et le voyage.
     fenetre: () => (fenetres.find((f) => f.estOuvert()) || { element: { id: null } }).element.id,
     photo: () => Boolean(photo),
+    reglerPhoto: (c) => { if (photo) Object.assign(photo.cam, c); },
     photos: () => photos.length,
     voyage: () => (voyage ? { ...voyage, destination: voyage.destination.zone } : null),
     visiteurs: () => visiteurs.nombre(),
