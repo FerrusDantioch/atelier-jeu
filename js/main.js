@@ -124,6 +124,7 @@ import { construireVol } from './vol.js';
 import { creerJournal, creerGarderobe, creerPanneauVitrine, creerPanneauAssemblage, creerPanneauCiel } from './interface-v16.js';
 import { creerModePhoto } from './interface-photo.js';
 import { animerEau, eclairerEau } from './eau.js';
+import { fusionnerDecor } from './fusion.js';
 import { animerVent, eclairerNuit } from './vie.js';
 import {
   creerFerrus,
@@ -260,7 +261,17 @@ function demarrer() {
   const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.5, 120);
 
   // Une scène vide avec le ciel, la brume et la lumière (la même pour chaque lieu).
-  const soleils = []; // le « soleil » de chaque lieu (pour couper les ombres en mode Économie)
+  // Le « soleil » qui fait les ombres. Version 1.7 : il n'y en a plus qu'UN,
+  // qui suit Ferrus d'un lieu à l'autre (voir placerDansLieu). Avant, chaque
+  // lieu avait le sien, et chacun gardait en mémoire sa grande image d'ombres.
+  const soleil = new THREE.DirectionalLight('#ffe0b8', 1.5);
+  soleil.position.set(-10, 22, 12);
+  soleil.castShadow = true;
+  soleil.shadow.mapSize.set(tactile ? 1024 : 2048, tactile ? 1024 : 2048);
+  Object.assign(soleil.shadow.camera, { left: -24, right: 24, top: 22, bottom: -22, near: 1, far: 60 });
+  soleil.shadow.bias = -0.0005;
+  soleil.shadow.normalBias = 0.03;
+  const soleils = [soleil]; // (pour couper les ombres en mode Économie)
   function creerSceneDeBase() {
     const scene = new THREE.Scene();
     // Un ciel couleur sable doux et une brume légère qui cache l'horizon.
@@ -271,17 +282,8 @@ function demarrer() {
     // - une lumière « ciel / sol » qui éclaire tout doucement ;
     const ciel = new THREE.HemisphereLight('#fff1d8', '#8a7558', 1.75);
     scene.add(ciel);
-    // - un « soleil » de fin d'après-midi qui fait les ombres. Il reste fixe et
-    //   couvre tout le lieu : les ombres ne bougent pas et ne scintillent pas.
-    const soleil = new THREE.DirectionalLight('#ffe0b8', 1.5);
-    soleil.position.set(-10, 22, 12);
-    soleil.castShadow = true;
-    soleil.shadow.mapSize.set(tactile ? 1024 : 2048, tactile ? 1024 : 2048);
-    Object.assign(soleil.shadow.camera, { left: -24, right: 24, top: 22, bottom: -22, near: 1, far: 60 });
-    soleil.shadow.bias = -0.0005;
-    soleil.shadow.normalBias = 0.03;
-    scene.add(soleil, soleil.target);
-    soleils.push(soleil);
+    // - le « soleil » de fin d'après-midi, qui fait les ombres, est partagé
+    //   par tous les lieux : il est ajouté à la scène quand Ferrus y entre.
     // Les lumières que le jour et la nuit font changer (voir appliquerLumiere).
     scene.userData.lumieres = { ciel, soleil };
     return scene;
@@ -325,12 +327,21 @@ function demarrer() {
 
   // Les six lieux. Chacun : { scene, marqueurs, pnj, objetsQuete, … }
   const lieux = {};
+  // Version 1.7 : une fois un lieu construit, on soude son décor fixe pour le
+  // dessiner en beaucoup moins de fois (voir fusion.js). Les « sondes » font
+  // vivre le lieu un instant, pour repérer ce qui bouge et ne pas le souder.
+  function souderDecor(lieu, sondes = []) {
+    const animes = [...(lieu.decor.vie || []), ...(lieu.decor.eau || [])];
+    const animer = (t) => () => { for (const a of animes) a.userData.animer(t); };
+    lieu.soudure = fusionnerDecor(lieu.scene, lieu.decor, [animer(1.3), animer(7.7), ...sondes, animer(0)]);
+  }
 
   // --- La place (étapes 1 et 2) ---
   {
     const scene = creerSceneDeBase();
     const lieu = { scene, marqueurs: new Map(), pnj: [], objetsQuete: new Map() };
     lieu.decor = construireDecor(scene, MONDE);
+    souderDecor(lieu);
     // Odile, et ses engrenages perdus (cachés au départ).
     const odile = creerOdile();
     odile.position.set(MONDE.odile.x, 0, MONDE.odile.z);
@@ -355,6 +366,7 @@ function demarrer() {
     const scene = creerSceneDeBase();
     const lieu = { scene, marqueurs: new Map(), pnj: [], objetsQuete: new Map() };
     lieu.decor = construireMarche(scene, ZONES.marche);
+    souderDecor(lieu);
     for (const p of ZONES.marche.pnj) ajouterPnj(lieu, p);
     lieux.marche = lieu;
   }
@@ -364,6 +376,7 @@ function demarrer() {
     const scene = creerSceneDeBase();
     const lieu = { scene, marqueurs: new Map(), pnj: [], objetsQuete: new Map() };
     lieu.decor = construireMoulin(scene, ZONES.moulin);
+    souderDecor(lieu);
     for (const p of ZONES.moulin.pnj) ajouterPnj(lieu, p);
     const m = ZONES.moulin.mecanisme;
     ajouterMarqueur(lieu, 'mecanisme', m.x, m.z, 1.9);
@@ -384,6 +397,7 @@ function demarrer() {
     const scene = creerSceneDeBase();
     const lieu = { scene, marqueurs: new Map(), pnj: [], objetsQuete: new Map() };
     lieu.decor = construireGare(scene, ZONES.gare);
+    souderDecor(lieu);
     for (const p of ZONES.gare.pnj) ajouterPnj(lieu, p);
     const h = ZONES.gare.horloge;
     ajouterMarqueur(lieu, 'horloge', h.x, h.z, 4.45);
@@ -406,6 +420,7 @@ function demarrer() {
     const scene = creerSceneDeBase();
     const lieu = { scene, marqueurs: new Map(), pnj: [], objetsQuete: new Map() };
     lieu.decor = construireMine(scene, ZONES.mine);
+    souderDecor(lieu);
     for (const p of ZONES.mine.pnj) ajouterPnj(lieu, p);
     const w = ZONES.mine.wagonnet;
     ajouterMarqueur(lieu, 'wagonnet', w.x, w.z, 1.95);
@@ -426,6 +441,7 @@ function demarrer() {
     const scene = creerSceneDeBase();
     const lieu = { scene, marqueurs: new Map(), pnj: [], objetsQuete: new Map() };
     lieu.decor = construireGalerie(scene, ZONES.galerie);
+    souderDecor(lieu);
     lieux.galerie = lieu;
   }
 
@@ -434,6 +450,10 @@ function demarrer() {
     const scene = creerSceneDeBase();
     const lieu = { scene, marqueurs: new Map(), pnj: [], objetsQuete: new Map() };
     lieu.decor = construireInterieur(scene, ZONES.interieur);
+    souderDecor(lieu, [
+      () => { for (let i = 0; i < 80; i++) lieu.decor.regler(1); lieu.decor.vie[0].userData.animer(2.2); },
+      () => { for (let i = 0; i < 400; i++) lieu.decor.regler(0); },
+    ]);
     for (const p of ZONES.interieur.pnj) ajouterPnj(lieu, p); // Lucie, l'apprentie
     lieux.interieur = lieu;
   }
@@ -443,6 +463,7 @@ function demarrer() {
     const scene = creerSceneDeBase();
     const lieu = { scene, marqueurs: new Map(), pnj: [], objetsQuete: new Map() };
     lieu.decor = construireLac(scene, ZONES.lac);
+    souderDecor(lieu);
     for (const p of ZONES.lac.pnj) ajouterPnj(lieu, p); // Gaston, le pêcheur
     lieux.lac = lieu;
   }
@@ -452,6 +473,16 @@ function demarrer() {
     const scene = creerSceneDeBase();
     const lieu = { scene, marqueurs: new Map(), pnj: [], objetsQuete: new Map() };
     lieu.decor = construireForet(scene, ZONES.foret);
+    {
+      const { telescope, chantier } = lieu.decor;
+      souderDecor(lieu, [
+        () => telescope.regler(true),
+        () => telescope.regler(false),
+        () => chantier.regler(5),
+        () => chantier.animer(3.1),
+        () => chantier.regler(0),
+      ]);
+    }
     for (const p of ZONES.foret.pnj) ajouterPnj(lieu, p); // Anatole, l'inventeur
     const t = ZONES.foret.telescope;
     ajouterMarqueur(lieu, 'telescope', t.x, t.z, 3.4);
@@ -487,6 +518,13 @@ function demarrer() {
   chatErrant.rotation.y = -0.6;
   chatErrant.userData.repos = 10; // il est assis
   lieux.place.scene.add(chatErrant);
+  // Version 1.7 : on soude aussi le décor fixe qu'on vient d'ajouter à la place
+  // (la vitrine, les barrières du potager…), en laissant libre tout ce qui vit.
+  lieux.place.soudure = fusionnerDecor(
+    lieux.place.scene,
+    { decor: lieux.place.decor, marqueurs: lieux.place.marqueurs, pnj: lieux.place.pnj, objetsQuete: lieux.place.objetsQuete, fetes3d, barriereForet, chatErrant },
+    [() => potager3d.userData.regler(1), () => potager3d.userData.regler(-1)],
+  );
 
   // Les flaques des jours de pluie (version 1.5), sur les chemins et les pavés.
   for (const [nom, liste] of Object.entries(FLAQUES)) creerFlaques(lieux[nom].scene, liste);
@@ -517,6 +555,7 @@ function demarrer() {
   const ferrus = creerFerrus();
   ferrus.position.set(MONDE.joueur.x, 0, MONDE.joueur.z);
   lieux.place.scene.add(ferrus);
+  lieux.place.scene.add(soleil, soleil.target);
 
   // La qualité de l'image (option « Normale » ou « Économie »).
   let imagesParSeconde = 60;
@@ -985,6 +1024,7 @@ function demarrer() {
     zone = nouveauLieu;
     audio.changerAmbiance(zone); // chaque lieu a sa musique
     lieux[zone].scene.add(ferrus); // Ferrus quitte l'ancienne scène et entre dans la nouvelle
+    lieux[zone].scene.add(soleil, soleil.target); // le soleil (et ses ombres) aussi
     lieux[zone].scene.add(chutes); // les flocons (ou les pétales) le suivent
     lieux[zone].scene.add(pluie, compagnons.chat, compagnons.oiseau); // la pluie et les compagnons aussi
     obstacles = obstaclesZone(zone, etat);
@@ -1039,6 +1079,7 @@ function demarrer() {
     afficherMessages(['Le dirigeable « Le Cuivrebourg » prend son envol…']);
     fondu.classList.add('visible');
     setTimeout(() => {
+      sceneVol.add(soleil, soleil.target); // le soleil éclaire maintenant la carte du ciel
       voyage = { depuis: zone, vers: destination.zone, temps: 0, duree: dureeVol(zone, destination.zone), destination, fini: false };
       document.body.classList.add('mode-photo'); // pendant le vol, l'interface se fait discrète
       fondu.classList.remove('visible');
@@ -1131,7 +1172,7 @@ function demarrer() {
   function prendrePhoto() {
     if (!photo) return;
     try {
-      renderer.render(lieux[zone].scene, camera);
+      dessinerLieu();
       const source = renderer.domElement;
       const largeur = Math.min(720, source.width);
       const hauteur = Math.round(largeur * (source.height / source.width));
@@ -1226,6 +1267,16 @@ function demarrer() {
         c.chemin = [...MONDE.clients.chemin].reverse().concat([MONDE.clients.entree]);
       }
     }
+  }
+
+  // Où sont les clients et les visiteurs de la vitrine ? (Rien à calculer quand
+  // la place est vide, ce qui est le cas le plus courant.)
+  const AUCUN_PASSANT = [];
+  function positionsPassants() {
+    if (clients3d.size === 0 && visiteurs.nombre() === 0) return AUCUN_PASSANT;
+    const liste = visiteurs.positions();
+    for (const c of clients3d.values()) liste.push(c.objet.position);
+    return liste;
   }
 
   function animerClients(dt) {
@@ -1328,6 +1379,9 @@ function demarrer() {
     const dt = photo ? 0 : dtReel;
     tempsTotal += dt;
     const lieu = lieux[zone];
+    // La saison et la météo du moment : calculées une seule fois par image.
+    const saisonImage = saisonDuJeu();
+    const meteo = meteoDuMoment(etat.jour, etat.journee, saisonImage, reglages.meteo);
 
     // --- L'atelier vit, même quand Ferrus est ailleurs (fabrication, clients) ---
     // (Pendant les options, le jeu est en pause : l'atelier attend aussi.)
@@ -1356,7 +1410,7 @@ function demarrer() {
         afficherMessages(nouvelles);
         majEtat();
       }
-      const saison = saisonDuMoment(etat.jour, etat.journee, reglages.saisons).id;
+      const saison = saisonImage;
       const annonce = messageSaison(saisonPrecedente, saison);
       if (annonce) afficherMessages([annonce]);
       saisonPrecedente = saison;
@@ -1366,7 +1420,7 @@ function demarrer() {
         afficherMessages(fete);
         majEtat();
       }
-      const temps = meteoDuMoment(etat.jour, etat.journee, saison, reglages.meteo);
+      const temps = meteo;
       const annonceMeteo = messageMeteo(pluiePrecedente, temps.pluie);
       if (annonceMeteo) afficherMessages([annonceMeteo]);
       pluiePrecedente = temps.pluie;
@@ -1415,9 +1469,8 @@ function demarrer() {
       const { dx, dz } = peche ? { dx: 0, dz: 0 } : calculerPas(direction.x, direction.z, MONDE.joueur.vitesse, dt);
       const avant = position;
       // Sur la place, les clients sont des obstacles eux aussi.
-      const autour = zone === 'place'
-        ? obstacles.concat(obstaclesClients([...clients3d.values()].map((c) => c.objet.position).concat(visiteurs.positions()), position))
-        : obstacles;
+      const passants = zone === 'place' ? positionsPassants() : AUCUN_PASSANT;
+      const autour = passants.length > 0 ? obstacles.concat(obstaclesClients(passants, position)) : obstacles;
       position = deplacerJoueur(position, dx, dz, autour, ZONES[zone]);
       vitesse = dt > 0 ? Math.hypot(position.x - avant.x, position.z - avant.z) / dt : 0;
       if (Math.hypot(dx, dz) > 0.0001) orientationVoulue = Math.atan2(dx, dz);
@@ -1439,7 +1492,7 @@ function demarrer() {
         const cible = cibleProcheZone(zone, position.x, position.z, etat);
         // Le train n'est pas à quai : on le dit, plutôt que « Monter dans le train ».
         const trainParti = cible === 'locomotive' && voyageTrain(etat, zone) && !trainAQuai;
-        let indice = cible ? (trainParti ? 'Le train revient bientôt' : libelleZone(etat, cible, saisonDuJeu())) : null;
+        let indice = cible ? (trainParti ? 'Le train revient bientôt' : libelleZone(etat, cible, saisonImage)) : null;
         if (peche) indice = 'Patience… (bougez pour ranger la canne)';
         ui.majIndice(indice);
       }
@@ -1503,7 +1556,6 @@ function demarrer() {
     else if (ZONES[zone].lumiereFixe) lumiere = LUMIERE_INTERIEUR;
     appliquerLumiere(lieu.scene, lumiere, abrite);
     // La météo (version 1.5) : un ciel plus gris sous la pluie, la brume du matin.
-    const meteo = meteoDuMoment(etat.jour, etat.journee, saisonDuJeu(), reglages.meteo);
     if (!abrite) appliquerMeteo(lieu.scene, meteo, camera.position.distanceTo(viseeLissee));
     mouillerFlaques(meteo.flaques);
     pluie.userData.animer(tempsTotal, viseeLissee.x, viseeLissee.z - 2, abrite || moinsDeMouvement ? 0 : meteo.pluie);
@@ -1547,7 +1599,7 @@ function demarrer() {
       for (const [id, filon] of lieu.decor.filons) filon.userData.regler(progressionFilon(etat, id));
     }
     // Version 1.6 : les buissons de la forêt (mûrs ou en train de repousser).
-    if (zone === 'foret') lieu.decor.buissons.regler(CUEILLETTES.map((c) => progressionCueillette(etat, c.id)), saisonDuJeu());
+    if (zone === 'foret') lieu.decor.buissons.regler(CUEILLETTES.map((c) => progressionCueillette(etat, c.id)), saisonImage);
     const horlogeMurale = lieux.place.decor.decorations['horloge-murale'];
     if (zone === 'place' && horlogeMurale.visible) horlogeMurale.userData.regler(anglesAiguilles(etat.journee));
 
@@ -1561,7 +1613,7 @@ function demarrer() {
       const t = voyage.temps / voyage.duree;
       vol.placer(voyage.depuis, voyage.vers, Math.min(1, t), tempsTotal, camera);
       appliquerLumiere(sceneVol, lumiereDuMoment(reglages.jourNuit ? etat.journee : MOMENT_JOUR_FIXE));
-      renderer.render(sceneVol, camera);
+      dessinerLieu();
       if (t >= 1 && !voyage.fini) finirVoyage();
       requestAnimationFrame(boucle);
       return;
@@ -1584,8 +1636,14 @@ function demarrer() {
       camera.lookAt(viseeLissee);
     }
 
-    renderer.render(lieu.scene, camera);
+    dessinerLieu();
     requestAnimationFrame(boucle);
+  }
+
+  // Dessine ce que le joueur regarde : le lieu où il est, ou la carte du ciel
+  // pendant un voyage en dirigeable.
+  function dessinerLieu() {
+    renderer.render(voyage ? sceneVol : lieux[zone].scene, camera);
   }
 
   // L'horloge et le train de la gare (version 1.2).
@@ -1680,6 +1738,7 @@ function demarrer() {
     etat,
     position: () => ({ ...position }),
     zone: () => zone,
+    scene: () => lieux[zone].scene,
     dessin: () => ({ ...renderer.info.render }),
     // Les triangles de chaque partie du lieu affiché (pour surveiller les performances).
     triangles: () => {
@@ -1696,6 +1755,7 @@ function demarrer() {
     clients3d: () => clients3d.size,
     positionsClients: () => [...clients3d.values()].map((c) => ({ x: c.objet.position.x, z: c.objet.position.z })),
     reglages,
+    soudures: () => Object.fromEntries(Object.entries(lieux).map(([nom, l]) => [nom, l.soudure])),
     audio: () => audio.etat(),
     imagesParSeconde: () => imagesParSeconde,
     ombres: () => soleils.every((s) => s.castShadow),
@@ -1728,49 +1788,61 @@ function demarrer() {
   // l'album : on place le personnage devant une petite caméra, on prend la
   // photo dans un petit cadre de 128 × 128 pixels, et on la garde.
   const portraits = new Map();
-  let photographe = null;
   let mannequin = null; // un deuxième Ferrus, pour l'aperçu de la garde-robe (version 1.6)
-  function obtenirApercuFerrus() {
-    try {
-      if (!photographe) {
-        photographe = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-        photographe.setSize(128, 128);
-        photographe.setPixelRatio(1);
-      }
+  // Version 1.7 : le petit « studio photo » est préparé une seule fois, et la
+  // photo est prise par le moteur 3D du jeu lui-même, dans un coin de l'image
+  // (avant, un deuxième moteur 3D était créé rien que pour ça). Le coin est
+  // recopié aussitôt, puis le jeu redessine le lieu par-dessus : on ne voit rien.
+  const TAILLE_PORTRAIT = 128;
+  let studio = null;
+  function photographier(modele, hauteur, distance, surplomb = 0.1) {
+    if (!studio) {
       const scene = new THREE.Scene();
       scene.background = new THREE.Color('#e6d3b0');
       scene.add(new THREE.HemisphereLight('#fff1d8', '#8a7558', 2.2));
       const lampe = new THREE.DirectionalLight('#ffe0b8', 1.3);
       lampe.position.set(-2, 3, 4);
       scene.add(lampe);
+      const toile = document.createElement('canvas');
+      toile.width = TAILLE_PORTRAIT;
+      toile.height = TAILLE_PORTRAIT;
+      studio = { scene, appareil: new THREE.PerspectiveCamera(30, 1, 0.05, 20), toile };
+    }
+    const { scene, appareil, toile } = studio;
+    appareil.position.set(0, hauteur + surplomb, distance);
+    appareil.lookAt(0, hauteur, 0);
+    scene.add(modele);
+    const source = renderer.domElement;
+    const cote = TAILLE_PORTRAIT / renderer.getPixelRatio(); // 128 vrais pixels
+    try {
+      renderer.setViewport(0, 0, cote, cote);
+      renderer.setScissor(0, 0, cote, cote);
+      renderer.setScissorTest(true);
+      renderer.render(scene, appareil);
+      // Le coin en bas à gauche de l'image du jeu → notre petite toile.
+      toile.getContext('2d').drawImage(source, 0, source.height - TAILLE_PORTRAIT, TAILLE_PORTRAIT, TAILLE_PORTRAIT, 0, 0, TAILLE_PORTRAIT, TAILLE_PORTRAIT);
+      return toile.toDataURL('image/png');
+    } finally {
+      scene.remove(modele);
+      renderer.setScissorTest(false);
+      renderer.setViewport(0, 0, window.innerWidth, window.innerHeight);
+      dessinerLieu(); // on redessine tout de suite le lieu par-dessus
+    }
+  }
+  function obtenirApercuFerrus() {
+    try {
       if (!mannequin) mannequin = creerFerrus();
       habillerFerrus(mannequin, tenuePortee(etat));
       mannequin.rotation.y = 0.35;
-      scene.add(mannequin);
-      const appareil = new THREE.PerspectiveCamera(30, 1, 0.05, 20);
-      appareil.position.set(0, 1.3, 2.75);
-      appareil.lookAt(0, 1.05, 0);
-      photographe.render(scene, appareil);
-      scene.remove(mannequin);
-      return photographe.domElement.toDataURL('image/png');
+      return photographier(mannequin, 1.05, 2.75, 0.25);
     } catch {
       return null;
     }
   }
   function obtenirPortrait(id) {
     if (portraits.has(id)) return portraits.get(id);
+    let image = null; // pas de portrait : l'album affiche un « ? »
     try {
-      if (!photographe) {
-        photographe = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-        photographe.setSize(128, 128);
-        photographe.setPixelRatio(1);
-      }
-      const scene = new THREE.Scene();
-      scene.background = new THREE.Color('#e6d3b0');
-      scene.add(new THREE.HemisphereLight('#fff1d8', '#8a7558', 2.2));
-      const lampe = new THREE.DirectionalLight('#ffe0b8', 1.3);
-      lampe.position.set(-2, 3, 4);
-      scene.add(lampe);
       let modele;
       let hauteur = 1.5;
       let distance = 1.7;
@@ -1779,17 +1851,11 @@ function demarrer() {
       else if (id === 'oiseau') { modele = creerOiseau(); hauteur = 0.03; distance = 0.55; }
       else modele = creerPersonnage(TENUES_PNJ[id]);
       modele.rotation.y = 0.35;
-      scene.add(modele);
-      const appareil = new THREE.PerspectiveCamera(30, 1, 0.05, 20);
-      appareil.position.set(0, hauteur + 0.1, distance);
-      appareil.lookAt(0, hauteur, 0);
-      photographe.render(scene, appareil);
-      const image = photographe.domElement.toDataURL('image/png');
-      portraits.set(id, image);
-      return image;
+      image = photographier(modele, hauteur, distance);
     } catch {
-      portraits.set(id, null); // pas de portrait : l'album affiche un « ? »
-      return null;
+      image = null;
     }
+    portraits.set(id, image);
+    return image;
   }
 }

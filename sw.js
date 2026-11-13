@@ -61,6 +61,7 @@ const FICHIERS = [
   'js/logique-vitrine.js',
   'js/vie.js',
   'js/formes.js',
+  'js/fusion.js',
   'js/interface-atelier.js',
   'js/interface-options.js',
   'js/interface.js',
