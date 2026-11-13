@@ -17,6 +17,7 @@
 
 import * as THREE from '../lib/three/three.module.js';
 import { boite, cylindre, boule } from './formes.js';
+import { matiereMetal } from './rendu.js';
 
 // -----------------------------------------------------------------------------
 // 1. LE VENT
@@ -213,7 +214,7 @@ export function creerLucioles({ x, z, largeur, profondeur, nombre = 10, graine =
 // Une lanterne sur un poteau de fonte (2,6 m de haut), avec son halo.
 const COULEUR_FONTE = '#3f4a46';
 // (Une seule matière pour toutes les lanternes du jeu.)
-const fonte = new THREE.MeshLambertMaterial({ color: COULEUR_FONTE });
+const fonte = matiereMetal(COULEUR_FONTE, { metalness: 0.55, roughness: 0.5 });
 export function creerLampadaire() {
   const g = new THREE.Group();
   const piece = (forme, matiere, y) => {

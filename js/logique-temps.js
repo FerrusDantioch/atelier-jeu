@@ -91,6 +91,24 @@ export function lumiereDuMoment(journee) {
   };
 }
 
+// Version 1.7 : le soleil se déplace dans le ciel. Renvoie la direction d'où
+// vient la lumière (un vecteur de longueur 1), pour un moment de la journée
+// (de 0 à 1 : 0 = minuit, 0,5 = midi).
+//   - le matin, le soleil est à l'est (x positif) : les ombres partent vers l'ouest ;
+//   - à midi, il est au plus haut ;
+//   - le soir, il est à l'ouest ; la nuit, la lune prend le relais, en douceur
+//     (il n'y a jamais de saut : les ombres tournent très lentement).
+// La lumière vient toujours un peu du sud (du côté de la caméra) et reste
+// assez haute : les ombres ne s'allongent jamais au point de tout recouvrir.
+export function directionSoleil(journee) {
+  const angle = (bouclerJournee(journee) - 0.5) * Math.PI * 2;
+  const x = -Math.sin(angle) * 13;
+  const y = 20 + Math.cos(angle * 2) * 4;
+  const z = 12;
+  const longueur = Math.hypot(x, y, z);
+  return { x: x / longueur, y: y / longueur, z: z / longueur };
+}
+
 // Fait avancer la journée de « dt » secondes. Renvoie les messages à afficher
 // (seulement si le cycle jour/nuit est activé dans les options).
 // Version 1.4 : à chaque minuit, on passe au jour suivant (« etat.jour » :

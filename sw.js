@@ -62,6 +62,7 @@ const FICHIERS = [
   'js/vie.js',
   'js/formes.js',
   'js/fusion.js',
+  'js/rendu.js',
   'js/interface-atelier.js',
   'js/interface-options.js',
   'js/interface.js',
