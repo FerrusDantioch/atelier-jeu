@@ -15,7 +15,7 @@
 // alors effacées.
 // =============================================================================
 
-const VERSION = '1.6.0';
+const VERSION = '1.7.0';
 const NOM_CACHE = `cuivrebourg-${VERSION}`;
 
 // Tous les fichiers nécessaires pour jouer, gardés dès l'installation.
@@ -72,6 +72,12 @@ const FICHIERS = [
   'js/vie.js',
   'js/formes.js',
   'js/fusion.js',
+  'js/lieux.js',
+  'js/clients3d.js',
+  'js/portraits.js',
+  'js/stockage.js',
+  'js/decor-ville.js',
+  'js/logique-ville.js',
   'js/effets.js',
   'js/rendu.js',
   'js/interface-atelier.js',

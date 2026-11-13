@@ -453,6 +453,10 @@ export const TENUES_PNJ = {
   // Lucie, l'apprentie (version 1.5) : salopette, foulard, lunettes sur le front.
   lucie: { peau: '#f0c9a6', haut: '#e2c9a0', bas: '#5a6a7a', cheveux: '#a0522d', chapeau: 'foulard', couleurChapeau: '#c98b7a', tablier: '#5a6a7a' },
   // Anatole, l'inventeur de la forêt (version 1.6) : redingote prune, haut-de-forme, moustache blanche.
+  // Version 1.7, la ville nouvelle. Inès, la conductrice du tramway : blouson bleu canard, casquette.
+  ines: { peau: '#c68e6a', haut: '#2f7f86', bas: '#2f3a4a', cheveux: '#2a201c', chapeau: 'casquette', couleurChapeau: '#2f3a4a', boutons: '#e8e2d6' },
+  // Malik, le patron du café : chemise blanche, tablier noir de barista.
+  malik: { peau: '#a8744f', haut: '#f1ede4', bas: '#3a3a40', cheveux: '#1f1a18', chapeau: 'aucun', tablier: '#2e2e33', moustache: '#1f1a18' },
   anatole: { peau: '#e8c0a0', haut: '#6f5a7a', bas: '#4a4038', cheveux: '#e8e4dc', chapeau: 'haut-de-forme', couleurChapeau: '#5e4330', moustache: '#ece8e0', boutons: '#c99a4a' },
 };
 

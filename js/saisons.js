@@ -152,7 +152,7 @@ export function creerFleurs(scene, zoneId, donnees, obstacles, graine = 5) {
 // l'herbe au fil des saisons (blanches sous la neige).
 function creerTouffes(scene, l, exclu, obstacles, hasard) {
   const places = [];
-  for (let essai = 0; essai < 4000 && places.length < 240; essai++) {
+  for (let essai = 0; essai < 4000 && places.length < 170; essai++) {
     const x = l.minX - 3 + hasard() * (l.maxX - l.minX + 6);
     const z = l.minZ - 2 + hasard() * (l.maxZ - l.minZ + 5);
     if (exclu(x, z) || toucheUnObstacle(x, z, 0.3, obstacles)) continue;
@@ -165,7 +165,7 @@ function creerTouffes(scene, l, exclu, obstacles, hasard) {
   const teinte = new THREE.Color();
   let i = 0;
   for (const p of places) {
-    const clair = 0.8 + hasard() * 0.28; // certaines touffes sont plus claires, d'autres plus sombres
+    const clair = 0.98 + hasard() * 0.3; // certaines touffes sont plus claires, d'autres plus sombres
     for (let k = 0; k < 3; k++) {
       const a = (k / 3) * Math.PI * 2 + hasard() * 2;
       const taille = 0.7 + hasard() * 0.7;

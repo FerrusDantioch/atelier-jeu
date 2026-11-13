@@ -51,6 +51,7 @@ import { creerEtatGarderobe } from './logique-garderobe.js';
 import { creerEtatVitrine } from './logique-vitrine.js';
 import { creerEtatForet, appliquerActionForet } from './logique-foret.js';
 import { creerEtatJournal } from './logique-journal.js';
+import { creerEtatVille, appliquerActionVille, objectifVille } from './logique-ville.js';
 
 // -----------------------------------------------------------------------------
 // 1. LE PLAN DE LA PLACE
@@ -360,6 +361,8 @@ export function creerEtatJeu() {
     foret: creerEtatForet(),         // la cueillette et les étoiles
     curiosites: [],                  // les curiosités trouvées (pour la vitrine)
     journal: creerEtatJournal(),     // le journal du matin
+    // Version 1.7 :
+    ville: creerEtatVille(),         // les services rendus dans la ville nouvelle
   };
 }
 
@@ -392,8 +395,10 @@ export function objectifActuel(etat) {
 // Une deuxième ligne d'objectif, plus petite : quand une quête est en cours et
 // qu'un client attend au comptoir, on le rappelle (null sinon).
 export function objectifSecondaire(etat) {
-  if (!etat.atelier.ouvert || !objectifQuetes(etat)) return null;
-  return clientAuComptoir(etat) ? `Atelier : ${objectifAtelier(etat)}` : null;
+  if (!etat.atelier.ouvert) return null;
+  if (objectifQuetes(etat) && clientAuComptoir(etat)) return `Atelier : ${objectifAtelier(etat)}`;
+  // (Version 1.7 : sinon, ce qu'un habitant de la ville nouvelle attend.)
+  return objectifVille(etat);
 }
 
 // Les marqueurs flottants : faut-il en afficher un au-dessus d'Odile ? de
@@ -474,6 +479,8 @@ export function appliquerAction(etat, action) {
   // Version 1.6 : l'amitié (cadeaux) et la forêt (la récompense des étoiles).
   if (prefixe === 'amitie') return appliquerActionAmitie(etat, action);
   if (prefixe === 'foret') return appliquerActionForet(etat, action);
+  // Version 1.7 : les services de la ville nouvelle.
+  if (prefixe === 'ville') return appliquerActionVille(etat, action);
   return appliquerActionQuete(etat, action);
 }
 
