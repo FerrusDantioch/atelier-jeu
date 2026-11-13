@@ -12,7 +12,7 @@
 // Pour le relancer à la main : npm run copier-three
 // =============================================================================
 
-import { copyFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -36,6 +36,36 @@ for (const [depuis, vers] of fichiers) {
   copyFileSync(join(source, depuis), join(destination, vers));
 }
 
+// Version 1.7 : les « effets » de la qualité « Élevée » (le halo lumineux
+// autour des lanternes). Ce sont des modules fournis avec Three.js, dans son
+// dossier d'exemples. Ils chargent Three.js par son nom (« three ») : un
+// navigateur ne sait pas le trouver tout seul, alors on remplace ce nom par le
+// chemin de notre copie.
+const effets = [
+  'postprocessing/EffectComposer.js',
+  'postprocessing/Pass.js',
+  'postprocessing/RenderPass.js',
+  'postprocessing/ShaderPass.js',
+  'postprocessing/MaskPass.js',
+  'postprocessing/UnrealBloomPass.js',
+  'postprocessing/OutputPass.js',
+  'shaders/CopyShader.js',
+  'shaders/LuminosityHighPassShader.js',
+  'shaders/OutputShader.js',
+];
+for (const f of effets) {
+  const texte = readFileSync(join(source, 'examples', 'jsm', f), 'utf8').replace(/from\s+'three'/g, "from '../three.module.js'");
+  for (const m of texte.matchAll(/from\s+'(\.\.?\/[^']+)'/g)) {
+    const voulu = join(dirname(f), m[1]).replaceAll('\\', '/');
+    if (voulu !== 'three.module.js' && !effets.includes(voulu)) {
+      console.error(`Attention : ${f} a besoin de ${voulu}, qui n'est pas copié.`);
+      process.exit(1);
+    }
+  }
+  mkdirSync(dirname(join(destination, f)), { recursive: true });
+  writeFileSync(join(destination, f), texte);
+}
+
 // Vérification : three.module.js ne doit charger que des fichiers qu'on a copiés.
 const module = readFileSync(join(destination, 'three.module.js'), 'utf8');
 const imports = [...module.matchAll(/from\s+'(\.\/[^']+)'/g)].map((m) => m[1].slice(2));
@@ -46,4 +76,4 @@ if (manquants.length > 0) {
 }
 
 const version = JSON.parse(readFileSync(join(source, 'package.json'), 'utf8')).version;
-console.log(`Three.js ${version} copié dans lib/three/ (${fichiers.length} fichiers).`);
+console.log(`Three.js ${version} copié dans lib/three/ (${fichiers.length + effets.length} fichiers).`);
