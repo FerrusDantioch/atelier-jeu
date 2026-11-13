@@ -46,6 +46,18 @@ habitants : chaque habitant a un problème à résoudre, ce sont les quêtes.
   **garde-robe** de Ferrus, la **partie dans un fichier** (pour passer d'un
   appareil à l'autre), le **mode photo**, un **petit jeu d'assemblage**
   d'engrenages, et une option pour **grossir le texte**.
+- **Version 1.7** : une **plus belle image** (couleurs plus profondes, ombres
+  douces qui tournent avec le soleil, un vrai ciel, du cuivre qui brille, de
+  l'herbe et des pavés moins uniformes), une qualité **« Élevée »** en option,
+  un jeu **plus léger** à dessiner, et la **ville nouvelle** : un quartier
+  d'aujourd'hui (tramway, café, immeubles de verre) où l'on va en tramway
+  depuis la gare.
+
+![La ville nouvelle : le tramway à son arrêt, le café et la médiathèque](captures/pc-ville.png)
+
+![La ville nouvelle le soir, vue du parc, avec sa sculpture « L'Engrenage »](captures/pc-ville-soir.png)
+
+![La place au petit matin, avec les nouvelles lumières](captures/pc-place-matin.png)
 
 ![La forêt de l'inventeur et le dirigeable amarré à son mât](captures/pc-foret.png)
 
@@ -354,7 +366,7 @@ sur l'appareil, à part de la partie : « Nouvelle partie » ne les efface pas.
 | Jour et nuit | Activé | Le soir tombe, les lanternes s'allument, puis le jour revient (une journée dure 8 minutes). « Toujours le jour » : la lumière ne change plus. |
 | Saisons | Activées | Printemps, été, automne, hiver : chaque saison dure 2 jours du jeu (environ 16 minutes). « Toujours l'été » : le décor ne change plus. |
 | Météo | Activée | Une petite pluie douce certains après-midi, un peu de brume certains matins. « Toujours beau » : ni pluie ni brume. |
-| Qualité de l'image | Normale | « Économie » : image moins fine, sans ombres, 30 images par seconde. Pour un téléphone qui chauffe ou se décharge vite. |
+| Qualité de l'image | Normale | « Économie » : image moins fine, sans ombres, 30 images par seconde. Pour un téléphone qui chauffe ou se décharge vite. « Élevée » (version 1.7) : image très fine, ombres plus précises, halo lumineux autour des lanternes. Pour un ordinateur ou un téléphone récent. |
 | Taille du texte (version 1.6) | Normal | « Grand » (15 % plus gros) ou « Très grand » (30 % plus gros) : tous les textes, dialogues et panneaux. |
 | Petit jeu d'assemblage (version 1.6) | Proposé | « Jamais » : les objets rares se fabriquent directement, sans le petit jeu. |
 | Votre partie dans un fichier (version 1.6) | — | Enregistrer la partie dans un fichier, ou en ouvrir une (voir « La sauvegarde »). |
@@ -765,6 +777,77 @@ de ne jamais le proposer.
 
 ![Le petit jeu d'assemblage](captures/pc-assemblage.png)
 
+## Une plus belle image (version 1.7)
+
+Tout reste fabriqué par le jeu lui-même : aucune image, aucun fichier 3D à
+télécharger, et le jeu marche toujours sans connexion.
+
+- **La lumière** : une « correction tonale » donne des couleurs plus
+  profondes sans rien « brûler », le soleil éclaire plus fort et le ciel un
+  peu moins : on lit mieux les volumes (un côté au soleil, un côté à l'ombre).
+- **Les ombres** ont des bords doux, et elles **tournent avec le soleil** :
+  il se lève à l'est, monte à midi, se couche à l'ouest ; la nuit, la lune
+  prend le relais, sans aucun saut.
+- **Le ciel** : un vrai dôme, avec un dégradé, le soleil ou la lune, des
+  étoiles la nuit et de légers nuages (plus épais quand il pleut). On le voit
+  surtout en **mode photo**, en baissant la caméra, et en dirigeable.
+- **Les métaux** : le cuivre, le laiton et l'acier reflètent le ciel. Le
+  reste garde son aspect doux de jouet en bois.
+- **Les sols** : l'herbe, les pavés et les chemins ont un léger grain, et
+  des touffes d'herbe se balancent au vent dans les prés.
+- **La qualité « Élevée »** (dans les options) : image plus fine, ombres
+  deux fois plus précises, et un halo autour de ce qui brille (lanternes,
+  fenêtres, braises). Elle demande une bonne carte graphique ; « Normale »
+  et « Économie » restent aussi légères qu'avant.
+
+## Un jeu plus léger (version 1.7)
+
+Ce qui ne se voit pas, mais qui soulage les téléphones :
+
+- **Le décor fixe est « soudé »** : les centaines de petites formes d'un lieu
+  qui ne bougent jamais (murs, poutres, tonneaux…) sont réunies par matière et
+  dessinées d'un seul coup. Selon le lieu, la carte graphique reçoit 20 à 50 %
+  d'ordres de dessin en moins. Ce qui vit (portes, roues, objets de quête)
+  reste libre : le jeu le repère tout seul en « faisant vivre » le lieu un
+  instant au démarrage.
+- **Un seul soleil** pour tous les lieux (avant : un par lieu, chacun avec sa
+  grande image d'ombres gardée en mémoire).
+- **Les clients partagent leurs formes** (bras, jambes, têtes) au lieu de les
+  recréer à chaque arrivée.
+- **Les portraits de l'album** sont pris par le moteur du jeu lui-même (avant :
+  un second moteur 3D était créé pour eux).
+
+## La ville nouvelle et le tramway (version 1.7)
+
+Au sud-est de la gare, il y a maintenant un **arrêt de tramway** : « Ligne 1 —
+Ville nouvelle ». La ligne ouvre dès que le train de Cuivrebourg roule de
+nouveau (la quête d'Augustin). Approchez-vous de l'arrêt et appuyez sur `E`
+(ou **Interagir**) : « Ding ding ! », et Ferrus descend dans un quartier
+d'aujourd'hui. Le dirigeable peut s'y poser lui aussi.
+
+![L'arrêt du tramway, à la gare de Cuivrebourg](captures/pc-gare-tramway.png)
+
+On y trouve la **médiathèque** (verre et béton clair, panneaux solaires sur
+le toit), le **café** et sa terrasse, une **résidence** à balcons, la rue
+avec son passage piéton, deux voitures (dont une électrique, branchée à sa
+borne), des vélos en libre-service, des lampadaires modernes, et un petit
+parc avec « L'Engrenage », une grande sculpture de cuivre en hommage au
+vieux village. La musique y est plus vive, comme en terrasse.
+
+Deux habitants y ont chacun un **service** à demander (ce ne sont pas des
+quêtes : on les rend quand on veut, dans l'ordre qu'on veut) :
+
+| Habitant | Ce qu'il lui faut | Il paie | Ce que ça change |
+|---|---|---|---|
+| **Inès**, la conductrice du tramway | une horloge mécanique | 160 pièces | L'horloge est accrochée à l'arrêt |
+| **Malik**, le patron du café | une bouilloire à vapeur | 110 pièces | La bouilloire siffle (et fume) sur le comptoir |
+
+Quand les deux services sont rendus, la ville offre une **prime de 100
+pièces**. Un losange ambre flotte au-dessus d'un habitant quand vous avez
+dans votre stock ce qu'il attend.
+
+![L'arrêt de la ville nouvelle, avec l'horloge de Ferrus](captures/pc-ville-arret.png)
+
 ## Confort visuel et sonore
 
 Couleurs douces et chaudes, éclairage doux, aucun clignotement, aucune
@@ -784,8 +867,8 @@ voyage en dirigeable est lent et doux.
 npm test
 ```
 
-(C'est la même chose que `node --test`.) 217 tests vérifient les quêtes,
-l'argent, les collisions dans les neuf lieux (avec des centaines de
+(C'est la même chose que `node --test`.) 228 tests vérifient les quêtes,
+l'argent, les collisions dans les dix lieux (avec des centaines de
 promenades au hasard : Ferrus ne se coince jamais), la gestion de l'atelier (dont
 une partie de 15 minutes jouée automatiquement), la sauvegarde (y compris
 des sauvegardes abîmées ou trafiquées), les options, la musique (toutes les
@@ -798,7 +881,10 @@ potager, la pêche, l'album, la forêt (tout y est accessible depuis l'entrée),
 les étoiles, le dirigeable (chaque point d'atterrissage est libre), l'amitié et
 les anniversaires, le journal, la vitrine, la garde-robe, le petit jeu
 d'assemblage (chaque planche a une solution), le mode photo, la partie dans
-un fichier et les fichiers d'installation. Tout doit être indiqué `pass`.
+un fichier, le décor soudé (rien de ce qui bouge n'est soudé), la ville
+nouvelle et son tramway (on peut aller partout, les services ne sont payés
+qu'une fois), le soleil qui se déplace (jamais de saut) et les fichiers
+d'installation. Tout doit être indiqué `pass`.
 
 ## L'organisation des fichiers
 
@@ -854,6 +940,15 @@ un fichier et les fichiers d'installation. Tout doit être indiqué `pass`.
 | `js/interface-fenetre.js` | Une fenêtre toute prête (titre, onglets, « Fermer »), pour les nouveautés de la version 1.6 |
 | `js/interface-v16.js` | Les fenêtres du journal, de la garde-robe, de la vitrine, du petit jeu d'assemblage et du télescope |
 | `js/interface-photo.js` | Les commandes du mode photo |
+| `js/decor-ville.js` | La ville nouvelle en 3D (version 1.7) : immeubles, café, tramway, arrêt, voitures, vélos, sculpture |
+| `js/logique-ville.js` | **Les règles de la ville nouvelle**, sans aucune 3D : les services d'Inès et de Malik, la prime |
+| `js/rendu.js` | La belle image (version 1.7) : correction tonale, reflets des métaux, dôme du ciel |
+| `js/effets.js` | Le halo lumineux de la qualité « Élevée » (chargé seulement si on la choisit) |
+| `js/fusion.js` | Soude le décor fixe d'un lieu pour le dessiner en beaucoup moins de fois |
+| `js/lieux.js` | Prépare tous les lieux en 3D, chacun dans sa scène (sorti de `main.js` en 1.7) |
+| `js/clients3d.js` | Les clients de l'atelier en 3D, sur la place (sorti de `main.js` en 1.7) |
+| `js/portraits.js` | Le petit « studio photo » des portraits de l'album et de la garde-robe |
+| `js/stockage.js` | Ce que le jeu range dans le navigateur : la partie et les réglages |
 | `js/vie.js` | Le décor qui vit : fumée des cheminées, vent dans les feuillages, lanternes et fenêtres qui s'allument la nuit, lucioles |
 | `js/formes.js` | Les formes de base aux bords arrondis : boîtes, cylindres, gélules, formes « tournées » comme un vase |
 | `js/eau.js` | L'eau qui bouge : reflets qui ondulent, ronds dans l'eau, feuilles au fil du canal, reflet des étoiles la nuit |
@@ -861,7 +956,7 @@ un fichier et les fichiers d'installation. Tout doit être indiqué `pass`.
 | `js/commandes.js` | Le clavier, le joystick tactile (qui vient sous le pouce) et le bouton « Interagir » |
 | `js/interface.js` | L'argent, le calendrier, l'objectif, la barre de fabrication, les petits messages, la boîte de dialogue |
 | `js/interface-atelier.js` | Le panneau de l'établi (onglets Fabriquer, Acheter, Améliorer, Décorer, Carnet) |
-| `lib/three/` | Three.js 0.186.1 (le moteur 3D), copié ici pour ne dépendre d'aucun site extérieur |
+| `lib/three/` | Three.js 0.186.1 (le moteur 3D), copié ici pour ne dépendre d'aucun site extérieur ; ses sous-dossiers `postprocessing/` et `shaders/` servent à la qualité « Élevée » |
 | `tests/logique.test.js` | Les tests automatiques des règles de l'étape 1 |
 | `tests/atelier.test.js` | Les tests automatiques de la gestion de l'atelier |
 | `tests/etape3.test.js` | Les tests automatiques des quêtes, des lieux et de la sauvegarde |
@@ -872,13 +967,13 @@ un fichier et les fichiers d'installation. Tout doit être indiqué `pass`.
 | `tests/version14.test.js` | Les tests automatiques de la galerie, des saisons, du carnet de commandes et des décorations |
 | `tests/version15.test.js` | Les tests automatiques des fêtes, de la météo, des compagnons, de l'intérieur, de l'apprentie, du potager, de la pêche et de l'album |
 | `tests/version16.test.js` | Les tests automatiques de la forêt, des étoiles, du dirigeable, de l'amitié, du journal, de la vitrine, de la garde-robe, de l'assemblage, du mode photo et de la partie dans un fichier |
+| `tests/version17.test.js` | Les tests automatiques du décor soudé, de la ville nouvelle, du tramway, du soleil qui se déplace et de la qualité « Élevée » |
 | `manifest.webmanifest` | La « fiche d'identité » de l'application : nom, icône, couleurs, plein écran |
 | `sw.js` | Le « service worker » : garde une copie du jeu pour jouer sans connexion |
 | `icones/` | L'icône du jeu (un engrenage de cuivre et une flamme) : le dessin `icone.svg` et ses versions PNG |
 | `serveur.js` | Le petit serveur lancé par `npm start` |
 | `outils/copier-three.js` | Recopie Three.js de `node_modules` vers `lib/three/` (`npm run copier-three`) |
-| `outils/creer-zip.js` | Fabrique l'archive de sauvegarde (`npm run zip`) |
-| `atelier-cuivrebourg.zip` | Une sauvegarde de tout le projet (sans `node_modules`) |
+| `outils/creer-zip.js` | Fabrique une archive de sauvegarde sur votre ordinateur (`npm run zip`) |
 | `captures/` | Des captures d'écran du jeu (ordinateur et téléphone) |
 | `package.json` | La fiche du projet : nom, commandes, version de Three.js |
 | `LICENSE` | La licence du code (Creative Commons BY-NC-ND 4.0) |
@@ -888,15 +983,19 @@ GitHub : le fichier `.gitignore` l'en empêche.
 
 ## L'archive de sauvegarde
 
-`atelier-cuivrebourg.zip` contient tout le projet, sauf `node_modules`. On
-peut la télécharger depuis le téléphone à cette adresse :
-https://ferrusdantioch.github.io/atelier-jeu/atelier-cuivrebourg.zip
-
-Pour la refaire après une modification :
+Pour garder une copie de tout le projet (sauf `node_modules`) dans un seul
+fichier, lancez :
 
 ```bash
 npm run zip
 ```
+
+Cela crée `atelier-cuivrebourg.zip` dans le dossier du jeu. Depuis la version
+1.7, cette archive **n'est plus envoyée sur GitHub** (le fichier `.gitignore`
+l'en empêche) : elle pesait près de 20 Mo, et chaque nouvelle version
+alourdissait le dépôt d'autant. Pour télécharger le projet depuis un
+téléphone, utilisez le bouton **Code → Download ZIP** de la page GitHub du
+dépôt : il fabrique la même archive à la demande.
 
 ## Publication (GitHub Pages)
 

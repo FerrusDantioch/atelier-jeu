@@ -20,6 +20,7 @@ import { AMIS, POINTS_MAX } from './logique-amitie.js';
 import { TENUES, TENUE_DEPART, CATEGORIES_TENUE } from './logique-garderobe.js';
 import { PLACES_VITRINE, INTERVALLE_VISITEURS, decrireObjetVitrine } from './logique-vitrine.js';
 import { CURIOSITES, CONSTELLATIONS, DUREE_REPOUSSE_FORET } from './logique-foret.js';
+import { SERVICES_VILLE } from './logique-ville.js';
 import { CLIENTS_CARNET } from './logique-commandes.js';
 import { DUREE_REPOUSSE } from './logique-galerie.js';
 import { TACHES_APPRENTIE } from './logique-atelier.js';
@@ -130,6 +131,11 @@ function verifierVersion16(etat) {
   // Le journal.
   etat.journal.dernierJour = entier(etat.journal.dernierJour);
   etat.journal.lu = entier(etat.journal.lu, 0, etat.journal.dernierJour);
+  // Version 1.7 : la ville nouvelle.
+  const ville = etat.ville;
+  for (const id of Object.keys(ville.services)) ville.services[id] = ville.services[id] === true;
+  ville.rencontres = [...new Set(ville.rencontres.filter((id) => SERVICES_VILLE[id]))];
+  ville.prime = ville.prime === true;
 }
 
 // -----------------------------------------------------------------------------

@@ -32,6 +32,8 @@ export const DESTINATIONS = Object.freeze([
   { zone: 'mine', nom: 'La mine de cuivre', ouvert: (etat) => queteTerminee(etat, 'train-cuivrebourg') },
   { zone: 'lac', nom: 'Le lac', ouvert: (etat) => etat.atelier.ouvert },
   { zone: 'foret', nom: 'La forêt', ouvert: (etat) => etat.atelier.ouvert },
+  // Version 1.7 : la ville nouvelle, au bout de la ligne de tramway.
+  { zone: 'ville', nom: 'La ville nouvelle', ouvert: (etat) => queteTerminee(etat, 'train-cuivrebourg') },
 ]);
 
 // Les lieux couverts, d'où l'on ne peut pas partir en dirigeable.
@@ -47,6 +49,7 @@ export const ATTERRISSAGES = Object.freeze({
   mine: { x: -2, z: 2.5, orientation: 0 },
   lac: { x: 4, z: -0.4, orientation: 0 },
   foret: { x: -3.5, z: -1.4, orientation: 0 },
+  ville: { x: 4, z: 2.4, orientation: 0 },
 });
 
 // La petite carte du village vue du ciel (pour le voyage) : la position de
@@ -59,6 +62,7 @@ export const CARTE_VOL = Object.freeze({
   lac: { x: -10, z: 9 },
   foret: { x: 11, z: 0 },
   mine: { x: 27, z: -7 },
+  ville: { x: 29, z: 13 },
 });
 
 // Les destinations possibles depuis un lieu.

@@ -16,6 +16,7 @@ import { objet, COULEURS, panneauTexte, construireHaies, construireArbres, const
 import { poteauIndicateur } from './decor-zones.js';
 import { boite, cylindre, boule, tour } from './formes.js';
 import { creerFumee, MATIERE_FENETRE } from './vie.js';
+import { creerAbriTram } from './decor-ville.js';
 
 const FONTE = '#3f4a46';      // la fonte (métal sombre et doux)
 const VERT_LOCO = '#5f8070';  // le vert de la locomotive
@@ -54,6 +55,17 @@ export function construireGare(scene, zone) {
   construireChateauEau(scene, zone.chateauEau);
   const horloge = construireHorloge(scene, zone.horloge);
   const train = construireTrain(scene, zone.locomotive);
+
+  // Version 1.7 : l'arrêt du tramway de la ville nouvelle. Un abri de verre
+  // tout neuf, un bout de quai en dalles claires, et les rails qui filent
+  // vers l'est.
+  const arret = creerAbriTram('VILLE NOUVELLE');
+  arret.position.set(zone.arretTram.x, 0, zone.arretTram.z);
+  scene.add(arret);
+  const quaiTram = objet(new THREE.PlaneGeometry(9.5, 3.6), '#cfcac0', 9.75, 0.03, 1.3, { recoit: true });
+  quaiTram.rotation.x = -Math.PI / 2;
+  scene.add(quaiTram);
+  for (const z of [0.1, 1.0]) scene.add(objet(boite(9.5, 0.04, 0.09), COULEURS.metal, 9.75, 0.045, z));
 
   return { horloge, train, eau: [], vie: [fumeeGare, train.fumee] };
 }
