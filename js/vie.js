@@ -17,6 +17,7 @@
 
 import * as THREE from '../lib/three/three.module.js';
 import { boite, cylindre, boule } from './formes.js';
+import { matiereMetal } from './rendu.js';
 
 // -----------------------------------------------------------------------------
 // 1. LE VENT
@@ -31,6 +32,7 @@ export function matiereFeuillage(couleur, force = 1) {
   const cle = couleur + force;
   if (feuillages.has(cle)) return feuillages.get(cle);
   const m = new THREE.MeshLambertMaterial({ color: couleur });
+  m.userData.vent = true; // (fusion.js ne soude pas ce qui se balance au vent)
   m.onBeforeCompile = (shader) => {
     shader.uniforms.uVent = temps;
     shader.uniforms.uForceVent = { value: force };
@@ -211,9 +213,10 @@ export function creerLucioles({ x, z, largeur, profondeur, nombre = 10, graine =
 
 // Une lanterne sur un poteau de fonte (2,6 m de haut), avec son halo.
 const COULEUR_FONTE = '#3f4a46';
+// (Une seule matière pour toutes les lanternes du jeu.)
+const fonte = matiereMetal(COULEUR_FONTE, { metalness: 0.55, roughness: 0.5 });
 export function creerLampadaire() {
   const g = new THREE.Group();
-  const fonte = new THREE.MeshLambertMaterial({ color: COULEUR_FONTE });
   const piece = (forme, matiere, y) => {
     const m = new THREE.Mesh(forme, matiere);
     m.position.y = y;

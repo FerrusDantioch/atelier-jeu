@@ -20,6 +20,7 @@ import { boite, cylindre, boule } from './formes.js';
 import { EAU_CALME, creerRonds } from './eau.js';
 import { MATIERE_FENETRE, MATIERE_LUEUR, matiereFeuillage, creerFumee, creerLampadaire, creerLucioles, creerHalo } from './vie.js';
 import { gelule } from './formes.js';
+import { matiereMetal } from './rendu.js';
 
 // ----------------------------------------------------------------------------
 // Petits outils communs
@@ -28,15 +29,70 @@ import { gelule } from './formes.js';
 // Une « matière » = la couleur et l'aspect d'une surface. On les garde en
 // mémoire pour ne jamais créer deux fois la même (économie de mémoire).
 const matieres = new Map();
+// Version 1.7 : les métaux brillent. Le cuivre, le laiton et l'acier ont une
+// matière « physique » qui reflète le ciel (voir creerReflets dans rendu.js) ;
+// tout le reste garde la matière simple et douce des jouets en bois.
+const METAUX = {
+  '#b87333': { metalness: 0.8, roughness: 0.36 },  // le cuivre
+  '#c99a4a': { metalness: 0.85, roughness: 0.3 },  // le laiton
+  '#6b6660': { metalness: 0.7, roughness: 0.45 },  // l'acier
+};
+// Les sols ont un « grain » : de légères taches plus claires et plus sombres,
+// pour qu'un grand pré ou une place pavée ne soit plus d'une seule couleur.
+// [force des grandes taches, force du petit grain]
+const GRAINS = {
+  '#a7b47c': [0.09, 0.04],   // l'herbe
+  '#cdbc9e': [0.1, 0.06],   // le pavage
+  '#c5b391': [0.1, 0.08],   // les chemins
+  '#bba98a': [0.06, 0.06],  // les pavés
+};
 export function matiere(couleur, options = {}) {
   const cle = couleur + JSON.stringify(options);
   if (!matieres.has(cle)) {
-    // « Lambert » = un éclairage simple et doux, rapide à calculer.
-    // L'ombrage est « lisse » : la lumière glisse en douceur sur les arrondis
-    // (au lieu de petites facettes bien nettes).
-    matieres.set(cle, new THREE.MeshLambertMaterial({ color: couleur, ...options }));
+    let m;
+    if (METAUX[couleur]) {
+      m = matiereMetal(couleur, { ...METAUX[couleur], ...options });
+    } else {
+      // « Lambert » = un éclairage simple et doux, rapide à calculer.
+      // L'ombrage est « lisse » : la lumière glisse en douceur sur les arrondis
+      // (au lieu de petites facettes bien nettes).
+      m = new THREE.MeshLambertMaterial({ color: couleur, ...options });
+      if (GRAINS[couleur]) ajouterGrain(m, ...GRAINS[couleur]);
+    }
+    matieres.set(cle, m);
   }
   return matieres.get(cle);
+}
+
+// Donne du grain à une matière de sol. C'est la carte graphique qui calcule
+// les taches, d'après la position de chaque point dans le lieu : elles ne
+// bougent jamais, et ne coûtent presque rien.
+export function ajouterGrain(m, taches = 0.15, grain = 0.06) {
+  m.onBeforeCompile = (shader) => {
+    shader.uniforms.uGrain = { value: new THREE.Vector2(taches, grain) };
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nvarying vec2 vPosSol;')
+      .replace('#include <project_vertex>', `#include <project_vertex>
+        vec4 posSol = vec4(transformed, 1.0);
+        #ifdef USE_INSTANCING
+          posSol = instanceMatrix * posSol;
+        #endif
+        vPosSol = (modelMatrix * posSol).xz;`);
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', `#include <common>
+        uniform vec2 uGrain;
+        varying vec2 vPosSol;
+        float hasardSol(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+        float bruitSol(vec2 p) {
+          vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);
+          return mix(mix(hasardSol(i), hasardSol(i + vec2(1.0, 0.0)), f.x), mix(hasardSol(i + vec2(0.0, 1.0)), hasardSol(i + vec2(1.0, 1.0)), f.x), f.y);
+        }`)
+      .replace('#include <color_fragment>', `#include <color_fragment>
+        float tachesSol = bruitSol(vPosSol * 0.28) * 0.6 + bruitSol(vPosSol * 0.9 + 11.0) * 0.4;
+        float grainSol = bruitSol(vPosSol * 5.5) * 0.6 + bruitSol(vPosSol * 13.0) * 0.4;
+        diffuseColor.rgb *= 1.0 + (tachesSol - 0.5) * 2.0 * uGrain.x + (grainSol - 0.5) * 2.0 * uGrain.y;`);
+  };
+  return m;
 }
 
 // Crée un objet 3D (une forme + une matière) et le place.

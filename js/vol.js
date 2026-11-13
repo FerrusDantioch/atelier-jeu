@@ -40,6 +40,8 @@ export function construireVol(scene) {
   chemin(C.marche, C.lac);
   chemin(C.place, C.foret);
   chemin({ x: C.gare.x, z: C.gare.z - 1.6 }, { x: C.mine.x - 1.5, z: C.mine.z + 1.5 }, 0.45, '#5a4d42', 0.025);
+  // Version 1.7 : la ligne de tramway, de la gare à la ville nouvelle.
+  chemin({ x: C.gare.x + 1.5, z: C.gare.z + 0.4 }, { x: C.ville.x - 1.6, z: C.ville.z - 0.2 }, 0.35, '#727880', 0.025);
 
   const maison = (x, z, l, p, murs, toit, h = 0.7) => {
     scene.add(objet(boite(l, h, p, 0.05), murs, x, h / 2, z, { ombre: true }));
@@ -72,6 +74,16 @@ export function construireVol(scene) {
   maison(C.gare.x - 1.2, C.gare.z - 0.5, 1.8, 0.9, '#dcc4a0', '#6f7d8c');
   scene.add(objet(boite(1.0, 0.3, 0.35, 0.05), '#5a6a5a', C.gare.x + 1.2, 0.2, C.gare.z - 1.6));
   scene.add(objet(cylindre(0.08, 0.08, 0.25), COULEURS.metal, C.gare.x + 1.5, 0.45, C.gare.z - 1.6));
+  // La ville nouvelle (version 1.7) : une dalle claire, la rue, des immeubles
+  // à toit plat, et le petit tramway.
+  plat(new THREE.PlaneGeometry(5.2, 4.2), '#cfcac0', C.ville.x, 0.03, C.ville.z);
+  plat(new THREE.PlaneGeometry(5.2, 0.8), '#5d626a', C.ville.x, 0.035, C.ville.z + 0.5);
+  for (const [dx, l, h, couleur] of [[-1.5, 1.3, 1.5, '#e4e1da'], [0, 1.1, 0.7, '#efe9dc'], [1.5, 1.3, 2.0, '#dc9a7c']]) {
+    scene.add(objet(boite(l, h, 0.9, 0.05), couleur, C.ville.x + dx, h / 2, C.ville.z - 1.0, { ombre: true }));
+    scene.add(objet(boite(l * 0.8, 0.12, 0.04), '#86aec4', C.ville.x + dx, h * 0.6, C.ville.z - 0.54));
+  }
+  scene.add(objet(boite(1.2, 0.3, 0.3, 0.08), '#f3f1ec', C.ville.x - 0.8, 0.2, C.ville.z + 0.5, { ombre: true }));
+  scene.add(objet(boite(1.22, 0.08, 0.32, 0.03), '#2f8f96', C.ville.x - 0.8, 0.12, C.ville.z + 0.5));
   // Le lac, son ponton et la cabane du pêcheur.
   const lac = new THREE.Mesh(new THREE.CircleGeometry(3.2, 36), EAU_CALME);
   lac.rotation.x = -Math.PI / 2;

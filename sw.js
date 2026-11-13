@@ -15,7 +15,7 @@
 // alors effacées.
 // =============================================================================
 
-const VERSION = '1.6.0';
+const VERSION = '1.7.0';
 const NOM_CACHE = `cuivrebourg-${VERSION}`;
 
 // Tous les fichiers nécessaires pour jouer, gardés dès l'installation.
@@ -29,6 +29,16 @@ const FICHIERS = [
   'icones/apple-touch-icon.png',
   'lib/three/three.module.js',
   'lib/three/three.core.js',
+  'lib/three/postprocessing/EffectComposer.js',
+  'lib/three/postprocessing/Pass.js',
+  'lib/three/postprocessing/RenderPass.js',
+  'lib/three/postprocessing/ShaderPass.js',
+  'lib/three/postprocessing/MaskPass.js',
+  'lib/three/postprocessing/UnrealBloomPass.js',
+  'lib/three/postprocessing/OutputPass.js',
+  'lib/three/shaders/CopyShader.js',
+  'lib/three/shaders/LuminosityHighPassShader.js',
+  'lib/three/shaders/OutputShader.js',
   'js/commandes.js',
   'js/decor-zones.js',
   'js/decor.js',
@@ -61,6 +71,15 @@ const FICHIERS = [
   'js/logique-vitrine.js',
   'js/vie.js',
   'js/formes.js',
+  'js/fusion.js',
+  'js/lieux.js',
+  'js/clients3d.js',
+  'js/portraits.js',
+  'js/stockage.js',
+  'js/decor-ville.js',
+  'js/logique-ville.js',
+  'js/effets.js',
+  'js/rendu.js',
   'js/interface-atelier.js',
   'js/interface-options.js',
   'js/interface.js',

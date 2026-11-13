@@ -34,6 +34,7 @@ import { libellePotager } from './logique-potager.js';
 import { FILONS, estFilon, galerieOuverte, libelleFilon } from './logique-galerie.js';
 import { CUEILLETTES, RAYON_BUISSON, estCueillette, libelleCueillette, libelleTelescope, telescopeRepare } from './logique-foret.js';
 import { etapesDirigeable, dirigeablePret } from './logique-dirigeable.js';
+import { tramOuvert } from './logique-ville.js';
 
 // Raccourci : un rectangle d'obstacle.
 const rect = (id, x, z, largeur, profondeur) => ({ type: 'rectangle', id, x, z, largeur, profondeur });
@@ -210,6 +211,8 @@ export const ZONES = Object.freeze({
     // Un banc sur le quai.
     // (Entre le quai et la voie, on laisse toujours au moins 1 m pour passer.)
     bancs: [{ id: 'banc', x: -3.4, z: -4.4, largeur: 1.5, profondeur: 0.55 }],
+    // Version 1.7 : l'arrêt du tramway de la ville nouvelle (son abri).
+    arretTram: { id: 'arret-tram', x: 9.2, z: 2.6, largeur: 2.8, profondeur: 0.7 },
     lampadaires: [{ x: -4.9, z: -4.4 }, { x: 3.6, z: -4.4 }, { x: 9.4, z: -4.4 }, { x: -6, z: 1.4 }],
     arbres: [{ x: -11.5, z: 6.5 }, { x: -5.5, z: 7.3 }, { x: 4, z: 7.4 }, { x: 10.5, z: 6.8 }, { x: 12.2, z: 2.8 }],
     rayonArbre: 0.65,
@@ -220,6 +223,7 @@ export const ZONES = Object.freeze({
       { id: 'augustin', x: -1.3, z: -3.3, distanceInteraction: 2.2 },
       { id: 'horloge', x: 1, z: -4.4, distanceInteraction: 1.9 },
       { id: 'locomotive', x: 6, z: -5.3, distanceInteraction: 2.1 },
+      { id: 'arret-tram', x: 9.2, z: 1.6, distanceInteraction: 1.3 },
     ],
     sorties: [
       { vers: 'moulin', minX: -99, maxX: -13.4, minZ: -1.4, maxZ: 1.4 },
@@ -227,6 +231,7 @@ export const ZONES = Object.freeze({
     arrivees: {
       moulin: { x: -12.3, z: 0, orientation: Math.PI / 2 },
       mine: { x: 6, z: -4.3, orientation: 0 }, // en descendant du train
+      ville: { x: 9.2, z: 1.5, orientation: 0 }, // en descendant du tramway
     },
   },
 
@@ -468,6 +473,61 @@ export const ZONES = Object.freeze({
       place: { x: -12.3, z: 0, orientation: Math.PI / 2 },
     },
   },
+
+  // --- La ville nouvelle (version 1.7) : un quartier d'aujourd'hui, au bout de
+  // la ligne de tramway qui part de la gare. Au nord, trois immeubles (la
+  // médiathèque, le café, une résidence) ; devant, le trottoir et la terrasse
+  // du café ; puis la rue, où attend le tramway ; au sud, l'arrêt et un
+  // petit parc. On y vient en tramway (ou en dirigeable).
+  ville: {
+    id: 'ville',
+    nom: 'La ville nouvelle',
+    limites: { minX: -14, maxX: 14, minZ: -9, maxZ: 9 },
+    joueur: MONDE.joueur,
+    camera: { minX: -7, maxX: 7, minZ: -4, maxZ: 5 },
+    batiments: [
+      { id: 'mediatheque', x: -9, z: -5.9, largeur: 7, profondeur: 4.2, etages: 3, enseigne: 'MÉDIATHÈQUE' },
+      { id: 'cafe', x: 0, z: -6.1, largeur: 6, profondeur: 3.8, etages: 1, enseigne: 'CAFÉ' },
+      { id: 'residence', x: 9, z: -5.9, largeur: 7, profondeur: 4.2, etages: 4, enseigne: 'RÉSIDENCE' },
+    ],
+    // La rue (on peut la traverser : il n'y passe que le tramway, à l'arrêt).
+    rue: { z: 2, profondeur: 5.2 },
+    // Ce qui est garé dans la rue : le tramway, à son arrêt, et deux voitures.
+    caisses: [
+      { id: 'tramway', x: -6.2, z: 3.4, largeur: 7.4, profondeur: 1.9 },
+      { id: 'voiture-1', x: 5.2, z: 0.3, largeur: 2.5, profondeur: 1.25 },
+      { id: 'voiture-2', x: 9.4, z: 0.3, largeur: 2.5, profondeur: 1.25 },
+      // L'abri de l'arrêt, sur le trottoir du sud.
+      { id: 'abri', x: -6.6, z: 6.1, largeur: 2.8, profondeur: 0.7 },
+      // Les vélos en libre-service, devant la résidence.
+      { id: 'velos', x: 10.4, z: -2.9, largeur: 2.6, profondeur: 0.7 },
+    ],
+    bancs: [{ id: 'banc', x: 0.6, z: 6.6, largeur: 1.6, profondeur: 0.55 }],
+    // Les tables rondes de la terrasse, et la grande sculpture du parc.
+    ronds: [
+      { id: 'table-1', x: -2.3, z: -2.4, rayon: 0.5 },
+      { id: 'table-2', x: 2.6, z: -2.4, rayon: 0.5 },
+      { id: 'sculpture', x: 7.6, z: 7.2, rayon: 0.95 },
+    ],
+    lampadaires: [{ x: -4.2, z: -1.1 }, { x: 3.9, z: -1.1 }, { x: -10.4, z: 5.4 }, { x: 4.2, z: 5.4 }, { x: 12.2, z: 5.4 }],
+    arbres: [{ x: -11.6, z: 7.7 }, { x: -2.6, z: 8 }, { x: 3.6, z: 8.1 }, { x: 11.6, z: 7.9 }, { x: -12.6, z: -1.6 }, { x: 13, z: -1.2 }],
+    rayonArbre: 0.65,
+    pnj: [
+      { id: 'ines', nom: 'Inès', x: -3.6, z: 5.7, rayon: 0.45, distanceInteraction: 2.2 },
+      { id: 'malik', nom: 'Malik', x: 0.9, z: -3.3, rayon: 0.45, distanceInteraction: 2.2 },
+    ],
+    interactifs: [
+      { id: 'ines', x: -3.6, z: 5.7, distanceInteraction: 2.2 },
+      { id: 'malik', x: 0.9, z: -3.3, distanceInteraction: 2.2 },
+      { id: 'arret-ville', x: -6.6, z: 5.0, distanceInteraction: 1.3 },
+      { id: 'sculpture', x: 7.6, z: 7.2, distanceInteraction: 2.0 },
+      { id: 'velos', x: 10.4, z: -2.1, distanceInteraction: 1.3 },
+    ],
+    sorties: [],
+    arrivees: {
+      gare: { x: -6.6, z: 4.95, orientation: 0 }, // en descendant du tramway
+    },
+  },
 });
 
 // Les lumières fixes (qui ne suivent ni le jour ni la nuit) : l'intérieur de
@@ -548,6 +608,8 @@ export function obstaclesZone(zoneId, etat) {
   if (z.voie) ajouterRect(z.voie);
   if (z.entree) ajouterRect(z.entree);
   if (z.wagonnet) ajouterRect(z.wagonnet);
+  if (z.arretTram) ajouterRect(z.arretTram);
+  (z.ronds || []).forEach((r) => liste.push({ type: 'cercle', id: r.id, x: r.x, z: r.z, rayon: r.rayon }));
   (z.rochers || []).forEach((r, i) => liste.push({ type: 'cercle', id: `rocher-${i + 1}`, x: r.x, z: r.z, rayon: r.rayon }));
   // Une barrière (arbre tombé, barrière de la gare) bloque tant qu'elle n'est pas ouverte.
   if (z.barriere && !conditionRemplie(etat, z.barriere.ouverteSi)) ajouterRect(z.barriere);
@@ -603,6 +665,11 @@ export function libelleZone(etat, cible, saisonId = 'ete') {
     return voyageTrain(etat, 'gare') ? 'Monter dans le train (vers la mine)' : 'La locomotive';
   }
   if (cible === 'train-retour') return 'Rentrer à Cuivrebourg en train';
+  // Version 1.7 : le tramway et la ville nouvelle.
+  if (cible === 'arret-tram') return voyageTram(etat, 'gare') ? 'Prendre le tramway (vers la ville nouvelle)' : "L'arrêt du tramway";
+  if (cible === 'arret-ville') return 'Prendre le tramway (vers la gare)';
+  if (cible === 'sculpture') return 'La sculpture du parc';
+  if (cible === 'velos') return 'Les vélos en libre-service';
   if (cible === 'entree-mine') return galerieOuverte(etat) ? 'Descendre dans la mine' : "L'entrée de la mine";
   // Version 1.5.
   if (cible === 'porte-atelier') return "Entrer dans l'atelier";
@@ -725,6 +792,10 @@ export function messageObjet(etat, cible) {
     return ['Le wagonnet a déraillé : il lui manque une roue.'];
   }
   if (cible === 'train-retour') return ['Le train attend à quai.'];
+  // Version 1.7.
+  if (cible === 'arret-tram') return ['Un arrêt de tramway tout neuf : « Ligne 1 — Ville nouvelle ». La ligne ouvrira quand le train de Cuivrebourg roulera de nouveau.'];
+  if (cible === 'sculpture') return ["« L'Engrenage », une grande sculpture de cuivre. Sur la plaque : « À Cuivrebourg, d'où viennent nos plus beaux rouages. »"];
+  if (cible === 'velos') return ['Des vélos en libre-service. Ferrus préfère marcher : il a toujours ses outils à porter !'];
   if (cible === 'entree-mine') return ["L'entrée de la mine est fermée : Sidonie n'y laisse descendre personne tant que son wagonnet est en panne."];
   if (cible === 'ponton') return ['Un bel endroit pour pêcher… Il vous faudrait une canne. Gaston, le vieux pêcheur, en a peut-être une.'];
   if (cible === 'forge') return [etat.atelier.fabrication ? 'La forge rougeoie : une fabrication est en cours.' : 'La forge ronronne doucement. Rouille adore dormir à côté.'];
@@ -751,6 +822,17 @@ export function messageObjet(etat, cible) {
 export function voyageTrain(etat, depuis) {
   if (!queteTerminee(etat, 'train-cuivrebourg')) return null;
   const vers = { gare: 'mine', mine: 'gare' }[depuis];
+  if (!vers) return null;
+  const a = ZONES[vers].arrivees[depuis];
+  return { zone: vers, x: a.x, z: a.z, orientation: a.orientation };
+}
+
+// Le voyage en tramway (version 1.7) : de la gare à la ville nouvelle, et
+// retour. Il roule dès que le train de Cuivrebourg est reparti. Renvoie
+// { zone, x, z, orientation } ou null.
+export function voyageTram(etat, depuis) {
+  if (!tramOuvert(etat)) return null;
+  const vers = { gare: 'ville', ville: 'gare' }[depuis];
   if (!vers) return null;
   const a = ZONES[vers].arrivees[depuis];
   return { zone: vers, x: a.x, z: a.z, orientation: a.orientation };

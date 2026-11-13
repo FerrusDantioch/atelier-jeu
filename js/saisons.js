@@ -30,7 +30,7 @@ let cibles = null;
 function obtenirCibles() {
   if (cibles) return cibles;
   cibles = {
-    herbe: [matiere(COULEURS.herbe)],
+    herbe: [matiere(COULEURS.herbe), matiereFeuillage(COULEURS.herbe, 0.35)],
     feuillage: [matiereFeuillage(COULEURS.feuillage), matiere(COULEURS.feuillage)],
     feuillageClair: [matiereFeuillage(COULEURS.feuillageClair, 1.4), matiere(COULEURS.feuillageClair)],
     haie: [matiere(COULEURS.haie)],
@@ -142,7 +142,43 @@ export function creerFleurs(scene, zoneId, donnees, obstacles, graine = 5) {
   fleurs.visible = false;
   scene.add(fleurs);
   fleursDuJeu.push(fleurs);
+  creerTouffes(scene, l, exclu, obstacles, hasard);
   return fleurs;
+}
+
+// Version 1.7 : des touffes d'herbe un peu partout dans les prés (pas sur les
+// chemins ni les pavés). Chaque touffe = 3 brins pointus ; toutes sont
+// dessinées d'un seul coup, se balancent au vent et suivent la couleur de
+// l'herbe au fil des saisons (blanches sous la neige).
+function creerTouffes(scene, l, exclu, obstacles, hasard) {
+  const places = [];
+  for (let essai = 0; essai < 4000 && places.length < 170; essai++) {
+    const x = l.minX - 3 + hasard() * (l.maxX - l.minX + 6);
+    const z = l.minZ - 2 + hasard() * (l.maxZ - l.minZ + 5);
+    if (exclu(x, z) || toucheUnObstacle(x, z, 0.3, obstacles)) continue;
+    places.push({ x, z });
+  }
+  const brins = new THREE.InstancedMesh(new THREE.ConeGeometry(0.05, 0.3, 4), matiereFeuillage(COULEURS.herbe, 0.35), places.length * 3);
+  const m = new THREE.Matrix4();
+  const q = new THREE.Quaternion();
+  const penche = new THREE.Euler();
+  const teinte = new THREE.Color();
+  let i = 0;
+  for (const p of places) {
+    const clair = 0.98 + hasard() * 0.3; // certaines touffes sont plus claires, d'autres plus sombres
+    for (let k = 0; k < 3; k++) {
+      const a = (k / 3) * Math.PI * 2 + hasard() * 2;
+      const taille = 0.7 + hasard() * 0.7;
+      q.setFromEuler(penche.set(Math.cos(a) * 0.35, 0, -Math.sin(a) * 0.35));
+      m.compose(new THREE.Vector3(p.x + Math.sin(a) * 0.07, 0.13 * taille, p.z + Math.cos(a) * 0.07), q, new THREE.Vector3(1, taille, 1));
+      brins.setMatrixAt(i, m);
+      brins.setColorAt(i, teinte.setScalar(clair));
+      i++;
+    }
+  }
+  brins.receiveShadow = true;
+  scene.add(brins);
+  return brins;
 }
 
 // -----------------------------------------------------------------------------

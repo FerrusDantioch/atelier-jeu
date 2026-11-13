@@ -1,1 +1,3 @@
 node_modules/
+# L'archive de sauvegarde (npm run zip) reste sur l'ordinateur.
+*.zip

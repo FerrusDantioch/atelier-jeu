@@ -13,12 +13,36 @@
 import * as THREE from '../lib/three/three.module.js';
 import { matiere, formeEngrenage } from './decor.js';
 import { TENUES as TENUES_FERRUS } from './logique-garderobe.js';
-import { boite, cylindre, boule, tour, gelule } from './formes.js';
+import * as formes from './formes.js';
 import { MATIERE_LUEUR } from './vie.js';
 
 // Une tête bien ronde, et le dessus d'une tête (cheveux, bonnet…).
-const tete = (rayon) => new THREE.SphereGeometry(rayon, 20, 14);
-const calotte = (rayon) => new THREE.SphereGeometry(rayon, 20, 8, 0, Math.PI * 2, 0, Math.PI / 2);
+const tete = partager((rayon) => new THREE.SphereGeometry(rayon, 20, 14));
+const calotte = partager((rayon) => new THREE.SphereGeometry(rayon, 20, 8, 0, Math.PI * 2, 0, Math.PI / 2));
+
+// Version 1.7 : les formes sont PARTAGÉES entre tous les personnages. Deux
+// clients ont les mêmes bras, les mêmes jambes, la même tête : on ne fabrique
+// chaque forme qu'une fois, et on la réutilise (avant, chaque client qui
+// entrait sur la place recréait une quarantaine de formes, jetées à son départ).
+// Une forme partagée ne doit jamais être modifiée : pour en tourner une, on en
+// fait d'abord une copie (« .clone() »).
+function partager(fabrique) {
+  const dejaFaites = new Map();
+  return (...mesures) => {
+    const cle = JSON.stringify(mesures);
+    if (!dejaFaites.has(cle)) {
+      const forme = fabrique(...mesures);
+      forme.userData.partagee = true;
+      dejaFaites.set(cle, forme);
+    }
+    return dejaFaites.get(cle);
+  };
+}
+const boite = partager(formes.boite);
+const cylindre = partager(formes.cylindre);
+const boule = partager(formes.boule);
+const tour = partager(formes.tour);
+const gelule = partager(formes.gelule);
 
 // Un buste aux épaules arrondies, de y = bas à y = haut (en « tour » de potier).
 function buste(rayonBas, rayonHaut, bas, haut) {
@@ -38,9 +62,7 @@ function buste(rayonBas, rayonHaut, bas, haut) {
 
 // Un tablier de cuir (ou de toile) qui épouse le ventre : un morceau de
 // cylindre, visible des deux côtés.
-function tablier(rayon, hauteur) {
-  return new THREE.CylinderGeometry(rayon, rayon + 0.01, hauteur, 12, 1, true, -0.72, 1.44);
-}
+const tablier = partager((rayon, hauteur) => new THREE.CylinderGeometry(rayon, rayon + 0.01, hauteur, 12, 1, true, -0.72, 1.44));
 
 // Deux petits yeux sombres (pour les personnages sans lunettes d'artisan).
 function yeux(parent, y, z, ecart = 0.08) {
@@ -253,7 +275,7 @@ function fabriquerChapeau(id, couleur) {
   if (id === 'casque-mineur') {
     piece(g, calotte(0.275), couleur, 0, 1.64, 0).scale.set(1, 0.95, 1.05);
     piece(g, new THREE.TorusGeometry(0.275, 0.025, 6, 24), couleur, 0, 1.64, 0).rotation.x = Math.PI / 2;
-    piece(g, cylindre(0.05, 0.05, 0.06, 12, 0.015).rotateX(Math.PI / 2), '#6b6660', 0, 1.76, 0.245);
+    piece(g, cylindre(0.05, 0.05, 0.06, 12, 0.015).clone().rotateX(Math.PI / 2), '#6b6660', 0, 1.76, 0.245);
     piece(g, boule(0.04, 1), MATIERE_LUEUR, 0, 1.76, 0.275);
     return g;
   }
@@ -431,6 +453,10 @@ export const TENUES_PNJ = {
   // Lucie, l'apprentie (version 1.5) : salopette, foulard, lunettes sur le front.
   lucie: { peau: '#f0c9a6', haut: '#e2c9a0', bas: '#5a6a7a', cheveux: '#a0522d', chapeau: 'foulard', couleurChapeau: '#c98b7a', tablier: '#5a6a7a' },
   // Anatole, l'inventeur de la forêt (version 1.6) : redingote prune, haut-de-forme, moustache blanche.
+  // Version 1.7, la ville nouvelle. Inès, la conductrice du tramway : blouson bleu canard, casquette.
+  ines: { peau: '#c68e6a', haut: '#2f7f86', bas: '#2f3a4a', cheveux: '#2a201c', chapeau: 'casquette', couleurChapeau: '#2f3a4a', boutons: '#e8e2d6' },
+  // Malik, le patron du café : chemise blanche, tablier noir de barista.
+  malik: { peau: '#a8744f', haut: '#f1ede4', bas: '#3a3a40', cheveux: '#1f1a18', chapeau: 'aucun', tablier: '#2e2e33', moustache: '#1f1a18' },
   anatole: { peau: '#e8c0a0', haut: '#6f5a7a', bas: '#4a4038', cheveux: '#e8e4dc', chapeau: 'haut-de-forme', couleurChapeau: '#5e4330', moustache: '#ece8e0', boutons: '#c99a4a' },
 };
 
@@ -489,7 +515,7 @@ export function creerPersonnage(t, numero = 0) {
     casque.scale.set(1, 0.95, 1.05);
     const bord = piece(corps, new THREE.TorusGeometry(0.27, 0.025, 6, 24), t.couleurChapeau, 0, 1.64, 0);
     bord.rotation.x = Math.PI / 2;
-    piece(corps, cylindre(0.05, 0.05, 0.06, 12, 0.015).rotateX(Math.PI / 2), '#6b6660', 0, 1.76, 0.24);
+    piece(corps, cylindre(0.05, 0.05, 0.06, 12, 0.015).clone().rotateX(Math.PI / 2), '#6b6660', 0, 1.76, 0.24);
     piece(corps, boule(0.04, 1), MATIERE_LUEUR, 0, 1.76, 0.27);
   } else if (t.chapeau === 'bonnet') {
     const bonnet = piece(corps, new THREE.ConeGeometry(0.22, 0.4, 18), t.couleurChapeau, 0, 1.92, -0.04);
@@ -516,6 +542,7 @@ export const animerMarche = animerFerrus;
 export function supprimerPersonnage(personnage) {
   personnage.removeFromParent();
   personnage.traverse((o) => {
-    if (o.geometry) o.geometry.dispose();
+    // (Les formes partagées restent : elles servent aux autres personnages.)
+    if (o.geometry && !o.geometry.userData.partagee) o.geometry.dispose();
   });
 }

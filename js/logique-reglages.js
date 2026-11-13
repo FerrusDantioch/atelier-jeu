@@ -14,7 +14,7 @@
 // =============================================================================
 
 // Le numéro de version du jeu (le même que dans package.json et sw.js).
-export const VERSION_JEU = '1.6.0';
+export const VERSION_JEU = '1.7.0';
 
 export const CLE_REGLAGES = 'atelier-cuivrebourg-reglages';
 
@@ -22,6 +22,7 @@ export const CLE_REGLAGES = 'atelier-cuivrebourg-reglages';
 export const NIVEAUX_VOLUME = 5;
 
 export const QUALITES = {
+  elevee: { nom: 'Élevée', detail: 'Pour un ordinateur ou un téléphone récent : image très fine, ombres plus précises, halo lumineux autour des lanternes.' },
   normale: { nom: 'Normale', detail: 'Image fine et ombres douces.' },
   economie: { nom: 'Économie', detail: 'Pour un téléphone qui chauffe ou se décharge vite : image moins fine, sans ombres, 30 images par seconde.' },
 };
@@ -94,5 +95,8 @@ export function volumeReel(niveau) {
 // Ce que la qualité choisie change pour l'affichage.
 export function parametresQualite(qualite, densitePixels) {
   if (qualite === 'economie') return { pixelRatio: 1, ombres: false, imagesParSeconde: 30 };
+  // Version 1.7 : « Élevée » = image plus fine, ombres plus précises, et les
+  // effets de lumière (voir effets.js).
+  if (qualite === 'elevee') return { pixelRatio: Math.min(densitePixels || 1, 2), ombres: true, imagesParSeconde: 60, ombresFines: true, effets: true };
   return { pixelRatio: Math.min(densitePixels || 1, 1.5), ombres: true, imagesParSeconde: 60 };
 }

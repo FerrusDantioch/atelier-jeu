@@ -109,6 +109,16 @@ export const AMBIANCES = {
     progression: [0, 3, 4, 0, 6, 3, 4, 0],
     densite: 0.32,
   },
+  // Version 1.7 : la ville nouvelle, plus vive et plus légère (comme une
+  // petite musique de café, en terrasse).
+  ville: {
+    nom: 'La ville nouvelle',
+    tempo: 84,
+    tonique: 55, // sol
+    gamme: 'majeur',
+    progression: [0, 5, 3, 4, 0, 5, 1, 4],
+    densite: 0.42,
+  },
 };
 
 export const TEMPS_PAR_MESURE = 4;
