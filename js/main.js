@@ -125,6 +125,7 @@ import { creerJournal, creerGarderobe, creerPanneauVitrine, creerPanneauAssembla
 import { creerModePhoto } from './interface-photo.js';
 import { animerEau, eclairerEau } from './eau.js';
 import { fusionnerDecor } from './fusion.js';
+import { creerEffets } from './effets.js';
 import { reglerMoteur, creerReflets, definirReflets, eclairerMetaux, creerCiel, FORCES } from './rendu.js';
 import { animerVent, eclairerNuit } from './vie.js';
 import {
@@ -574,12 +575,32 @@ function demarrer() {
 
   // La qualité de l'image (option « Normale » ou « Économie »).
   let imagesParSeconde = 60;
+  let effets = null;            // les effets de la qualité « Élevée » (version 1.7)
+  let effetsVoulus = false;
+  let effetsEnPreparation = false;
   function appliquerQualite() {
     const q = parametresQualite(reglages.qualite, window.devicePixelRatio || 1);
     renderer.setPixelRatio(q.pixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
     for (const soleil of soleils) soleil.castShadow = q.ombres;
     imagesParSeconde = q.imagesParSeconde;
+    // Version 1.7, qualité « Élevée » : une image d'ombres deux fois plus
+    // précise, et le halo des lumières (chargé seulement à ce moment-là).
+    const cote = (tactile ? 1024 : 2048) * (q.ombresFines ? 2 : 1);
+    if (soleil.shadow.mapSize.x !== cote) {
+      soleil.shadow.mapSize.set(cote, cote);
+      if (soleil.shadow.map) soleil.shadow.map.dispose();
+      soleil.shadow.map = null;
+    }
+    effetsVoulus = Boolean(q.effets);
+    if (effetsVoulus && !effets && !effetsEnPreparation) {
+      effetsEnPreparation = true;
+      creerEffets(renderer)
+        .then((e) => { effets = e; })
+        .catch(() => { effetsVoulus = false; }) // tant pis : l'image reste celle de la qualité « Normale »
+        .finally(() => { effetsEnPreparation = false; });
+    }
+    if (effets) effets.redimensionner();
   }
   appliquerQualite();
 
@@ -1359,6 +1380,7 @@ function demarrer() {
     camera.fov = camera.aspect < 1 ? 50 : 40;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+    if (effets) effets.redimensionner();
   }
   redimensionner();
   calculerCamera(camera.position);
@@ -1675,7 +1697,13 @@ function demarrer() {
         pluie: voyage ? 0 : pluieDuCiel,
       });
     }
-    renderer.render(scene, camera);
+    if (effets && effetsVoulus) {
+      // « nuit » pour le halo : la vraie nuit dehors, et les lieux sombres (galerie, atelier).
+      const sombre = abrite ? 0.85 : lumiereDuMoment(reglages.jourNuit ? etat.journee : MOMENT_JOUR_FIXE).nuit;
+      effets.dessiner(scene, camera, sombre);
+    } else {
+      renderer.render(scene, camera);
+    }
   }
 
   // L'horloge et le train de la gare (version 1.2).
