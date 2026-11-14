@@ -30,6 +30,8 @@ export const ORIGINES_TENUE = Object.freeze({
   gaston: 'un cadeau de Gaston, quand vous serez très bons amis (5 cœurs)',
   lucie: 'un cadeau de Lucie, quand vous serez très bons amis (5 cœurs)',
   anatole: "un cadeau d'Anatole, quand vous serez très bons amis (5 cœurs)",
+  ines: "un cadeau d'Inès, quand vous serez très bons amis (5 cœurs)",
+  malik: 'un cadeau de Malik, quand vous serez très bons amis (5 cœurs)',
   dirigeable: 'la récompense du premier vol du dirigeable',
 });
 
@@ -45,6 +47,7 @@ export const TENUES = Object.freeze({
   'casque-mineur': { categorie: 'chapeau', nom: 'Casque de mineur', description: 'En laiton, avec une petite lampe qui s\'allume le soir.', origine: 'sidonie', couleur: '#c9a35a' },
   'bonnet-marin': { categorie: 'chapeau', nom: 'Bonnet de marin', description: 'Chaud et douillet, pour les matins brumeux au lac.', origine: 'gaston', couleur: '#5b6a78' },
   'haut-de-forme-inventeur': { categorie: 'chapeau', nom: "Haut-de-forme d'inventeur", description: 'Orné d\'engrenages et de lunettes de laiton.', origine: 'anatole', couleur: '#6b4a33' },
+  'casquette-tram': { categorie: 'chapeau', nom: 'Casquette de tramway', description: "Celle des conducteurs de la ligne 1, avec son petit écusson.", origine: 'ines', couleur: '#2f7f86' },
   'casquette-aviateur': { categorie: 'chapeau', nom: "Casquette d'aviateur", description: 'En cuir, avec ses lunettes de vol.', origine: 'dirigeable', couleur: '#7a5a3e' },
   // --- Les lunettes ---
   'lunettes-artisan': { categorie: 'lunettes', nom: "Lunettes d'artisan", description: 'Les fidèles lunettes de travail de Ferrus.', defaut: true },
@@ -55,6 +58,7 @@ export const TENUES = Object.freeze({
   'tablier-cuir': { categorie: 'tablier', nom: 'Tablier de cuir', description: 'Le tablier de toujours, un peu usé.', defaut: true, couleur: '#8a5a3a' },
   'tablier-toile': { categorie: 'tablier', nom: 'Tablier de toile bleue', description: 'Léger et frais, pour les jours d\'été.', prix: 30, couleur: '#5f7f9a' },
   'tablier-sapin': { categorie: 'tablier', nom: 'Tablier vert sapin', description: 'De la couleur des grands arbres de la forêt.', prix: 40, couleur: '#5f7a5a' },
+  'tablier-barista': { categorie: 'tablier', nom: 'Tablier du café', description: 'Noir et bien coupé, comme celui de Malik.', origine: 'malik', couleur: '#2e2e33' },
   'sans-tablier': { categorie: 'tablier', nom: 'Sans tablier', description: 'Pour le dimanche.', defaut: true },
   // --- Les écharpes ---
   'sans-echarpe': { categorie: 'echarpe', nom: 'Sans écharpe', description: 'Le cou bien dégagé.', defaut: true },

@@ -260,10 +260,12 @@ function fabriquerChapeau(id, couleur) {
     piece(g, cylindre(0.218, 0.218, 0.04, 20), '#3d2b1f', 0, 1.79, 0);
     return g;
   }
-  if (id === 'casquette-facteur') {
+  if (id === 'casquette-facteur' || id === 'casquette-tram') {
     piece(g, calotte(0.255), couleur, 0, 1.68, 0);
     piece(g, cylindre(0.15, 0.15, 0.03, 20, 0.012), couleur, 0, 1.69, 0.2).scale.set(1, 1, 0.75);
-    piece(g, cylindre(0.258, 0.258, 0.05, 20), '#3f4a5c', 0, 1.7, 0);
+    piece(g, cylindre(0.258, 0.258, 0.05, 20), id === 'casquette-tram' ? '#2f3a4a' : '#3f4a5c', 0, 1.7, 0);
+    // La casquette du tramway (version 1.7.1) a un petit écusson de laiton.
+    if (id === 'casquette-tram') piece(g, cylindre(0.035, 0.035, 0.02, 12).clone().rotateX(Math.PI / 2), '#c99a4a', 0, 1.79, 0.235);
     return g;
   }
   if (id === 'beret-farine') {

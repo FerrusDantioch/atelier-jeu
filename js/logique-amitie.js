@@ -6,7 +6,8 @@
 //   - quand on lui offre un objet (une fois par jour). Chacun a ses goûts :
 //     un objet qu'il ADORE compte beaucoup, un objet qu'il AIME compte bien ;
 //   - quand on l'aide : ses quêtes terminées, les fêtes pour Odile, les
-//     poissons trouvés pour Gaston, le carnet de commandes…
+//     poissons trouvés pour Gaston, le carnet de commandes, les services
+//     rendus à Inès et à Malik, en ville (version 1.7.1)…
 // Le jour de son ANNIVERSAIRE (noté dans le calendrier), un cadeau compte double.
 // À 3 cœurs, l'habitant offre un petit cadeau ; à 5 cœurs, un grand cadeau
 // (une tenue pour la garde-robe, ou des plans pour l'atelier).
@@ -103,6 +104,21 @@ export const AMIS = Object.freeze([
     cadeau3: { argent: 40, texte: "Une petite bourse, pour vos prochaines inventions. La science n'attend pas !" },
     cadeau5: { tenue: 'haut-de-forme-inventeur', texte: "Mon haut-de-forme d'inventeur, avec ses engrenages. Vous êtes un vrai inventeur, maintenant !" },
   },
+  // Version 1.7.1 : les deux habitants de la ville nouvelle.
+  {
+    id: 'ines', nom: 'Inès', saison: 1, jour: 1,
+    adore: 'lanterne', aime: ['train-miniature', 'horloge', 'bouquet'],
+    merciAdore: "Une lanterne ! Je l'accroche à l'avant du tramway : les soirs de brume, on me verra de loin.",
+    cadeau3: { materiau: 'ressort', nombre: 3, texte: 'Des ressorts de rechange du tramway. Au dépôt, on en a des caisses entières !' },
+    cadeau5: { tenue: 'casquette-tram', texte: 'Ma casquette de conductrice ! Avec elle, vous voyagez gratuitement… enfin, comme tout le monde.' },
+  },
+  {
+    id: 'malik', nom: 'Malik', saison: 2, jour: 1,
+    adore: 'bouquet', aime: ['baies', 'bouilloire', 'boite-musique'],
+    merciAdore: 'Un bouquet ! Une fleur sur chaque table de la terrasse : mes clients vont se croire à la campagne.',
+    cadeau3: { argent: 40, texte: "Les clients ont laissé des pourboires « pour l'artisan de la bouilloire ». C'est vous !" },
+    cadeau5: { tenue: 'tablier-barista', texte: 'Un tablier du café, noir et bien coupé. Vous êtes ici chez vous, Ferrus.' },
+  },
 ]);
 
 // Les objets qu'on peut offrir (ceux de l'atelier, et ce qui pousse ou se cueille).
@@ -133,6 +149,8 @@ export function bonusAmitie(etat, id) {
   if (id === 'odile') bonus += (etat.fetes ? etat.fetes.faites.length : 0) * 15;
   if (id === 'gaston' && etat.peche) bonus += Math.min(40, Object.values(etat.peche.especes).filter((n) => n > 0).length * 5);
   if (id === 'lucie' && possedeAmelioration(etat, 'apprentie')) bonus += 30;
+  // Version 1.7.1 : le service rendu à un habitant de la ville nouvelle.
+  if ((id === 'ines' || id === 'malik') && etat.ville && etat.ville.services[id]) bonus += 40;
   return bonus;
 }
 
