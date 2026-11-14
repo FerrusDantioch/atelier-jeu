@@ -38,6 +38,7 @@ import { animerCompagnons, animerChat } from './compagnons.js';
 import { animerEau } from './eau.js';
 import { animerVent } from './vie.js';
 import { animerFerrus } from './personnages.js';
+import { ombrePersonnage } from './logique-ombres.js';
 
 // Tourne un personnage en douceur vers un angle (par le chemin le plus court).
 function tournerVers(objet, angle, dt, rapidite) {
@@ -336,6 +337,16 @@ export function creerBoucle(jeu, o) {
       chat: etat.compagnons.chat,
       oiseau: etat.compagnons.oiseau,
     });
+    // Version 1.7.1 : une petite ombre de contact au pied de chaque personnage.
+    const ombres = [ombrePersonnage(position.x, position.z)];
+    for (const p of lieu.pnj) if (p.objet.visible) ombres.push(ombrePersonnage(p.x, p.z));
+    const chat = monde.compagnons.chat;
+    if (chat.visible) ombres.push(ombrePersonnage(chat.position.x, chat.position.z, 0.2));
+    if (zone === 'place') {
+      if (monde.chatErrant.visible) ombres.push(ombrePersonnage(monde.chatErrant.position.x, monde.chatErrant.position.z, 0.2));
+      for (const passant of positionsPassants()) ombres.push(ombrePersonnage(passant.x, passant.z));
+    }
+    monde.ombresPersonnages.userData.placer(ombres);
     const materiel = lieux.lac.decor.peche;
     materiel.visible = Boolean(jeu.peche) && zone === 'lac';
     if (materiel.visible) {

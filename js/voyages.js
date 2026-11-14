@@ -35,6 +35,7 @@ export function creerVoyages(jeu, o) {
     scene.add(moteur.soleil, moteur.soleil.target, moteur.ciel); // le soleil (et ses ombres) et le ciel aussi
     scene.add(monde.chutes); // les flocons (ou les pétales) le suivent
     scene.add(monde.pluie, monde.compagnons.chat, monde.compagnons.oiseau); // la pluie et les compagnons aussi
+    scene.add(monde.ombresPersonnages); // et les ombres au pied des personnages
     jeu.obstacles = obstaclesZone(jeu.zone, jeu.etat);
     // Sécurité : si le point d'arrivée touche un obstacle, on le pousse dehors.
     jeu.position = deplacerJoueur({ x, z }, 0, 0, jeu.obstacles, ZONES[jeu.zone]);

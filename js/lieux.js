@@ -35,6 +35,8 @@ import { creerPluie, creerFlaques, FLAQUES } from './meteo.js';
 import { creerFleurs, creerChutes } from './saisons.js';
 import { creerCompagnons, creerChat } from './compagnons.js';
 import { creerClients3d } from './clients3d.js';
+import { ombresDeContact } from './logique-ombres.js';
+import { creerOmbresContact, creerOmbresPersonnages } from './ombres.js';
 import { construireVille } from './decor-ville.js';
 import { construireVol } from './vol.js';
 import { fusionnerDecor } from './fusion.js';
@@ -299,6 +301,10 @@ export function creerLieux(soleil, ciel) {
     }
   }
 
+  // Les ombres de contact (version 1.7.1) : un halo sombre au pied des murs,
+  // des arbres, des meubles… Un seul objet par lieu (voir ombres.js).
+  for (const [nom, lieu] of Object.entries(lieux)) lieu.scene.add(creerOmbresContact(ombresDeContact(nom)));
+
   // --- Ce qui suit Ferrus d'un lieu à l'autre (au départ : sur la place) ---
   // Ce qui tombe du ciel (pétales, feuilles, flocons), et la pluie (version 1.5).
   const chutes = creerChutes();
@@ -308,7 +314,9 @@ export function creerLieux(soleil, ciel) {
   // Ferrus lui-même.
   const ferrus = creerFerrus();
   ferrus.position.set(MONDE.joueur.x, 0, MONDE.joueur.z);
-  place.add(chutes, pluie, compagnons.chat, compagnons.oiseau, ferrus, soleil, soleil.target, ciel);
+  // Les ombres de contact des personnages du lieu (version 1.7.1).
+  const ombresPersonnages = creerOmbresPersonnages();
+  place.add(chutes, pluie, compagnons.chat, compagnons.oiseau, ferrus, ombresPersonnages, soleil, soleil.target, ciel);
 
   // Les clients en 3D (étape 2) : ils vivent sur la place (voir clients3d.js).
   const clients = creerClients3d(place);
@@ -319,5 +327,5 @@ export function creerLieux(soleil, ciel) {
   sceneVol.fog.far = 95;
   const vol = construireVol(sceneVol);
 
-  return { lieux, sceneVol, vol, ferrus, compagnons, clients, chutes, pluie, vitrine3d, visiteurs, barriereForet, potager3d, fetes3d, chatErrant };
+  return { lieux, sceneVol, vol, ferrus, compagnons, clients, chutes, pluie, ombresPersonnages, vitrine3d, visiteurs, barriereForet, potager3d, fetes3d, chatErrant };
 }

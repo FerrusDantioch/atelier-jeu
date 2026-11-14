@@ -84,6 +84,8 @@ const FICHIERS = [
   'js/mode-photo.js',
   'js/boucle.js',
   'js/verifications.js',
+  'js/ombres.js',
+  'js/logique-ombres.js',
   'js/decor-ville.js',
   'js/logique-ville.js',
   'js/effets.js',
