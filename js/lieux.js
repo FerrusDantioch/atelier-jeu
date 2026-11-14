@@ -7,14 +7,19 @@
 //   de l'atelier, le lac, la forêt, la ville nouvelle… et la petite carte du
 //   village vue du ciel, pour les voyages en dirigeable.
 //
-// main.js n'a plus qu'à appeler « creerLieux » une fois, puis à faire vivre
-// le lieu où se trouve Ferrus.
+// On y prépare aussi tout ce qui VIT dans ces lieux : Ferrus, ses compagnons,
+// les clients de l'atelier, la vitrine et ses visiteurs, le potager, les décors
+// des fêtes, la pluie et ce qui tombe du ciel. L'ensemble forme le « monde ».
+//
+// main.js n'a plus qu'à appeler « creerLieux » une fois ; la boucle de jeu
+// (boucle.js) fait ensuite vivre le lieu où se trouve Ferrus.
 // =============================================================================
 
 import * as THREE from '../lib/three/three.module.js';
-import { MONDE } from './logique.js';
+import { MONDE, creerEtatJeu } from './logique.js';
 import { QUETES } from './logique-quetes.js';
-import { ZONES } from './logique-zones.js';
+import { ZONES, obstaclesZone } from './logique-zones.js';
+import { CHAT_ERRANT } from './logique-compagnons.js';
 import { construireDecor, creerEngrenageQuete, creerMarqueur } from './decor.js';
 import { construireMarche, construireMoulin, creerPaleQuete } from './decor-zones.js';
 import { construireGare } from './decor-gare.js';
@@ -22,16 +27,26 @@ import { construireMine, creerPepiteQuete } from './decor-mine.js';
 import { construireGalerie } from './decor-galerie.js';
 import { construireInterieur } from './decor-interieur.js';
 import { construireLac } from './decor-lac.js';
-import { construireForet } from './decor-foret.js';
+import { construireForet, construireCheminForet } from './decor-foret.js';
+import { construirePotager } from './decor-potager.js';
+import { construireFetes } from './fetes.js';
+import { construireVitrine, creerVisiteurs } from './vitrine.js';
+import { creerPluie, creerFlaques, FLAQUES } from './meteo.js';
+import { creerFleurs, creerChutes } from './saisons.js';
+import { creerCompagnons, creerChat } from './compagnons.js';
+import { creerClients3d } from './clients3d.js';
+import { ombresDeContact } from './logique-ombres.js';
+import { creerOmbresContact, creerOmbresPersonnages } from './ombres.js';
 import { construireVille } from './decor-ville.js';
 import { construireVol } from './vol.js';
 import { fusionnerDecor } from './fusion.js';
-import { creerOdile, animerOdile, creerPersonnage, TENUES_PNJ, animerMarche } from './personnages.js';
+import { creerOdile, animerOdile, creerPersonnage, creerFerrus, TENUES_PNJ, animerMarche } from './personnages.js';
 
-// « soleil » : la lumière qui fait les ombres. Il n'y en a qu'une pour tout le
-// jeu ; main.js la déplace d'un lieu à l'autre avec Ferrus.
-// Renvoie { lieux, sceneVol, vol }.
-export function creerLieux(soleil) {
+// « soleil » : la lumière qui fait les ombres, et « ciel » : le dôme du ciel.
+// Il n'y en a qu'un de chaque pour tout le jeu ; ils passent d'un lieu à
+// l'autre avec Ferrus (voir voyages.js).
+// Renvoie le « monde » : { lieux, sceneVol, vol, ferrus, compagnons, clients… }.
+export function creerLieux(soleil, ciel) {
   // Une scène vide avec le ciel, la brume et la lumière (la même pour chaque lieu).
   function creerSceneDeBase() {
     const scene = new THREE.Scene();
@@ -41,12 +56,12 @@ export function creerLieux(soleil) {
     scene.fog = new THREE.Fog(couleurCiel, 34, 70);
     // La lumière : douce et chaude, sans contraste violent.
     // - une lumière « ciel / sol » qui éclaire tout doucement ;
-    const ciel = new THREE.HemisphereLight('#fff1d8', '#8a7558', 1.75);
-    scene.add(ciel);
+    const lumiereCiel = new THREE.HemisphereLight('#fff1d8', '#8a7558', 1.75);
+    scene.add(lumiereCiel);
     // - le « soleil » de fin d'après-midi, qui fait les ombres, est partagé
     //   par tous les lieux : il est ajouté à la scène quand Ferrus y entre.
     // Les lumières que le jour et la nuit font changer (voir appliquerLumiere).
-    scene.userData.lumieres = { ciel, soleil };
+    scene.userData.lumieres = { ciel: lumiereCiel, soleil };
     return scene;
   }
 
@@ -67,7 +82,7 @@ export function creerLieux(soleil) {
     ajouterMarqueur(lieu, p.id, p.x, p.z, 2.45);
   }
 
-  // Les six lieux. Chacun : { scene, marqueurs, pnj, objetsQuete, … }
+  // Les dix lieux. Chacun : { scene, marqueurs, pnj, objetsQuete, decor… }
   const lieux = {};
   // Version 1.7 : une fois un lieu construit, on soude son décor fixe pour le
   // dessiner en beaucoup moins de fois (voir fusion.js). Les « sondes » font
@@ -250,11 +265,67 @@ export function creerLieux(soleil) {
     lieux.ville = lieu;
   }
 
+  // --- Sur la place (version 1.6) : la vitrine et ses visiteurs, et le chemin de la forêt ---
+  const place = lieux.place.scene;
+  const vitrine3d = construireVitrine(place, MONDE.vitrine);
+  const visiteurs = creerVisiteurs(place);
+  const barriereForet = construireCheminForet(place, MONDE);
+
+  // --- Sur la place (version 1.5) : le potager, les décors des fêtes, et le
+  // petit chat qui attend d'être adopté ---
+  const potager3d = construirePotager(place, MONDE.potager);
+  const fetes3d = construireFetes(place, MONDE);
+  const chatErrant = creerChat();
+  chatErrant.position.set(CHAT_ERRANT.x, 0, CHAT_ERRANT.z);
+  chatErrant.rotation.y = -0.6;
+  chatErrant.userData.repos = 10; // il est assis
+  place.add(chatErrant);
+  // Version 1.7 : on soude aussi le décor fixe qu'on vient d'ajouter à la place
+  // (la vitrine, les barrières du potager…), en laissant libre tout ce qui vit.
+  lieux.place.soudure = fusionnerDecor(
+    place,
+    { decor: lieux.place.decor, marqueurs: lieux.place.marqueurs, pnj: lieux.place.pnj, objetsQuete: lieux.place.objetsQuete, fetes3d, barriereForet, chatErrant },
+    [() => potager3d.userData.regler(1), () => potager3d.userData.regler(-1)],
+  );
+
+  // Les flaques des jours de pluie (version 1.5), sur les chemins et les pavés.
+  for (const [nom, liste] of Object.entries(FLAQUES)) creerFlaques(lieux[nom].scene, liste);
+
+  // Les fleurs du printemps (version 1.4), dans les lieux où il y a de l'herbe
+  // (le marché est pavé, et la galerie est sous terre).
+  {
+    const partieNeuve = creerEtatJeu();
+    creerFleurs(place, 'place', MONDE, obstaclesZone('place', partieNeuve), 1);
+    for (const [nom, graine] of [['moulin', 2], ['gare', 3], ['mine', 4], ['lac', 6], ['foret', 7]]) {
+      creerFleurs(lieux[nom].scene, nom, ZONES[nom], obstaclesZone(nom, partieNeuve), graine);
+    }
+  }
+
+  // Les ombres de contact (version 1.7.1) : un halo sombre au pied des murs,
+  // des arbres, des meubles… Un seul objet par lieu (voir ombres.js).
+  for (const [nom, lieu] of Object.entries(lieux)) lieu.scene.add(creerOmbresContact(ombresDeContact(nom)));
+
+  // --- Ce qui suit Ferrus d'un lieu à l'autre (au départ : sur la place) ---
+  // Ce qui tombe du ciel (pétales, feuilles, flocons), et la pluie (version 1.5).
+  const chutes = creerChutes();
+  const pluie = creerPluie();
+  // Les compagnons (version 1.5) : Rouille le chat et Cliquet l'oiseau.
+  const compagnons = creerCompagnons();
+  // Ferrus lui-même.
+  const ferrus = creerFerrus();
+  ferrus.position.set(MONDE.joueur.x, 0, MONDE.joueur.z);
+  // Les ombres de contact des personnages du lieu (version 1.7.1).
+  const ombresPersonnages = creerOmbresPersonnages();
+  place.add(chutes, pluie, compagnons.chat, compagnons.oiseau, ferrus, ombresPersonnages, soleil, soleil.target, ciel);
+
+  // Les clients en 3D (étape 2) : ils vivent sur la place (voir clients3d.js).
+  const clients = creerClients3d(place);
+
   // --- Le ciel (version 1.6) : la carte du village, pour les voyages en dirigeable ---
   const sceneVol = creerSceneDeBase();
   sceneVol.fog.near = 40;
   sceneVol.fog.far = 95;
   const vol = construireVol(sceneVol);
 
-  return { lieux, sceneVol, vol };
+  return { lieux, sceneVol, vol, ferrus, compagnons, clients, chutes, pluie, ombresPersonnages, vitrine3d, visiteurs, barriereForet, potager3d, fetes3d, chatErrant };
 }

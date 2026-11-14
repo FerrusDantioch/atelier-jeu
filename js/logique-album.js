@@ -27,6 +27,9 @@ export const HABITANTS_ALBUM = Object.freeze([
   { id: 'gaston', nom: 'Gaston', role: 'Le vieux pêcheur', mot: 'Il pêche sur le lac depuis cinquante ans, sans jamais se presser.' },
   { id: 'lucie', nom: 'Lucie', role: "L'apprentie", mot: "La nièce d'Odile. Elle rêve d'ouvrir un jour son propre atelier." },
   { id: 'anatole', nom: 'Anatole', role: "L'inventeur de la forêt", mot: "Il connaît toutes les étoiles par leur nom, et rêve de voler au-dessus des nuages." },
+  // Version 1.7.1 : les habitants de la ville nouvelle.
+  { id: 'ines', nom: 'Inès', role: 'La conductrice du tramway', mot: "Elle connaît chaque virage de la ligne 1, et n'a jamais une minute de retard." },
+  { id: 'malik', nom: 'Malik', role: 'Le patron du café', mot: 'Son café est le rendez-vous de tout le quartier. La bouilloire y siffle du matin au soir.' },
   { id: 'chat', nom: 'Rouille', role: 'Le chat de l\'atelier', mot: 'Un petit chat roux qui vous suit partout, et ronronne près de la forge.', compagnon: true },
   { id: 'oiseau', nom: 'Cliquet', role: "L'oiseau mécanique", mot: 'Fabriqué de vos mains. Il fait « cliquet-cliquet » en battant des ailes.', compagnon: true },
 ]);

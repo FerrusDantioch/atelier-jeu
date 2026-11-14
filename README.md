@@ -52,6 +52,10 @@ habitants : chaque habitant a un problème à résoudre, ce sont les quêtes.
   un jeu **plus léger** à dessiner, et la **ville nouvelle** : un quartier
   d'aujourd'hui (tramway, café, immeubles de verre) où l'on va en tramway
   depuis la gare.
+- **Version 1.7.1** : des **ombres de contact** (les objets et les personnages
+  sont mieux « posés » sur le sol), **Inès et Malik** entrent dans l'album et
+  deviennent des amis (cœurs, anniversaires, cadeaux), et le code du jeu est
+  mieux rangé (`main.js` n'est plus qu'un assembleur).
 
 ![La ville nouvelle : le tramway à son arrêt, le café et la médiathèque](captures/pc-ville.png)
 
@@ -655,7 +659,8 @@ jeu est en pause pendant qu'il est ouvert.
 - **Photos** (version 1.6) : les photos du mode photo (à télécharger).
 
 Depuis la version 1.6, chaque fiche d'habitant montre aussi ses **cœurs
-d'amitié** et la date de son **anniversaire**.
+d'amitié** et la date de son **anniversaire**. Depuis la version 1.7.1, Inès
+et Malik, les habitants de la ville nouvelle, ont leur fiche eux aussi.
 
 ![L'album de souvenirs](captures/pc-album.png)
 
@@ -713,6 +718,11 @@ glissant un indice sur ce qui ferait plaisir). Ce jour-là, un cadeau compte
 double. À **3 cœurs**, l'habitant offre un petit cadeau (des pièces ou des
 matériaux) ; à **5 cœurs**, un grand cadeau : une tenue pour la garde-robe,
 ou, pour Augustin, les plans du train miniature.
+
+**Inès et Malik** (version 1.7.1), en ville nouvelle, sont des amis comme les
+autres : le service qu'on leur rend compte pour l'amitié, Inès adore les
+lanternes et Malik les bouquets, et à 5 cœurs ils offrent la **casquette du
+tramway** et le **tablier du café**.
 
 ## Le journal de Cuivrebourg (version 1.6)
 
@@ -799,6 +809,12 @@ télécharger, et le jeu marche toujours sans connexion.
   deux fois plus précises, et un halo autour de ce qui brille (lanternes,
   fenêtres, braises). Elle demande une bonne carte graphique ; « Normale »
   et « Économie » restent aussi légères qu'avant.
+- **Les ombres de contact** (version 1.7.1) : un halo sombre et doux au pied
+  des murs, des haies, des arbres, des meubles et des lanternes, et une petite
+  ombre ronde qui suit chaque personnage. Les objets ne « flottent » plus,
+  même la nuit, sous la pluie, ou en qualité « Économie » (où le soleil ne
+  fait pas d'ombres). Toutes les ombres d'un lieu sont dessinées d'un seul
+  coup : cela ne coûte presque rien.
 
 ## Un jeu plus léger (version 1.7)
 
@@ -867,7 +883,7 @@ voyage en dirigeable est lent et doux.
 npm test
 ```
 
-(C'est la même chose que `node --test`.) 228 tests vérifient les quêtes,
+(C'est la même chose que `node --test`.) 236 tests vérifient les quêtes,
 l'argent, les collisions dans les dix lieux (avec des centaines de
 promenades au hasard : Ferrus ne se coince jamais), la gestion de l'atelier (dont
 une partie de 15 minutes jouée automatiquement), la sauvegarde (y compris
@@ -883,8 +899,10 @@ les anniversaires, le journal, la vitrine, la garde-robe, le petit jeu
 d'assemblage (chaque planche a une solution), le mode photo, la partie dans
 un fichier, le décor soudé (rien de ce qui bouge n'est soudé), la ville
 nouvelle et son tramway (on peut aller partout, les services ne sont payés
-qu'une fois), le soleil qui se déplace (jamais de saut) et les fichiers
-d'installation. Tout doit être indiqué `pass`.
+qu'une fois), le soleil qui se déplace (jamais de saut), les ombres de
+contact (chacune est au pied d'un objet qui est toujours là), l'amitié d'Inès
+et de Malik (une partie plus ancienne s'ouvre sans rien perdre) et les
+fichiers d'installation. Tout doit être indiqué `pass`.
 
 ## L'organisation des fichiers
 
@@ -919,7 +937,17 @@ d'installation. Tout doit être indiqué `pass`.
 | `js/logique-musique.js` | **La composition de la musique**, sans son : gammes, accords, mélodie, petits sons |
 | `js/musique.js` | Fait sonner la musique et les petits sons (Web Audio, le synthétiseur du navigateur) |
 | `js/interface-options.js` | Le panneau des options (musique, sons, qualité, plein écran, installer) |
-| `js/main.js` | Le chef d'orchestre : crée la scène 3D, la caméra, la lumière, et fait tourner le jeu |
+| `js/main.js` | Le chef d'orchestre : il crée la partie, l'interface et les commandes, puis **assemble** les morceaux ci-dessous |
+| `js/moteur.js` | Le moteur 3D (sorti de `main.js` en 1.7.1) : l'image, le soleil, le ciel, la qualité, la lumière du moment |
+| `js/camera.js` | La caméra qui suit Ferrus en douceur (et qui tourne autour de lui en mode photo) |
+| `js/boucle.js` | **La boucle de jeu** : 60 fois par seconde, le monde avance, Ferrus se déplace, le lieu s'anime, on redessine |
+| `js/interactions.js` | Ce qui se passe quand on appuie sur « Interagir » : parler, ouvrir l'établi, pêcher, prendre le tramway… |
+| `js/voyages.js` | Passer d'un lieu à l'autre : à pied, en train, en tramway, en dirigeable |
+| `js/mode-photo.js` | Le mode photo : entrer, cadrer, prendre la photo, la ranger dans l'album |
+| `js/mise-a-jour.js` | Met le décor d'accord avec la partie : portail ouvert, roue réparée, losanges des quêtes… |
+| `js/verifications.js` | Une petite porte d'entrée pour les vérifications automatiques (`atelier.etat` dans la console) |
+| `js/logique-ombres.js` | **Les ombres de contact** (version 1.7.1), sans aucune 3D : où les poser dans chaque lieu |
+| `js/ombres.js` | Dessine les ombres de contact : un seul objet par lieu, plus les ombres des personnages |
 | `js/decor.js` | La place en 3D : sol, haies, arbres, puits, atelier, maison d'Odile, établi, lampe, comptoir, améliorations, décorations |
 | `js/decor-zones.js` | Le marché et le moulin en 3D : étals, fontaine, canal, roue à aubes, pales, barrière de la gare |
 | `js/decor-gare.js` | La gare en 3D : voie ferrée, quai, horloge, locomotive et wagon, château d'eau |
@@ -945,14 +973,14 @@ d'installation. Tout doit être indiqué `pass`.
 | `js/rendu.js` | La belle image (version 1.7) : correction tonale, reflets des métaux, dôme du ciel |
 | `js/effets.js` | Le halo lumineux de la qualité « Élevée » (chargé seulement si on la choisit) |
 | `js/fusion.js` | Soude le décor fixe d'un lieu pour le dessiner en beaucoup moins de fois |
-| `js/lieux.js` | Prépare tous les lieux en 3D, chacun dans sa scène (sorti de `main.js` en 1.7) |
+| `js/lieux.js` | Prépare tous les lieux en 3D, chacun dans sa scène, et tout ce qui y vit : Ferrus, ses compagnons, les clients, la vitrine, le potager… (sorti de `main.js` en 1.7) |
 | `js/clients3d.js` | Les clients de l'atelier en 3D, sur la place (sorti de `main.js` en 1.7) |
-| `js/portraits.js` | Le petit « studio photo » des portraits de l'album et de la garde-robe |
-| `js/stockage.js` | Ce que le jeu range dans le navigateur : la partie et les réglages |
+| `js/portraits.js` | Le petit « studio photo » : les portraits de l'album et l'aperçu de la garde-robe |
+| `js/stockage.js` | Ce que le jeu range dans le navigateur (la partie, les réglages, les photos), et les fichiers qu'il donne à télécharger |
 | `js/vie.js` | Le décor qui vit : fumée des cheminées, vent dans les feuillages, lanternes et fenêtres qui s'allument la nuit, lucioles |
 | `js/formes.js` | Les formes de base aux bords arrondis : boîtes, cylindres, gélules, formes « tournées » comme un vase |
 | `js/eau.js` | L'eau qui bouge : reflets qui ondulent, ronds dans l'eau, feuilles au fil du canal, reflet des étoiles la nuit |
-| `js/personnages.js` | Ferrus (avec ses lunettes d'artisan, et ses tenues de la garde-robe), Odile, Capucine, Barnabé, Léon, Augustin, Sidonie, Gaston, Lucie, Anatole, les clients, et leurs animations |
+| `js/personnages.js` | Ferrus (avec ses lunettes d'artisan, et ses tenues de la garde-robe), Odile, Capucine, Barnabé, Léon, Augustin, Sidonie, Gaston, Lucie, Anatole, Inès, Malik, les clients, et leurs animations |
 | `js/commandes.js` | Le clavier, le joystick tactile (qui vient sous le pouce) et le bouton « Interagir » |
 | `js/interface.js` | L'argent, le calendrier, l'objectif, la barre de fabrication, les petits messages, la boîte de dialogue |
 | `js/interface-atelier.js` | Le panneau de l'établi (onglets Fabriquer, Acheter, Améliorer, Décorer, Carnet) |
@@ -968,6 +996,7 @@ d'installation. Tout doit être indiqué `pass`.
 | `tests/version15.test.js` | Les tests automatiques des fêtes, de la météo, des compagnons, de l'intérieur, de l'apprentie, du potager, de la pêche et de l'album |
 | `tests/version16.test.js` | Les tests automatiques de la forêt, des étoiles, du dirigeable, de l'amitié, du journal, de la vitrine, de la garde-robe, de l'assemblage, du mode photo et de la partie dans un fichier |
 | `tests/version17.test.js` | Les tests automatiques du décor soudé, de la ville nouvelle, du tramway, du soleil qui se déplace et de la qualité « Élevée » |
+| `tests/version171.test.js` | Les tests automatiques des ombres de contact, et d'Inès et Malik dans l'album |
 | `manifest.webmanifest` | La « fiche d'identité » de l'application : nom, icône, couleurs, plein écran |
 | `sw.js` | Le « service worker » : garde une copie du jeu pour jouer sans connexion |
 | `icones/` | L'icône du jeu (un engrenage de cuivre et une flamme) : le dessin `icone.svg` et ses versions PNG |
